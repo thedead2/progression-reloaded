@@ -6,6 +6,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /** Implement this on objects that have a special icon **/
 public interface ICustomIcon {
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public ItemStack getIcon();
 }

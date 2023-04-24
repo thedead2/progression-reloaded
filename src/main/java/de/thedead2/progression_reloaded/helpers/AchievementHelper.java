@@ -19,7 +19,7 @@ public class AchievementHelper {
             }
         }) {
             @Override
-            @SideOnly(Side.CLIENT)
+            @OnlyIn(Dist.CLIENT)
             public String getDescription() {
                 return description;
             }

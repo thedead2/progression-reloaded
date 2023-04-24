@@ -16,7 +16,7 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 @ProgressionRule(name="openContainer", color=0xFFFFFF00, meta="onGUIChange")
 public class TriggerChangeGui extends TriggerBaseBoolean implements ICustomDescription, ICustomWidth {
     private static boolean DEBUG = false;
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     private static Gui lastGui;
 
     public String className = "core.gui.de.the_dead_2.progression_reloaded.GuiCore";
@@ -42,7 +42,7 @@ public class TriggerChangeGui extends TriggerBaseBoolean implements ICustomDescr
         return mode == DisplayMode.EDIT ? 100 : displayWidth;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onEvent(GuiOpenEvent event) {
         if (lastGui != event.getGui()) {

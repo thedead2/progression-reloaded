@@ -176,7 +176,7 @@ public class ItemProgression extends Item {
     }
 
     @Override
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public void addInformation(ItemStack stack, EntityPlayer player, List<String> list, boolean debug) {
         if (stack.getItemDamage() == ItemMeta.claim.ordinal()) {
             list.add("Right click me on tiles");
@@ -191,7 +191,7 @@ public class ItemProgression extends Item {
         }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public void getSubItems(Item item, CreativeTabs tab, List<ItemStack> list) {
         list.add(new ItemStack(item, 1, ItemMeta.book.ordinal()));
         list.add(new ItemStack(item, 1, ItemMeta.edit.ordinal()));

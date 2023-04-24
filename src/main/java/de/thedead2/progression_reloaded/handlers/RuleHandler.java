@@ -162,7 +162,7 @@ public class RuleHandler {
         } catch (Exception e) { e.printStackTrace();  return  null; }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static void cloneTrigger(ICriteria criteria, ITriggerProvider dummy) {
         try {
             ITrigger newTriggerType = dummy.getProvided().getClass().newInstance();
@@ -177,7 +177,7 @@ public class RuleHandler {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static void cloneCondition(ITriggerProvider trigger, IConditionProvider dummy) {
         try {
             ICondition newConditionType = dummy.getProvided().getClass().newInstance();
@@ -192,7 +192,7 @@ public class RuleHandler {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static void cloneReward(ICriteria criteria, IRewardProvider dummy) {
         try {
             IReward newRewardType = dummy.getProvided().getClass().newInstance();
@@ -207,7 +207,7 @@ public class RuleHandler {
         } catch (Exception e) { e.printStackTrace(); }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static void cloneFilter(ItemFilterField field, IFilterProvider dummy) {
         try {
             IFilter newFilter = dummy.getProvided().getClass().newInstance();

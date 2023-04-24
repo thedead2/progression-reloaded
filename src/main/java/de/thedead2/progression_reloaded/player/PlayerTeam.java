@@ -137,13 +137,13 @@ public class PlayerTeam implements ITextEditable, IPlayerTeam {
         return everyone;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @Override
     public String getTextField() {
         return this.name;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @Override
     public void setTextField(String arg0) {
         boolean sync = false;

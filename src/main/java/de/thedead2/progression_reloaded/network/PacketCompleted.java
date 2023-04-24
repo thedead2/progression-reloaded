@@ -54,7 +54,7 @@ public class PacketCompleted extends PenguinPacket {
         }
 
         @Override
-        @SideOnly(Side.CLIENT)
+        @OnlyIn(Dist.CLIENT)
         public String getDescription() {
             return criteria.getLocalisedName();
         }

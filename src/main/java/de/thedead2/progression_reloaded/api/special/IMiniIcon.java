@@ -6,6 +6,6 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 
 /** Implement this on objects that have a miniature icon **/
 public interface IMiniIcon {
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public ItemStack getMiniIcon();
 }

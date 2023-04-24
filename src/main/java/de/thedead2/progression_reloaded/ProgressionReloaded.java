@@ -1,10 +1,15 @@
 package de.thedead2.progression_reloaded.progression_reloaded;
 
 import de.thedead2.progression_reloaded.ItemProgression;
+import de.thedead2.progression_reloaded.PClientProxy;
 import de.thedead2.progression_reloaded.PCommonProxy;
 import de.thedead2.progression_reloaded.commands.ModCommand;
 import de.thedead2.progression_reloaded.crafting.ActionType;
 import de.thedead2.progression_reloaded.progression_reloaded.util.ConfigManager;
+import net.minecraft.client.resources.model.ModelState;
+import net.minecraft.data.DataProvider;
+import net.minecraft.data.models.ModelProvider;
+import net.minecraftforge.coremod.api.ASMAPI;
 import de.thedead2.progression_reloaded.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.commands.CommandManager;
 import de.thedead2.progression_reloaded.handlers.RemappingHandler;
@@ -25,6 +30,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.Loader;
@@ -65,14 +71,15 @@ public class ProgressionReloaded {
     private void setup(final FMLCommonSetupEvent event) {//PreInit Event?
         //Init the action types
         ActionType.init();
-        
+
+
+        ModelLoaderRegistry.loadASM();
 
         /*proxy.preInit(event.getAsmData());
         proxy.initClient();*/
     }
 
-    /*@SidedProxy(clientSide = JAVAPATH + "PClientProxy", serverSide = JAVAPATH + "PCommonProxy")
-    public static PCommonProxy proxy;*/
+    public static PCommonProxy proxy = DistExecutor.safeRunForDist(() -> PClientProxy::new, () -> PCommonProxy::new);
 
     /*@Instance(MODID)
     public static de.thedead2.progression_reloaded.ProgressionReloaded instance; //what is that for?*/
@@ -97,7 +104,7 @@ public class ProgressionReloaded {
     }
 
 
-    private void onServerStarting(final RegisterCommandsEvent event) {
+    private void onCommandsRegistration(final RegisterCommandsEvent event) {
         ModCommand.registerCommands(event.getDispatcher());
     }
 

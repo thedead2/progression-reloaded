@@ -69,7 +69,7 @@ public class EntityHelper {
         } catch (Exception e) { return  0; }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static List<EntityLivingBase> getEntities() {
         if (clientList == null) clientList = init(MCClientHelper.getMinecraft().theWorld);
 

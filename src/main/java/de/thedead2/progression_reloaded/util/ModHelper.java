@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util;
+package de.thedead2.progression_reloaded.util;
 
 import com.google.common.collect.Lists;
 import de.thedead2.progression_reloaded.progression_reloaded.util.exceptions.CrashHandler;
@@ -16,13 +16,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Properties;
 
 
 public abstract class ModHelper {
 
-    public static final String MOD_VERSION = "1.19.3-0.0.1";
+    private static Properties properties = new Properties();
+
+    private void initProperties(){
+        properties.load(Files.newInputStream(THIS_MOD_FILE.findResource()));
+    }
+
+    public static final String MOD_VERSION = properties.getProperty("mod_version");
     public static final String MOD_ID = "progression_reloaded";
     public static final String MOD_NAME = "Progression Reloaded";
     public static final String MOD_UPDATE_LINK = "";

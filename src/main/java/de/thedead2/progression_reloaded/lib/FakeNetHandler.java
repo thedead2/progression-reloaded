@@ -47,12 +47,12 @@ public class FakeNetHandler extends NetHandlerPlayServer {
             return false;
         }
 
-        @SideOnly(Side.CLIENT)
+        @OnlyIn(Dist.CLIENT)
         public static NetworkManager provideLanClient(InetAddress paramInetAddress, int paramInt) {
             return null;
         }
 
-        @SideOnly(Side.CLIENT)
+        @OnlyIn(Dist.CLIENT)
         public static NetworkManager provideLocalClient(SocketAddress paramSocketAddress) {
             return null;
         }

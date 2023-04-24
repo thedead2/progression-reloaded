@@ -20,7 +20,7 @@ public class PlayerTracker {
     private static final HashMap<TileEntity, UUID> owners = Maps.newHashMap();
     private static final HashSet<TileEntity> loaded = new HashSet();
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static PlayerDataClient getClientPlayer() {
         return PlayerDataClient.getInstance();
     }

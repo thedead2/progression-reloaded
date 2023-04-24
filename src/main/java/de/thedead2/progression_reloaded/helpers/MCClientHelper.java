@@ -9,12 +9,12 @@ import net.minecraftforge.fml.relauncher.SideOnly;
 public class MCClientHelper {
     public static boolean FORCE_EDIT = false;
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static EntityPlayer getPlayer() {
         return Minecraft.getMinecraft().thePlayer;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static Minecraft getMinecraft() {
         return Minecraft.getMinecraft();
     }

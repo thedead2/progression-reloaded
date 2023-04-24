@@ -59,7 +59,7 @@ public class JSONLoader {
         return result;
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static String[] clientTabJsonData;
     public static String[] serverTabJsonData;
     public static int serverHashcode;

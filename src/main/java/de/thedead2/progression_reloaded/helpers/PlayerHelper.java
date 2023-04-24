@@ -90,7 +90,7 @@ public class PlayerHelper {
         return FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerList();
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static UUID getClientUUID() {
         return getUUIDForPlayer(MCClientHelper.getPlayer());
     }

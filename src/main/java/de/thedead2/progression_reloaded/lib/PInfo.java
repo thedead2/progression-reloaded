@@ -15,6 +15,6 @@ public class PInfo {
     public static final String BOOKPATH = "progression:textures/books/";
     public static final String FILTER = "criteria.api.de.the_dead_2.progression_reloaded.IFilterProvider";
     
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     public static final ResourceLocation textures = new ResourceLocation(MODPATH, "textures/gui/textures.png");
 }

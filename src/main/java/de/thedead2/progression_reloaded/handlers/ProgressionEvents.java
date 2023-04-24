@@ -46,7 +46,7 @@ public class ProgressionEvents {
         PacketHandler.sendToEveryone(new PacketSyncUsernameCache(UsernameCache.getMap()));
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onGuiPost(DrawScreenEvent.Pre event) {
         if (checker.isRunnable(event.getGui())) {
@@ -54,7 +54,7 @@ public class ProgressionEvents {
         }
     }
 
-    @SideOnly(Side.CLIENT)
+    @OnlyIn(Dist.CLIENT)
     @SubscribeEvent
     public void onGuiPost(DrawScreenEvent.Post event) {
         if (checker.isRunnable(event.getGui())) {
