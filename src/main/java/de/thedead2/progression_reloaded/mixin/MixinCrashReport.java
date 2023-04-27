@@ -1,6 +1,7 @@
-package de.thedead2.progression_reloaded.progression_reloaded.mixin;
+package de.thedead2.progression_reloaded.mixin;
 
-import de.thedead2.progression_reloaded.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.ProgressionReloaded;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
 import org.spongepowered.asm.mixin.Final;
@@ -36,7 +37,7 @@ public abstract class MixinCrashReport {
                     }
                 }
                 else if(key.contains("Screen")){
-                    if(crashReportCategory$Entry.getValue().contains("de.thedead2.progression_reloaded.customadvancements")){
+                    if(crashReportCategory$Entry.getValue().contains(ProgressionReloaded.MAIN_PACKAGE)){
                         crashHandler.addScreenCrash(crashReportCategory$Entry, exception);
                         return;
                     }

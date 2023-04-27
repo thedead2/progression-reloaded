@@ -14,6 +14,8 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
+
 public class ModCommand {
 
     public static final int COMMAND_FAILURE = -1;

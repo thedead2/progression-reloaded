@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.generation.dataprovider;
 
+import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
+import de.thedead2.progression_reloaded.util.language.TranslationKeyType;
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.LanguageProvider;
 
@@ -24,7 +26,8 @@ public class ModLanguageProvider extends LanguageProvider {
 
     private void gatherKeyMapData(){
             if (lang.equals("en_us")) {
-
+                keyMap.put("item.progression_reloaded.progression_book", "Progression Book");
+                keyMap.put(TranslationKeyProvider.translationKeyFor(TranslationKeyType.CREATIVE_MODE_TAB, "progression_reloaded_tab"), "Progression Reloaded");
             }
     }
 }

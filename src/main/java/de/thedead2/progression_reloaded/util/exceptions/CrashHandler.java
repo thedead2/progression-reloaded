@@ -1,10 +1,8 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util.exceptions;
+package de.thedead2.progression_reloaded.util.exceptions;
 
 import com.google.common.io.ByteStreams;
-import de.thedead2.progression_reloaded.customadvancements.advancements.advancementtypes.IAdvancement;
-import de.thedead2.progression_reloaded.customadvancements.util.handler.JsonHandler;
-import de.thedead2.progression_reloaded.progression_reloaded.util.logger.ConsoleColors;
-import de.thedead2.progression_reloaded.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.ProgressionReloaded;
+import de.thedead2.progression_reloaded.util.logger.ConsoleColors;
 import joptsimple.internal.Strings;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
@@ -25,15 +23,15 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
 
-import static de.thedead2.progression_reloaded.customadvancements.util.ModHelper.*;
+import static de.thedead2.progression_reloaded.util.ModHelper.*;
+
 
 public class CrashHandler implements ISystemReportExtender {
 
     private static CrashHandler instance;
-    private IAdvancement activeAdvancement;
+    private static int crashCounter = 0;
     private Advancement activeGameAdvancement;
     private File activeFile;
-    private final Set<IAdvancement> advancements = new HashSet<>();
     private final Set<ResourceLocation> removedAdvancements = new HashSet<>();
     private final Set<CrashReportException> crashReportExceptions = new HashSet<>();
     private final List<CrashReportSection> sections = new ArrayList<>();
@@ -68,15 +66,11 @@ public class CrashHandler implements ISystemReportExtender {
     private void gatherDetails(){
         this.sections.clear();
         this.getModInformation();
-        if(this.activeAdvancement != null || this.activeGameAdvancement != null) {
-            this.getActiveAdvancement();
-        }
+
         if(this.activeFile != null) {
             this.getActiveFile();
         }
         this.getExecutionErrors();
-        this.getLoadedAdvancements();
-        this.getRemovedAdvancements();
     }
 
     private void addSection(CrashReportSection section){
@@ -86,61 +80,45 @@ public class CrashHandler implements ISystemReportExtender {
     private void getModInformation(){
         CrashReportSection section = new CrashReportSection();
         section.addDetail("Mod ID", MOD_ID);
-        section.addDetail("Version", MOD_VERSION);
-        section.addDetail("Main Path", DIR_PATH);
-        if(this.activeAdvancement == null && this.activeGameAdvancement == null) {
-            section.addDetail("Currently active advancement", "NONE");
+        if(crashCounter != 0){
+            section.addDetail("Version", MOD_VERSION);
+            section.addDetail("Main Path", DIR_PATH);
         }
+        else crashCounter++;
         if(this.activeFile == null) {
             section.addDetail("Currently active file", "NONE");
         }
     }
 
-    private void getExecutionErrors(){
+    private void getExecutionErrors() {
         CrashReportSection section = new CrashReportSection("All detected execution errors related to " + MOD_NAME);
-        if(!this.crashReportExceptions.isEmpty()) {
+        if (!this.crashReportExceptions.isEmpty()) {
             Set<CrashReportException> temp = new HashSet<>();
             this.crashReportExceptions.forEach((crashReportException) -> {
-                if(crashReportException.getLevel().equals(Level.FATAL)){
+                if (crashReportException.getLevel().equals(Level.FATAL)) {
                     section.addDetail(crashReportException);
                     temp.add(crashReportException);
                 }
             });
             this.crashReportExceptions.removeAll(temp);
 
-            if(this.crashReportExceptions.size() <= 5){
+            if (this.crashReportExceptions.size() <= 5) {
                 this.crashReportExceptions.forEach(section::addDetail);
-            }
-            else if(this.crashReportExceptions.size() <= 10){
+            } else if (this.crashReportExceptions.size() <= 10) {
                 this.crashReportExceptions.forEach((crashReportException) -> {
-                    if(crashReportException.level.isInRange(Level.ERROR, Level.FATAL)){
+                    if (crashReportException.level.isInRange(Level.ERROR, Level.FATAL)) {
+                        section.addDetail(crashReportException);
+                    }
+                });
+            } else {
+                this.crashReportExceptions.forEach((crashReportException) -> {
+                    if (crashReportException.level.equals(Level.FATAL)) {
                         section.addDetail(crashReportException);
                     }
                 });
             }
-            else {
-                this.crashReportExceptions.forEach((crashReportException) -> {
-                    if(crashReportException.level.equals(Level.FATAL)){
-                        section.addDetail(crashReportException);
-                    }
-                });
-            }
-        }
-        else {
+        } else {
             section.addDetail("There were no execution errors detected!");
-        }
-    }
-
-    private void getActiveAdvancement() {
-        if(this.activeAdvancement != null || this.activeGameAdvancement != null){
-            CrashReportSection section = new CrashReportSection("Currently active advancement");
-
-            if(this.activeAdvancement != null){
-                section.addDetail(this.activeAdvancement.getResourceLocation().toString(),"\n\n" + JsonHandler.formatJsonObject(this.activeAdvancement.getJsonObject()));
-            }
-            else {
-                section.addDetail(this.activeGameAdvancement.getId().toString(),"\n\n" + JsonHandler.formatJsonObject(this.activeGameAdvancement.deconstruct().serializeToJson()));
-            }
         }
     }
 
@@ -163,71 +141,8 @@ public class CrashHandler implements ISystemReportExtender {
         }
     }
 
-    private void getLoadedAdvancements(){
-        List<String> temp = new ArrayList<>();
-        if(!this.advancements.isEmpty()){
-            CrashReportSection section = new CrashReportSection("All loaded Advancements");
-            int i = 0;
-            for(IAdvancement advancement : this.advancements){
-                StringBuilder builder = new StringBuilder();
-                if(i != 0){
-                    builder.append("\t");
-                }
-                else {
-                    i++;
-                }
-                builder.append(advancement.toString());
-                temp.add(builder.toString());
-            }
-            section.addDetail(String.join(",\n", temp));
-        }
-    }
-
-    private void getRemovedAdvancements(){
-        List<String> temp = new ArrayList<>();
-        if(!this.removedAdvancements.isEmpty()){
-            CrashReportSection section = new CrashReportSection("All removed Advancements");
-            int i = 0;
-            for(ResourceLocation advancement : this.removedAdvancements){
-                StringBuilder builder = new StringBuilder();
-                if(i != 0){
-                    builder.append("\t");
-                }
-                else {
-                    i++;
-                }
-                builder.append(advancement.toString());
-                temp.add(builder.toString());
-            }
-            section.addDetail(String.join(",\n", temp));
-        }
-    }
-
-
-    public <T> void setActiveAdvancement(T advancement){
-        if(advancement instanceof IAdvancement activeAdvancement1){
-            this.activeAdvancement = activeAdvancement1;
-            if(!activeAdvancement1.getResourceLocation().toString().contains("recipes/")){
-                this.advancements.add(activeAdvancement1);
-            }
-        }
-        else if(advancement instanceof Advancement advancement1){
-            this.activeGameAdvancement = advancement1;
-        }
-        else if(advancement == null) {
-            this.activeAdvancement = null;
-            this.activeGameAdvancement = null;
-        }
-    }
-
     public void setActiveFile(File file){
         this.activeFile = file;
-    }
-
-    public void addRemovedAdvancement(ResourceLocation advancement){
-        if(!advancement.toString().contains("recipes/")) {
-            this.removedAdvancements.add(advancement);
-        }
     }
 
     public void addCrashDetails(String errorDescription, Level level, Throwable throwable){
@@ -236,7 +151,7 @@ public class CrashHandler implements ISystemReportExtender {
 
     public void addScreenCrash(CrashReportCategory.Entry crashReportCategory$Entry, Throwable exception){
         this.addCrashDetails("Error while rendering screen: " + crashReportCategory$Entry.getValue() +
-                        "\n\t\t\t\t" + ConsoleColors.italic + " Please note that this error was not caused by " + ModHelper.MOD_NAME + "! So don't report it to the mod author!" + ConsoleColors.reset,
+                        "\n\t\t\t\t" + ConsoleColors.italic + " Please note that this error was not caused by " + MOD_NAME + "! So don't report it to the mod author!" + ConsoleColors.reset,
                 Level.FATAL, exception, true
         );
     }
@@ -253,7 +168,7 @@ public class CrashHandler implements ISystemReportExtender {
 
     public boolean resolveCrash(Throwable throwable){
         for(StackTraceElement element : throwable.getStackTrace()){
-            if(element.getClassName().contains("de.thedead2.progression_reloaded.customadvancements")){
+            if(element.getClassName().contains(ProgressionReloaded.MAIN_PACKAGE)){
                 this.addCrashDetails("A fatal error occurred executing " + MOD_NAME, Level.FATAL, throwable, true);
                 return true;
             }
@@ -314,9 +229,6 @@ public class CrashHandler implements ISystemReportExtender {
 
     public void reset(){
         this.crashReportExceptions.clear();
-        this.advancements.clear();
-        this.removedAdvancements.clear();
-        this.activeAdvancement = null;
         this.activeFile = null;
     }
 

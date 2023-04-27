@@ -1,224 +1,79 @@
 package de.thedead2.progression_reloaded.player;
 
-import de.thedead2.progression_reloaded.api.IPlayerTeam;
-import de.thedead2.progression_reloaded.gui.editors.ITextEditable;
-import de.thedead2.progression_reloaded.helpers.PlayerHelper;
-import de.thedead2.progression_reloaded.network.PacketHandler;
-import de.thedead2.progression_reloaded.network.PacketSyncTeam;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.nbt.NBTTagList;
-import net.minecraft.nbt.NBTTagString;
-import net.minecraftforge.fml.relauncher.Side;
-import net.minecraftforge.fml.relauncher.SideOnly;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.data.ProgressionLevel;
+import de.thedead2.progression_reloaded.util.ModRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.resources.ResourceLocation;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
 
-public class PlayerTeam implements ITextEditable, IPlayerTeam {
-    public enum TeamType {
-        SINGLE, TEAM;
+public class PlayerTeam {
+
+    private final String teamName;
+    private final ResourceLocation id;
+    private ProgressionLevel progressionLevel;
+    private final Set<PlayerData> members = new HashSet<>();
+
+    public PlayerTeam(String teamName, ResourceLocation id, ProgressionLevel progressionLevel) {
+        this.teamName = teamName;
+        this.id = id;
+        this.progressionLevel = progressionLevel;
     }
 
-    private Set<UUID> invited = new HashSet();
-    private Set<UUID> members = new HashSet();
-    private TeamType type;
-    private UUID owner;
-    private boolean isActive = true;
-    private boolean multipleRewards = true;
-    private boolean isTrueTeam = true;
-    private String name;
-
-    private transient HashMap<UUID, EntityPlayer> teamCache = new HashMap();
-
-    public PlayerTeam() {}
-
-    public PlayerTeam(TeamType type, String name, UUID owner) {
-        this.owner = owner;
-        this.type = type;
-        if (this.name != null) {
-            this.name = name;
-        } else this.name = "Single Player";
+    public static PlayerTeam fromCompoundTag(CompoundTag tag) {
+        if(tag == null || tag.isEmpty()) return null;
+        String level = tag.getString("level");
+        String name = tag.getString("name");
+        String id = tag.getString("id");
+        return new PlayerTeam(name, ResourceLocation.tryParse(id), ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
     }
 
-    public boolean isInvited(UUID uuid) {
-        return invited.contains(uuid);
+    public static PlayerTeam fromRegistry(ResourceLocation teamId) {
+        return ModRegistries.PROGRESSION_TEAM_DATA.get().getValue(teamId);
     }
 
-    public void addToInvited(UUID uuid) {
-        invited.add(uuid);
+    public void addPlayer(PlayerData player){
+        members.add(player);
     }
 
-    public TeamType getType() {
-        return type;
+    public void removePlayer(PlayerData player){
+        members.remove(player);
     }
 
-    public String getName() {
-        return name;
+    public boolean isPlayerInTeam(PlayerData player){
+        return members.contains(player);
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    @Override
-    public UUID getOwner() {
-        return owner;
-    }
-
-    //For quicker access
-    public void rebuildTeamCache() {
-        teamCache = new HashMap();
-        EntityPlayer owner = PlayerHelper.getPlayerFromUUID(false, getOwner());
-        if (owner != null) teamCache.put(getOwner(), owner);
-        for (UUID uuid: getMembers()) {
-            EntityPlayer member = PlayerHelper.getPlayerFromUUID(false, uuid);
-            if (member != null) teamCache.put(uuid, member);
-        }
-    }
-
-    private boolean hasIllegalUUIDInCache() {
-        for (UUID uuid: teamCache.keySet()) {
-            if (getOwner() == uuid || getMembers().contains(uuid)) continue;
-            return true;
-        }
-
-        return false;
-    }
-
-    @Override
-    public Collection<EntityPlayer> getTeamEntities() {
-        if (teamCache.isEmpty() || hasIllegalUUIDInCache()) {
-            rebuildTeamCache();
-        }
-
-        return teamCache.values();
-    }
-
-    @Override
-    public boolean isTrueTeam() {
-        return isTrueTeam;
-    }
-
-    @Override
-    public boolean isSingle() {
-        return type == TeamType.SINGLE;
-    }
-    
-    public boolean giveMultipleRewards() {
-        return multipleRewards;
-    }
-
-    public void toggleMultiple() {
-        multipleRewards = !multipleRewards;
-        syncChanges(Side.CLIENT);
-    }
-    
-    public void toggleIsTrueTeam() {
-        isTrueTeam = !isTrueTeam;
-        syncChanges(Side.CLIENT);
-    }
-
-    public boolean isOwner(EntityPlayer player) {
-        return PlayerHelper.getUUIDForPlayer(player).equals(getOwner());
-    }
-
-    public Set<UUID> getMembers() {
+    public Set<PlayerData> getMembers() {
         return members;
     }
 
-    public Set<UUID> getEveryone() {
-        Set<UUID> everyone = new LinkedHashSet();
-        everyone.add(getOwner());
-        if (giveMultipleRewards()) {
-            everyone.addAll(getMembers());
-        }
-
-        return everyone;
+    public String getTeamName() {
+        return teamName;
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public String getTextField() {
-        return this.name;
+    public void updateProgressionLevel(ProgressionLevel level){
+        this.progressionLevel = level;
+        this.members.forEach(player -> player.updateProgressionLevel(level));
     }
 
-    @OnlyIn(Dist.CLIENT)
-    @Override
-    public void setTextField(String arg0) {
-        boolean sync = false;
-        if (!this.name.equals(arg0)) sync = true;
-        this.name = arg0;
-
-        if (sync) syncChanges(Side.CLIENT);
+    public ProgressionLevel getProgressionLevel() {
+        return progressionLevel;
     }
 
-    public void addMember(UUID uuid) {
-        members.add(uuid);
+    public ResourceLocation getId() {
+        return this.id;
     }
 
-    //Returns false if this team no longer exists
-    public boolean removeMember(UUID uuid) {
-        if (uuid == getOwner() && members.size() == 0) {
-            return false;
-        } else if (uuid == getOwner()) { //If the owner leaves, then the next level member becomes the owner
-            for (UUID member: members) {
-                owner = member;
-                break;
-            }
-
-            //Remove the new leader from members
-            members.remove(owner);
-        } else members.remove(uuid);
-
-        //Otherwise, Remove
-        return true;
-    }
-
-    /** Whether or not this data is used by anyone **/
-    public boolean isActive() {
-        return isActive;
-    }
-
-    /** Should only be called client side, called to update the data on the server **/
-    public void syncChanges(Side side) {
-        if (side == Side.CLIENT) PacketHandler.sendToServer(new PacketSyncTeam(this));
-        else if (side == Side.SERVER) {
-            for (EntityPlayerMP player : PlayerHelper.getPlayersFromUUID(getOwner())) {
-                PacketHandler.sendToClient(new PacketSyncTeam(this), player);
-            }
-        }
-    }
-
-    public void readFromNBT(NBTTagCompound tag) {
-        name = tag.getString("Name");
-        multipleRewards = tag.getBoolean("MultipleRewards");
-        isTrueTeam = tag.getBoolean("CountWholeTeam");
-        type = tag.getBoolean("IsSingleTeam") ? TeamType.SINGLE : TeamType.TEAM;
-        if (tag.hasKey("Owner")) owner = UUID.fromString(tag.getString("Owner"));
-        else if (tag.hasKey("UUID-Most")) owner = new UUID(tag.getLong("UUID-Most"), tag.getLong("UUID-Least"));
-        isActive = tag.getBoolean("IsActive");
-
-        members = new HashSet();
-        NBTTagList list = tag.getTagList("TeamMembers", 8);
-        for (int j = 0; j < list.tagCount(); j++) {
-            addMember(UUID.fromString(list.getStringTagAt(j)));
-        }
-    }
-
-    public void writeToNBT(NBTTagCompound tag) {
-        tag.setString("Name", name);
-        tag.setBoolean("MultipleRewards", multipleRewards);
-        tag.setBoolean("CountWholeTeam", isTrueTeam);
-        tag.setBoolean("IsSingleTeam", type == TeamType.SINGLE);
-        tag.setString("Owner", owner.toString());
-        tag.setBoolean("IsActive", isActive);
-
-        NBTTagList list = new NBTTagList();
-        for (UUID uuid : members) {
-            list.appendTag(new NBTTagString(uuid.toString()));
-        }
-
-        tag.setTag("TeamMembers", list);
+    public CompoundTag toCompoundTag() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("level", this.progressionLevel.getId().toString());
+        tag.putString("name", this.teamName);
+        tag.putString("id", this.id.toString());
+        return tag;
     }
 }

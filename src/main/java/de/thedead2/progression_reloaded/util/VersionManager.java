@@ -1,6 +1,6 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util;
+package de.thedead2.progression_reloaded.util;
 
-import de.thedead2.progression_reloaded.progression_reloaded.util.language.TranslationKeyProvider;
+import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.VersionChecker;

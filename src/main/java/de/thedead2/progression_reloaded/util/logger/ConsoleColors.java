@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util.logger;
+package de.thedead2.progression_reloaded.util.logger;
 
 public abstract class ConsoleColors {
     public static final String reset = "\u001B[0m";

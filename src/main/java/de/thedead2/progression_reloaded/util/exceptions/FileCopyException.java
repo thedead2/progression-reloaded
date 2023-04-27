@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util.exceptions;
+package de.thedead2.progression_reloaded.util.exceptions;
 
 public class FileCopyException extends RuntimeException {
 

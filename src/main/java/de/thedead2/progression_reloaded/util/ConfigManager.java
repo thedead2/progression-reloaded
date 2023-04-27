@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util;
+package de.thedead2.progression_reloaded.util;
 
 import net.minecraftforge.common.ForgeConfigSpec;
 
@@ -36,7 +36,7 @@ public abstract class ConfigManager {
 
         MUST_CLAIM_DEFAULT = CONFIG_BUILDER.comment("Default Setting for Claiming", "If this is true, new rewards will be set to mustClaim = true by default").define("mustClaimDefault", false);
 
-        HARD_RESET = CONFIG_BUILDER.comment("Remove Players from Teams when Resetting Data", "When this is true, players will be removed from their teams when you execute the progression reset command").define("hardReset", false);
+        HARD_RESET = CONFIG_BUILDER.comment("Remove Players from Teams when Resetting Data", "When this is true, players will be removed from their teams when you execute the progression_reloaded reset command").define("hardReset", false);
 
         HIDE_TOOLTIPS = CONFIG_BUILDER.comment("Hide Editor Tooltips", "With this set to true the information tooltips when editing will be removed").define("hideTooltips", false);
 

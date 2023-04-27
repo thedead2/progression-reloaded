@@ -1,6 +1,3 @@
-import java.nio.file.Files
-
-// For those who want the bleeding edge
 buildscript {
     repositories {
         maven { url = 'https://maven.minecraftforge.net' }
@@ -16,16 +13,16 @@ buildscript {
     }
 }
 
-plugins{
-    id 'net.minecraftforge.gradle'
-    id 'org.parchmentmc.librarian.forgegradle'
-    id 'eclipse'
-    id 'maven-publish'
-    id 'org.spongepowered.mixin'
-}
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+// MixinGradle:
+apply plugin: 'org.spongepowered.mixin'
 
-version = "${minecraft_version}-${mod_version}.${build_number}"
-group = 'de.thedead2.progression_reloaded'
+version = "${minecraft_version}-${mod_version}"
+group = "${java_path}" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "${mod_id}"
 
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
@@ -86,9 +83,7 @@ minecraft {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-build{
-    dependsOn(incrBuildNumber)
-}
+build.dependsOn('incrBuildNumber')
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.19.3-44.1.0'
@@ -150,19 +145,15 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
 }
 
-tasks.register('incrBuildNumber') {
+processResources.dependsOn('handleModProperties')
+
+tasks.register('handleModProperties'){
     Properties properties = new Properties()
-    File propertiesFile = new File('gradle.properties')
+    File propertiesFile = new File("src/main/resources/META-INF/mod.properties")
     properties.load(propertiesFile.newDataInputStream())
-    Integer nextBuildNumber = (properties.getProperty('build_number') as Integer + 1)
-    properties.setProperty('build_number', nextBuildNumber.toString())
+    properties.setProperty('mod_version', version.toString())
+    properties.setProperty('java_path', java_path)
+
     properties.store(propertiesFile.newWriter(), null)
     properties.load(propertiesFile.newDataInputStream())
 }
-
-/*jar {
-    manifest {
-        attributes 'FMLCorePlugin': 'de.thedead2.progression_reloaded.asm.ProgressionTransformer'
-        attributes 'FMLCorePluginContainsFMLMod': 'true'
-    }
-}*/

@@ -1,23 +1,38 @@
 package de.thedead2.progression_reloaded.data;
 
+import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.resources.ResourceLocation;
+
 public class ProgressionLevel {
 
     private final int index;
     private final String name;
+    private final ResourceLocation id;
 
     private final boolean baseLevel;
 
     private final ProgressionLevel previousLevel;
 
-    public ProgressionLevel(int index, String name, boolean baseLevel, ProgressionLevel previousLevel) {
+    private static final ProgressionLevel LOWEST = new ProgressionLevel("base", new ResourceLocation(ModHelper.MOD_ID, "base_level"));
+
+    public ProgressionLevel(int index, String name, ResourceLocation id, boolean baseLevel, ProgressionLevel previousLevel) {
         this.index = index;
         this.name = name;
+        this.id = id;
         this.baseLevel = baseLevel;
         this.previousLevel = previousLevel;
     }
 
-    public ProgressionLevel(String name) {
-        this(0, name, true, null);
+    public ProgressionLevel(String name, ResourceLocation id) {
+        this(0, name, id, true, null);
+    }
+
+    public static ProgressionLevel fromKey(ResourceLocation level) {
+        return lowest();
+    }
+
+    public static ProgressionLevel lowest() {
+        return LOWEST;
     }
 
 
@@ -39,6 +54,10 @@ public class ProgressionLevel {
         return name;
     }
 
+    public ResourceLocation getId() {
+        return this.id;
+    }
+
     public static class Builder{
 
         private String name;
@@ -55,7 +74,7 @@ public class ProgressionLevel {
         }
 
         public ProgressionLevel build(){
-            return new ProgressionLevel(name);
+            return lowest();
         }
     }
 }

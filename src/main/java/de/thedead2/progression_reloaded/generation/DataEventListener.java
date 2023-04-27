@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.generation;
 
-import de.thedead2.progression_reloaded.progression_reloaded.generation.dataprovider.ModLanguageProvider;
+import de.thedead2.progression_reloaded.generation.dataprovider.ModLanguageProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
@@ -11,7 +11,7 @@ import net.minecraftforge.fml.common.Mod;
 
 import java.util.concurrent.CompletableFuture;
 
-import static de.thedead2.progression_reloaded.progression_reloaded.util.ModHelper.MOD_ID;
+import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class DataEventListener {

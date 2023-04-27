@@ -1,10 +1,11 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util.language;
+package de.thedead2.progression_reloaded.util.language;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 
-import static de.thedead2.progression_reloaded.customadvancements.util.ModHelper.*;
+import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
+import static de.thedead2.progression_reloaded.util.ModHelper.MOD_NAME;
 
 public abstract class TranslationKeyProvider {
 

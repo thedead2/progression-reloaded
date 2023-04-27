@@ -1,10 +1,8 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util.handler;
+package de.thedead2.progression_reloaded.util.handler;
 
-import de.thedead2.progression_reloaded.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.progression_reloaded.util.exceptions.CrashHandler;
-import de.thedead2.progression_reloaded.progression_reloaded.util.exceptions.FileCopyException;
-import net.minecraft.resources.ResourceLocation;
-import org.apache.logging.log4j.Level;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.exceptions.FileCopyException;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +12,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.stream.Stream;
 
 public abstract class FileHandler extends ModHelper {

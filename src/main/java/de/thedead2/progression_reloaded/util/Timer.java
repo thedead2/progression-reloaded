@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.progression_reloaded.util;
+package de.thedead2.progression_reloaded.util;
 
 import org.apache.commons.lang3.time.StopWatch;
 

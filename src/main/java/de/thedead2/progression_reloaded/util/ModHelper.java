@@ -1,8 +1,8 @@
 package de.thedead2.progression_reloaded.util;
 
 import com.google.common.collect.Lists;
-import de.thedead2.progression_reloaded.progression_reloaded.util.exceptions.CrashHandler;
-import de.thedead2.progression_reloaded.progression_reloaded.util.language.TranslationKeyProvider;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.repository.PackRepository;
@@ -16,6 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
@@ -24,24 +25,15 @@ import java.util.Properties;
 
 public abstract class ModHelper {
 
-    private static Properties properties = new Properties();
-
-    private void initProperties(){
-        properties.load(Files.newInputStream(THIS_MOD_FILE.findResource()));
-    }
-
-    public static final String MOD_VERSION = properties.getProperty("mod_version");
     public static final String MOD_ID = "progression_reloaded";
+    public static final IModFile THIS_MOD_FILE = ModList.get().getModFileById(MOD_ID).getFile();
+    public static final ModContainer THIS_MOD_CONTAINER = ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for id: " + MOD_ID));
+    public static final ModProperties MOD_PROPERTIES = ModProperties.fromPath(THIS_MOD_FILE.findResource("META-INF/mod.properties"));
+
+    public static final String MOD_VERSION = MOD_PROPERTIES.getProperty("mod_version");
     public static final String MOD_NAME = "Progression Reloaded";
     public static final String MOD_UPDATE_LINK = "";
     public static final String MOD_ISSUES_LINK = "";
-
-    public static final String JAVA_PATH = "de.thedead2.progression_reloaded.progression_reloaded.";
-    public static final String ASM_PATH = "de/thedead2/progression_reloaded/";
-
-    public static final IModFile THIS_MOD_FILE = ModList.get().getModFileById(MOD_ID).getFile();
-    public static final ModContainer THIS_MOD_CONTAINER = ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for id: " + MOD_ID));
-
     public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
     public static final char PATH_SEPARATOR = File.separatorChar;
     public static final Path DIR_PATH = GAME_DIR.resolve(MOD_ID);
