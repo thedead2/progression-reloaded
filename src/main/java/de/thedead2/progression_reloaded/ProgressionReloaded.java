@@ -9,7 +9,6 @@ import de.thedead2.progression_reloaded.util.ModRegistries;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.storage.WorldData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -55,8 +54,7 @@ public class ProgressionReloaded {
     private void onServerStarting(final ServerStartingEvent event){
         MinecraftServer server = event.getServer();
         ServerLevel level = server.overworld();
-        var data = level.getDataStorage();
-        PlayerDataHandler.loadTeamData(data);
+        PlayerDataHandler.loadData(level);
     }
 
     private void onPlayerFileLoad(PlayerEvent.LoadFromFile event){
@@ -65,6 +63,10 @@ public class ProgressionReloaded {
 
     private void onPlayerFileSave(PlayerEvent.SaveToFile event){
         PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
+    }
+
+    private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event){
+        PlayerDataHandler.getPlayerData().orElseThrow().removePlayerFromActive(event.getEntity());
     }
 
     private void onCommandsRegistration(final RegisterCommandsEvent event) {

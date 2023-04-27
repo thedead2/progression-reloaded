@@ -1,114 +1,66 @@
 package de.thedead2.progression_reloaded.player;
 
-import de.thedead2.progression_reloaded.data.ProgressionLevel;
-import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import org.apache.logging.log4j.Level;
+import net.minecraft.world.level.saveddata.SavedData;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.File;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class PlayerData {
+public class PlayerData extends SavedData {
+    private final Set<ResourceLocation> knownPlayers = new HashSet<>();
+    private final Map<ResourceLocation, SinglePlayer> activePlayers = new HashMap<>();
 
-    private final String playerName;
-
-    private final PlayerTeam team;
-
-    private final UUID uuid;
-
-    private final Player player;
-
-    private ProgressionLevel progressionLevel;
-
-    public PlayerData(Player player, ProgressionLevel progressionLevel) {
-        this(null, player, progressionLevel);
+    public PlayerData(Collection<ResourceLocation> knownPlayers){
+        this.knownPlayers.addAll(knownPlayers);
+        this.setDirty();
     }
-
-    public PlayerData(PlayerTeam team, Player player, ProgressionLevel progressionLevel) {
-        this.playerName = player.getScoreboardName();
-        this.team = team;
-        this.uuid = player.getUUID();
-        this.player = player;
-        this.progressionLevel = progressionLevel;
-    }
-
-    public static PlayerData fromFile(File playerDataFile, Player player) {
-        CompoundTag tag = null;
-        try {
-            tag = NbtIo.read(playerDataFile);
-        }
-        catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.ERROR, true);
-        }
-        return fromCompoundTag(tag, player);
-    }
-
-    public static PlayerData fromCompoundTag(CompoundTag tag, Player player) {
-        if(tag == null) throw new NullPointerException("Can't create PlayerData with compound tag that is null!");
-        if(tag.isEmpty()) return new PlayerData(player, ProgressionLevel.lowest());
-        UUID uuid = tag.getUUID("uuid");
-        String level = tag.getString("level");
-        String team = tag.getString("team");
-        if(player.getUUID().equals(uuid)) return new PlayerData(PlayerTeam.fromRegistry(ResourceLocation.tryParse(team)), player, ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
-        throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
-    }
-
-
-    public Player getPlayer() {
-        return player;
-    }
-
-    public Optional<PlayerTeam> getTeam() {
-        return Optional.ofNullable(team);
-    }
-
-    public String getPlayerName() {
-        return playerName;
-    }
-
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public boolean isInTeam(){
-        return team != null;
-    }
-
-    public boolean isInTeam(PlayerTeam team){
-        return team.equals(this.team);
-    }
-
-    public void updateProgressionLevel(ProgressionLevel level){
-        this.progressionLevel = level;
-    }
-
-    public ProgressionLevel getProgressionLevel() {
-        return progressionLevel;
-    }
-
-    public boolean hasProgressionLevel(ProgressionLevel other){
-        return this.progressionLevel.equals(other) || this.progressionLevel.contains(other);
-    }
-
-    public void toFile(File playerFile) {
-        CompoundTag tag = this.toCompoundTag();
-        try {
-            NbtIo.write(tag, playerFile);
-        }
-        catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.ERROR, true);
-        }
-    }
-
-    private CompoundTag toCompoundTag() {
-        CompoundTag tag = new CompoundTag();
-        tag.putUUID("uuid", this.uuid);
-        tag.putString("level", this.progressionLevel.getId().toString());
-        if(this.team != null) tag.putString("team", this.team.getId().toString());
+    @Override
+    public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
+        AtomicInteger i = new AtomicInteger();
+        knownPlayers.forEach(resourceLocation -> tag.putInt(resourceLocation.toString(), i.getAndIncrement()));
         return tag;
+    }
+
+    public static PlayerData load(CompoundTag tag) {
+        Set<ResourceLocation> knownPlayers = new HashSet<>();
+        tag.getAllKeys().forEach(s -> knownPlayers.add(ResourceLocation.tryParse(s)));
+        return new PlayerData(knownPlayers);
+    }
+
+    public void addActivePlayer(SinglePlayer singlePlayer){
+        this.activePlayers.put(singlePlayer.getId(), singlePlayer);
+        this.addKnownPlayer(singlePlayer.getPlayer());
+    }
+
+    public SinglePlayer getActivePlayer(ResourceLocation id){
+        return this.activePlayers.get(id);
+    }
+
+    public SinglePlayer getActivePlayer(Player player){
+        return getActivePlayer(SinglePlayer.createId(player.getStringUUID()));
+    }
+
+    public Collection<SinglePlayer> allPlayerData() {
+        return this.activePlayers.values();
+    }
+
+    public void removePlayerFromActive(ResourceLocation id){
+        this.activePlayers.remove(id);
+    }
+
+    public void removePlayerFromActive(Player player){
+        removePlayerFromActive(SinglePlayer.createId(player.getStringUUID()));
+    }
+
+    public void addActivePlayer(Player player, File playerFile) {
+        this.addActivePlayer(SinglePlayer.fromFile(playerFile, player));
+    }
+
+    public void addKnownPlayer(Player player){
+        if(this.knownPlayers.add(SinglePlayer.createId(player.getStringUUID()))) this.setDirty();
     }
 }

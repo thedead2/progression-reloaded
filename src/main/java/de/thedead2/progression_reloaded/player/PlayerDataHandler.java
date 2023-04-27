@@ -1,32 +1,36 @@
 package de.thedead2.progression_reloaded.player;
 
-import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.ModRegistries;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.storage.DimensionDataStorage;
-import net.minecraftforge.registries.DeferredRegister;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.Optional;
 
 public abstract class PlayerDataHandler {
 
-    private static final DeferredRegister<PlayerData> DATA = DeferredRegister.create(ModRegistries.Keys.PLAYER_DATA, ModHelper.MOD_ID);
+    private static TeamData teamData = null;
+    private static PlayerData playerData = null;
 
     public static void loadPlayerData(File playerDataFile, Player player){
-        DATA.register(player.getStringUUID(), () -> PlayerData.fromFile(playerDataFile, player));
+        getPlayerData().orElseThrow().addActivePlayer(player, playerDataFile);
     }
 
-    public static void loadTeamData(DimensionDataStorage dataStorage){
-        dataStorage.computeIfAbsent(TeamData::load, TeamData::new, "teams");
+    public static void loadData(ServerLevel level){
+        var dataStorage = level.getDataStorage();
+        teamData = dataStorage.computeIfAbsent(TeamData::load, () -> new TeamData(Collections.emptyMap()), "teams");
+        playerData = dataStorage.computeIfAbsent(PlayerData::load, () -> new PlayerData(Collections.emptySet()), "players");
     }
 
     public static void savePlayerData(Player player, File playerFile) {
-        ModRegistries.PROGRESSION_PLAYER_DATA.get().getValue(new ResourceLocation(ModHelper.MOD_ID, player.getStringUUID())).toFile(playerFile);
+        getPlayerData().orElseThrow().getActivePlayer(player).toFile(playerFile);
     }
 
-    public static void saveTeamData(){
+    public static Optional<TeamData> getTeamData(){
+        return Optional.ofNullable(teamData);
+    }
 
+    public static Optional<PlayerData> getPlayerData(){
+        return Optional.ofNullable(playerData);
     }
 }
