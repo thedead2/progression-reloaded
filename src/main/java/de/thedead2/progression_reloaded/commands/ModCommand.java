@@ -6,16 +6,22 @@ import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import de.thedead2.progression_reloaded.util.CommandWrapperFunction;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraftforge.server.command.ConfigCommand;
+import org.apache.logging.log4j.Level;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static de.thedead2.progression_reloaded.util.ModHelper.*;
+import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
+import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 public class ModCommand {
 
@@ -34,6 +40,8 @@ public class ModCommand {
         LOGGER.debug("Registering commands...");
 
         TeamCommands.register();
+        PlayerCommands.register();
+        TestCommands.register();
 
         commands.forEach(modCommand -> {
             dispatcher.register(modCommand.getShortLA());
@@ -53,15 +61,26 @@ public class ModCommand {
 
 
     public static class Builder{
-        static void newModCommand(String commandPath, Command<CommandSourceStack> executable) {
+        static void newModCommand(String commandPath, CommandWrapperFunction executable) {
             newModCommand(commandPath, Collections.emptyMap(), Collections.emptyMap(), executable);
         }
 
-        static void newModCommand(String commandPath, Map<String, ArgumentType<?>> arguments, Map<String, SuggestionProvider<CommandSourceStack>> suggestions, Command<CommandSourceStack> executable) {
+        static void newModCommand(String commandPath, Map<String, ArgumentType<?>> arguments, Map<String, SuggestionProvider<CommandSourceStack>> suggestions, CommandWrapperFunction executable) {
             var shortAB = Commands.literal("pr");
             var longAB = Commands.literal(MOD_ID);
 
             List<String> commandParts = new ArrayList<>();
+
+            Command<CommandSourceStack> command = (context) -> {
+                try {
+                    return executable.runCommand(context);
+                }
+                catch (Throwable throwable){
+                    CrashHandler.getInstance().handleException("Something went wrong executing this command!", throwable, Level.ERROR, true);
+                    context.getSource().sendFailure(TranslationKeyProvider.chatMessage("command_failed", ChatFormatting.RED));
+                    return COMMAND_FAILURE;
+                }
+            };
 
             if(commandPath.contains("/")){
                 String sub = commandPath.replace(commandPath.substring(commandPath.indexOf("/")), "");
@@ -74,7 +93,7 @@ public class ModCommand {
                 commandParts.add(commandPath);
             }
 
-            commands.add(new ModCommand(shortAB.then(addToArgumentBuilder(shortAB, commandParts, arguments, suggestions, executable)), longAB.then(addToArgumentBuilder(longAB, commandParts, arguments, suggestions, executable))));
+            commands.add(new ModCommand(shortAB.then(addToArgumentBuilder(shortAB, commandParts, arguments, suggestions, command)), longAB.then(addToArgumentBuilder(longAB, commandParts, arguments, suggestions, command))));
         }
 
         private static ArgumentBuilder<CommandSourceStack, ?> addToArgumentBuilder(ArgumentBuilder<CommandSourceStack, ?> argumentBuilder, List<String> commandParts, Map<String, ArgumentType<?>> arguments, Map<String, SuggestionProvider<CommandSourceStack>> suggestions, Command<CommandSourceStack> command) {

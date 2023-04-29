@@ -7,9 +7,11 @@ import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModRegistries;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
@@ -43,6 +45,8 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(this::onServerStarting);
         forgeEventBus.addListener(this::onPlayerFileLoad);
         forgeEventBus.addListener(this::onPlayerFileSave);
+        forgeEventBus.addListener(this::onPlayerLoggedOut);
+        forgeEventBus.addListener(this::onGameShuttingDown);
         forgeEventBus.register(this);
     }
 
@@ -66,11 +70,15 @@ public class ProgressionReloaded {
     }
 
     private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event){
-        PlayerDataHandler.getPlayerData().orElseThrow().removePlayerFromActive(event.getEntity());
+        PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
     }
 
     private void onCommandsRegistration(final RegisterCommandsEvent event) {
         ModCommand.registerCommands(event.getDispatcher());
+    }
+
+    private void onGameShuttingDown(final GameShuttingDownEvent event){
+        TranslationKeyProvider.saveKeys();
     }
 
     static {

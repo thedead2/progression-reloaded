@@ -1,14 +1,12 @@
 package de.thedead2.progression_reloaded.player;
 
-import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.ModRegistries;
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.registries.DeferredRegister;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,7 +38,25 @@ public class TeamData extends SavedData {
         return this.teams.get(id);
     }
 
-    public Collection<PlayerTeam> allTeams() {
-        return this.teams.values();
+    public PlayerTeam getTeam(String teamName){
+        return getTeam(PlayerTeam.createId(teamName));
+    }
+
+    public ImmutableCollection<PlayerTeam> allTeams() {
+        return ImmutableSet.copyOf(this.teams.values());
+    }
+
+    public boolean removeTeam(PlayerTeam team) {
+        return removeTeam(team.getId());
+    }
+
+    public boolean removeTeam(ResourceLocation id) {
+        this.setDirty();
+        PlayerTeam team = this.teams.get(id);
+        if(team != null){
+            team.getActiveMembers().forEach(singlePlayer -> singlePlayer.setTeam(null));
+        }
+        this.teams.remove(id);
+        return team != null;
     }
 }

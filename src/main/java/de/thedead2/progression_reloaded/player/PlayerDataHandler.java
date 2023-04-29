@@ -23,7 +23,10 @@ public abstract class PlayerDataHandler {
     }
 
     public static void savePlayerData(Player player, File playerFile) {
-        getPlayerData().orElseThrow().getActivePlayer(player).toFile(playerFile);
+        var playerData = getPlayerData().orElseThrow();
+        var singlePlayer = playerData.getActivePlayer(player);
+        singlePlayer.toFile(playerFile);
+        if (singlePlayer.isOffline()) playerData.removePlayerFromActive(player);
     }
 
     public static Optional<TeamData> getTeamData(){

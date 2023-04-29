@@ -1,25 +1,25 @@
 package de.thedead2.progression_reloaded.player;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import de.thedead2.progression_reloaded.data.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlayerTeam {
-
     private final String teamName;
     private final ResourceLocation id;
     private ProgressionLevel progressionLevel;
     private final Set<SinglePlayer> activeMembers = new HashSet<>();
-    private final Set<ResourceLocation> knownMembers = new HashSet<>();
+    private final Set<KnownPlayer> knownMembers = new HashSet<>();
 
-    public PlayerTeam(String teamName, ResourceLocation id, Collection<ResourceLocation> knownMembers, ProgressionLevel progressionLevel) {
+    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, ProgressionLevel progressionLevel) {
         this.teamName = teamName;
         this.id = id;
         this.progressionLevel = progressionLevel;
@@ -32,13 +32,19 @@ public class PlayerTeam {
         String name = tag.getString("name");
         String id = tag.getString("id");
         CompoundTag members = tag.getCompound("members");
-        Set<ResourceLocation> memberIds = new HashSet<>();
-        members.getAllKeys().forEach(s -> memberIds.add(ResourceLocation.tryParse(s)));
+        Set<KnownPlayer> memberIds = new HashSet<>();
+        members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
         return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
     }
 
-    public static PlayerTeam fromRegistry(ResourceLocation teamId) {
-        return PlayerDataHandler.getTeamData().orElseThrow().getTeam(teamId);
+    public static PlayerTeam fromRegistry(String teamName, Player player) {
+        var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(ResourceLocation.tryParse(teamName));
+        if(team != null && team.accept(player)) return team;
+        else return null;
+    }
+
+    private boolean accept(Player player) {
+        return this.isPlayerInTeam(KnownPlayer.fromPlayer(player));
     }
 
     public static ResourceLocation createId(String name) {
@@ -46,23 +52,24 @@ public class PlayerTeam {
     }
 
     public void addActivePlayer(SinglePlayer singlePlayer){
+        if (singlePlayer == null) return;
         activeMembers.add(singlePlayer);
-        knownMembers.add(singlePlayer.getId());
+        singlePlayer.setTeam(this);
     }
 
-    public void removePlayer(SinglePlayer singlePlayer){
+    public void removeActivePlayer(SinglePlayer singlePlayer){
         activeMembers.remove(singlePlayer);
     }
 
-    public boolean isPlayerInTeam(SinglePlayer singlePlayer){
-        return activeMembers.contains(singlePlayer);
+    public boolean isPlayerInTeam(KnownPlayer player){
+        return knownMembers.contains(player);
     }
 
-    public Set<SinglePlayer> getActiveMembers() {
-        return activeMembers;
+    public ImmutableSet<SinglePlayer> getActiveMembers() {
+        return ImmutableSet.copyOf(activeMembers);
     }
 
-    public String getTeamName() {
+    public String getName() {
         return teamName;
     }
 
@@ -85,13 +92,32 @@ public class PlayerTeam {
         tag.putString("name", this.teamName);
         tag.putString("id", this.id.toString());
         CompoundTag members = new CompoundTag();
-        AtomicInteger i = new AtomicInteger();
-        this.knownMembers.forEach(id -> members.putInt(id.toString(), i.getAndIncrement()));
+        this.knownMembers.forEach(knownPlayer -> members.putString(knownPlayer.id().toString(), knownPlayer.name()));
         tag.put("members", members);
         return tag;
     }
 
-    public void addPlayers(Collection<SinglePlayer> players) {
-        players.forEach(this::addActivePlayer);
+    public void addPlayers(Collection<KnownPlayer> players) {
+        players.forEach(this::addPlayer);
+    }
+
+    private void addPlayer(KnownPlayer knownPlayer) {
+        this.knownMembers.add(knownPlayer);
+        this.addActivePlayer(PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(knownPlayer));
+    }
+
+    public void removePlayers(Collection<KnownPlayer> players) {
+        players.forEach(this::removePlayer);
+    }
+
+    private void removePlayer(KnownPlayer knownPlayer) {
+        this.knownMembers.remove(knownPlayer);
+        var singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(knownPlayer);
+        this.removeActivePlayer(singlePlayer);
+        singlePlayer.setTeam(null);
+    }
+
+    public ImmutableCollection<KnownPlayer> getMembers() {
+        return ImmutableSet.copyOf(this.knownMembers);
     }
 }

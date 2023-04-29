@@ -1,4 +1,17 @@
 {
-  "item.progression_reloaded.progression_book": "Progression Book",
-  "progression_reloaded.creative_mode_tab.progression_reloaded_tab": "Progression Reloaded"
+  "chat.progression_reloaded.added_players": "%s Added %s player(s) to %s",
+  "chat.progression_reloaded.command_failed": "%s Failed to execute the command!",
+  "chat.progression_reloaded.known_teams": "%s All known teams:",
+  "chat.progression_reloaded.player_already_in_other_team": "%s Can't add %s to %s as player is already a member of another team!",
+  "chat.progression_reloaded.player_in_no_team": "%s You are not a member of a team!",
+  "chat.progression_reloaded.player_in_team": "%s You are a member of team '%s'!",
+  "chat.progression_reloaded.remove_unknown_team_member": "%s Can't remove '%s' from '%s' as player is not a member of that team!",
+  "chat.progression_reloaded.removed_players": "%s Removed %s player(s) from %s",
+  "chat.progression_reloaded.team_created": "%s Team '%s' has been created successfully!",
+  "chat.progression_reloaded.team_deleted": "%s Team '%s' has been deleted!",
+  "chat.progression_reloaded.team_members": "%s All team members of %s:",
+  "chat.progression_reloaded.team_name_invalid": "%s The specified team name '%s' is invalid!",
+  "chat.progression_reloaded.unknown_team": "%s There's no team with name %s!",
+  "creative_mode_tab.progression_reloaded.progression_reloaded_tab": "Progression Reloaded",
+  "item.progression_reloaded.progression_book": "Progression Book"
 }

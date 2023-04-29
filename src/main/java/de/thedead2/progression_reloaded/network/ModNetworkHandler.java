@@ -7,7 +7,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
@@ -28,32 +28,40 @@ public abstract class ModNetworkHandler {
             PROTOCOL_VERSION::equals
     );
 
+    private static int messageId = 0;
+
+
+    private static int messageId(){
+        return messageId++;
+    }
+
     public static void registerPackets(){
-        int id = 0;
         LOGGER.debug("Registering network packages...");
 
-        newPacket(ClientOpenProgressionBookPacket.class, id++);
+        registerPacket(ClientOpenProgressionBookPacket.class, messageId());
 
         LOGGER.debug("Network registration complete.");
     }
 
-    private static <T extends ModNetworkPacket> void newPacket(Class<T> packet, int id){
-    newPacket(packet, buf -> ModNetworkPacket.fromBytes(buf, packet), id);
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, int id){
+        registerPacket(packet, id, null);
     }
 
-    private static <T extends ModNetworkPacket> void newPacket(Class<T> packet, Function<FriendlyByteBuf, T> decoder, int id){
-        INSTANCE.messageBuilder(packet, id).decoder(decoder).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, int id, NetworkDirection direction){
+    registerPacket(packet, buf -> ModNetworkPacket.fromBytes(buf, packet), id, direction);
     }
 
-    private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
-        if(FMLEnvironment.dist.isClient()) {
-            ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> packet.onClient(ctx)));
-        }
-        else {
-            ctx.get().enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.DEDICATED_SERVER, () -> () -> packet.onServer(ctx)));
-        }
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, Function<FriendlyByteBuf, T> decoder, int id, NetworkDirection direction){
+        INSTANCE.messageBuilder(packet, id, direction).decoder(decoder).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handle).add();
+    }
+
+    public static void handle(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
+        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
+        DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
         ctx.get().setPacketHandled(true);
     }
+
+    protected abstract void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx);
 
     public static <MSG extends ModNetworkPacket> void sendToServer(MSG msg){
         INSTANCE.sendToServer(msg);

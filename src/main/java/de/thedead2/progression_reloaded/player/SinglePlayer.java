@@ -14,17 +14,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SinglePlayer {
-
     private final String playerName;
-
-    private final PlayerTeam team;
-
+    private PlayerTeam team;
     private final UUID uuid;
     private final ResourceLocation id;
-
     private final Player player;
-
     private ProgressionLevel progressionLevel;
+    private boolean isOffline;
 
     public SinglePlayer(Player player, ResourceLocation id, ProgressionLevel progressionLevel) {
         this(null, player, id, progressionLevel);
@@ -36,7 +32,8 @@ public class SinglePlayer {
         this.uuid = player.getUUID();
         this.id = id;
         this.player = player;
-        this.progressionLevel = progressionLevel;
+        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : progressionLevel;
+        this.isOffline = false;
     }
 
     public static SinglePlayer fromFile(File playerDataFile, net.minecraft.world.entity.player.Player player) {
@@ -51,17 +48,16 @@ public class SinglePlayer {
     }
 
     public static SinglePlayer fromCompoundTag(CompoundTag tag, Player player) {
-        //if() throw new NullPointerException("Can't create PlayerData with compound tag that is null!");
         if(tag == null || tag.isEmpty()) return new SinglePlayer(player, createId(player.getStringUUID()), ProgressionLevel.lowest());
         UUID uuid = tag.getUUID("uuid");
         String level = tag.getString("level");
         String team = tag.getString("team");
-        if(player.getUUID().equals(uuid)) return new SinglePlayer(PlayerTeam.fromRegistry(ResourceLocation.tryParse(team)), player, createId(player.getStringUUID()), ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
+        if(player.getUUID().equals(uuid)) return new SinglePlayer(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
         throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
     }
 
 
-    public net.minecraft.world.entity.player.Player getPlayer() {
+    public Player getPlayer() {
         return player;
     }
 
@@ -121,5 +117,17 @@ public class SinglePlayer {
 
     public ResourceLocation getId() {
         return this.id;
+    }
+
+    public boolean isOffline() {
+        return this.isOffline;
+    }
+
+    public void loggedOut() {
+        this.isOffline = true;
+    }
+
+    public void setTeam(PlayerTeam playerTeam) {
+        this.team = playerTeam;
     }
 }

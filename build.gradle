@@ -57,6 +57,8 @@ minecraft {
             property 'forge.logging.markers', 'REGISTRIES'
             property 'forge.logging.console.level', 'debug'
 
+            args '--nogui'
+
             mods {
                 progression_reloaded {
                     source sourceSets.main
@@ -82,8 +84,6 @@ minecraft {
 }
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
-
-build.dependsOn('incrBuildNumber')
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.19.3-44.1.0'

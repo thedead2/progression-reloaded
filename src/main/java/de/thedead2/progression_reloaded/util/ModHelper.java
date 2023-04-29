@@ -9,18 +9,17 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.world.level.storage.WorldData;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.targets.CommonDevLaunchHandler;
 import net.minecraftforge.forgespi.locating.IModFile;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Properties;
 
 
 public abstract class ModHelper {
@@ -40,6 +39,10 @@ public abstract class ModHelper {
 
 
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
+
+    public static boolean isDevEnv(){
+        return FMLLoader.getLaunchHandler() instanceof CommonDevLaunchHandler;
+    }
 
     public static void reloadAll(MinecraftServer server){
         Timer timer = new Timer(true);

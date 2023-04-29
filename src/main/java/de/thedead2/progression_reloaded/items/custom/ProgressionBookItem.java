@@ -20,6 +20,6 @@ public class ProgressionBookItem extends Item {
         if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer){
             ModNetworkHandler.sendToPlayer(new ClientOpenProgressionBookPacket(), serverPlayer);
         }
-        return super.use(pLevel, pPlayer, pUsedHand);
+        return InteractionResultHolder.pass(pPlayer.getItemInHand(pUsedHand));
     }
 }

@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.player;
 
+import com.google.common.collect.ImmutableCollection;
+import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
@@ -8,48 +10,52 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class PlayerData extends SavedData {
-    private final Set<ResourceLocation> knownPlayers = new HashSet<>();
+    private final Set<KnownPlayer> knownPlayers = new HashSet<>();
     private final Map<ResourceLocation, SinglePlayer> activePlayers = new HashMap<>();
 
-    public PlayerData(Collection<ResourceLocation> knownPlayers){
+    public PlayerData(Collection<KnownPlayer> knownPlayers){
         this.knownPlayers.addAll(knownPlayers);
         this.setDirty();
     }
     @Override
     public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
-        AtomicInteger i = new AtomicInteger();
-        knownPlayers.forEach(resourceLocation -> tag.putInt(resourceLocation.toString(), i.getAndIncrement()));
+        knownPlayers.forEach(knownPlayer -> tag.putString(knownPlayer.id().toString(), knownPlayer.name()));
         return tag;
     }
 
     public static PlayerData load(CompoundTag tag) {
-        Set<ResourceLocation> knownPlayers = new HashSet<>();
-        tag.getAllKeys().forEach(s -> knownPlayers.add(ResourceLocation.tryParse(s)));
+        Set<KnownPlayer> knownPlayers = new HashSet<>();
+        tag.getAllKeys().forEach(s -> knownPlayers.add(new KnownPlayer(ResourceLocation.tryParse(s), tag.getString(s))));
         return new PlayerData(knownPlayers);
     }
 
     public void addActivePlayer(SinglePlayer singlePlayer){
         this.activePlayers.put(singlePlayer.getId(), singlePlayer);
         this.addKnownPlayer(singlePlayer.getPlayer());
+        singlePlayer.getTeam().ifPresent(team -> team.addActivePlayer(singlePlayer));
     }
 
     public SinglePlayer getActivePlayer(ResourceLocation id){
         return this.activePlayers.get(id);
     }
 
+    public SinglePlayer getActivePlayer(KnownPlayer knownPlayer){
+        return getActivePlayer(knownPlayer.id());
+    }
+
     public SinglePlayer getActivePlayer(Player player){
         return getActivePlayer(SinglePlayer.createId(player.getStringUUID()));
     }
 
-    public Collection<SinglePlayer> allPlayerData() {
-        return this.activePlayers.values();
+    public ImmutableCollection<SinglePlayer> allPlayersData() {
+        return ImmutableSet.copyOf(this.activePlayers.values());
     }
 
     public void removePlayerFromActive(ResourceLocation id){
-        this.activePlayers.remove(id);
+        var player = this.activePlayers.remove(id);
+        player.getTeam().ifPresent(team -> team.removeActivePlayer(player));
     }
 
     public void removePlayerFromActive(Player player){
@@ -61,6 +67,11 @@ public class PlayerData extends SavedData {
     }
 
     public void addKnownPlayer(Player player){
-        if(this.knownPlayers.add(SinglePlayer.createId(player.getStringUUID()))) this.setDirty();
+        if(this.knownPlayers.add(KnownPlayer.fromPlayer(player))) this.setDirty();
+    }
+
+    public void playerLoggedOut(Player player) {
+        var singlePlayer = getActivePlayer(player);
+        singlePlayer.loggedOut();
     }
 }

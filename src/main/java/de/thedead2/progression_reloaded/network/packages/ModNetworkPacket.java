@@ -2,29 +2,21 @@ package de.thedead2.progression_reloaded.network.packages;
 
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import org.apache.logging.log4j.Level;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
+public interface ModNetworkPacket {
 
-import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
-public abstract class ModNetworkPacket {
+    DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx);
 
-    protected ModNetworkPacket(){}
-    protected ModNetworkPacket(FriendlyByteBuf buf){}
+    DistExecutor.SafeRunnable onServer(Supplier<NetworkEvent.Context> ctx);
 
-    public void onClient(Supplier<NetworkEvent.Context> ctx){
-        LOGGER.warn("Told to do something on the client but I don't know what! -> {}", this.getClass().getName());
-    }
+    void toBytes(FriendlyByteBuf buf);
 
-    public void onServer(Supplier<NetworkEvent.Context> ctx){
-        LOGGER.warn("Told to do something on the server but I don't know what! -> {} from {}", this.getClass().getName(), ctx.get().getSender().getName().getString());
-    }
-
-    public void toBytes(FriendlyByteBuf buf){}
-
-    public static <T extends ModNetworkPacket> T fromBytes(FriendlyByteBuf buf, Class<T> packetClass) {
+    static <T extends ModNetworkPacket> T fromBytes(FriendlyByteBuf buf, Class<T> packetClass) {
         try {
             return packetClass.getConstructor(buf.getClass()).newInstance(buf);
         }

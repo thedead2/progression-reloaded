@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "progression_reloaded.refmap.json",
   "mixins": [
+    "MixinCrashReport"
   ],
   "client": [
   ],
