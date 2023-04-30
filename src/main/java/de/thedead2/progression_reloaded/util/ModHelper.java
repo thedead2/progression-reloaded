@@ -77,7 +77,7 @@ public abstract class ModHelper {
 
         server.reloadResources(selectedIds).exceptionally((e) -> {
             server.sendSystemMessage(TranslationKeyProvider.chatMessage("reload_failed_message", ChatFormatting.RED));
-            CrashHandler.getInstance().handleException("Failed to execute reload!", e, Level.ERROR, true);
+            CrashHandler.getInstance().handleException("Failed to execute reload!", e, Level.ERROR);
             return null;
         });
     }

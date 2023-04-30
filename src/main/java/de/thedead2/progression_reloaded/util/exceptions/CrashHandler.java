@@ -6,13 +6,13 @@ import de.thedead2.progression_reloaded.util.logger.ConsoleColors;
 import joptsimple.internal.Strings;
 import net.minecraft.CrashReport;
 import net.minecraft.CrashReportCategory;
-import net.minecraft.advancements.Advancement;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.Bootstrap;
 import net.minecraftforge.fml.ISystemReportExtender;
 import net.minecraftforge.logging.CrashReportExtender;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,9 +30,7 @@ public class CrashHandler implements ISystemReportExtender {
 
     private static CrashHandler instance;
     private static int crashCounter = 0;
-    private Advancement activeGameAdvancement;
     private File activeFile;
-    private final Set<ResourceLocation> removedAdvancements = new HashSet<>();
     private final Set<CrashReportException> crashReportExceptions = new HashSet<>();
     private final List<CrashReportSection> sections = new ArrayList<>();
 
@@ -236,14 +234,32 @@ public class CrashHandler implements ISystemReportExtender {
         Bootstrap.realStdoutPrintln(crashReport.getFriendlyReport());
     }
 
-    public void handleException(String description, Throwable e, Level level, boolean log) {
-        if (level.equals(Level.DEBUG))LOGGER.debug(description);
-        else if(level.equals(Level.WARN)) LOGGER.warn(description);
-        else if(level.equals(Level.ERROR)) LOGGER.error(description);
-        else if(level.equals(Level.FATAL)) LOGGER.fatal(description);
-        else LOGGER.info(description);
+    public static String getCallerCallerClassName() {
+        StackTraceElement[] stElements = Thread.currentThread().getStackTrace();
+        String callerClassName = null;
+        for (int i=1; i<stElements.length; i++) {
+            StackTraceElement ste = stElements[i];
+            if (!ste.getClassName().equals(CrashHandler.class.getName())&& ste.getClassName().indexOf("java.lang.Thread")!=0) {
+                if (callerClassName==null) {
+                    callerClassName = ste.getClassName();
+                } else if (!callerClassName.equals(ste.getClassName())) {
+                    String clazzName = ste.getClassName();
+                    return clazzName.substring(clazzName.lastIndexOf(".") + 1);
+                }
+            }
+        }
+        return null;
+    }
 
-        if (log) e.printStackTrace();
+    public void handleException(String description, String callingClass, Throwable e, Level level) {
+        String exceptionClass = callingClass != null ? callingClass : getCallerCallerClassName();
+        Marker marker = new MarkerManager.Log4jMarker(exceptionClass);
+        if (level.equals(Level.DEBUG))LOGGER.debug(marker, description);
+        else if(level.equals(Level.WARN)) LOGGER.warn(marker, description);
+        else if(level.equals(Level.ERROR)) LOGGER.error(marker, description, e);
+        else if(level.equals(Level.FATAL)) LOGGER.fatal(marker, description, e);
+        else LOGGER.info(marker, description);
+
         this.addCrashDetails(description, level, e);
         if(activeFile != null){
             printFileDataToConsole(activeFile);
@@ -251,7 +267,7 @@ public class CrashHandler implements ISystemReportExtender {
     }
 
     public void handleException(String description, Throwable e, Level level) {
-        handleException(description, e, level, false);
+        handleException(description, null, e, level);
     }
 
     private void printFileDataToConsole(File file){

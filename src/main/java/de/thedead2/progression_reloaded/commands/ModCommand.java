@@ -76,7 +76,7 @@ public class ModCommand {
                     return executable.runCommand(context);
                 }
                 catch (Throwable throwable){
-                    CrashHandler.getInstance().handleException("Something went wrong executing this command!", throwable, Level.ERROR, true);
+                    CrashHandler.getInstance().handleException("Something went wrong executing this command!", throwable, Level.ERROR);
                     context.getSource().sendFailure(TranslationKeyProvider.chatMessage("command_failed", ChatFormatting.RED));
                     return COMMAND_FAILURE;
                 }

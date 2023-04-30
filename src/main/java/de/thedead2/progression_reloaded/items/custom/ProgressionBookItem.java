@@ -2,14 +2,22 @@ package de.thedead2.progression_reloaded.items.custom;
 
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
+
 public class ProgressionBookItem extends Item {
     public ProgressionBookItem() {
         super(new Properties().stacksTo(1).fireResistant());
@@ -20,6 +28,13 @@ public class ProgressionBookItem extends Item {
         if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer){
             ModNetworkHandler.sendToPlayer(new ClientOpenProgressionBookPacket(), serverPlayer);
         }
-        return InteractionResultHolder.pass(pPlayer.getItemInHand(pUsedHand));
+        return super.use(pLevel, pPlayer, pUsedHand);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+        if(Screen.hasShiftDown()){
+            pTooltipComponents.add(Component.literal("Open for your progression").withStyle(ChatFormatting.GOLD));
+        }
     }
 }

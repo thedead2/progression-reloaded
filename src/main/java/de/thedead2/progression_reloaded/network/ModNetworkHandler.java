@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.network;
 
 import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
 import de.thedead2.progression_reloaded.network.packages.ModNetworkPacket;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,6 +13,7 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
+import org.apache.logging.log4j.Level;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -48,20 +50,24 @@ public abstract class ModNetworkHandler {
     }
 
     private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, int id, NetworkDirection direction){
-    registerPacket(packet, buf -> ModNetworkPacket.fromBytes(buf, packet), id, direction);
+        registerPacket(packet, buf -> ModNetworkPacket.fromBytes(buf, packet), id, direction);
     }
 
     private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, Function<FriendlyByteBuf, T> decoder, int id, NetworkDirection direction){
-        INSTANCE.messageBuilder(packet, id, direction).decoder(decoder).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handle).add();
+        INSTANCE.messageBuilder(packet, id, direction).decoder(decoder).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
     }
 
-    public static void handle(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
-        DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
-        DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
-        ctx.get().setPacketHandled(true);
+    public static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
+        try {
+            DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
+            DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
+            ctx.get().setPacketHandled(true);
+        }
+        catch (Throwable throwable){
+            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), "NetworkHandler", throwable, Level.ERROR);
+            ctx.get().setPacketHandled(false);
+        }
     }
-
-    protected abstract void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx);
 
     public static <MSG extends ModNetworkPacket> void sendToServer(MSG msg){
         INSTANCE.sendToServer(msg);

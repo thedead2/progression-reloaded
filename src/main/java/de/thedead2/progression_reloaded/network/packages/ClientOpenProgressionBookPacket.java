@@ -16,7 +16,6 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
     }
     @Override
     public DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
-        //For whatever reason this cannot be a lambda, it has to be an anonymous inner class?!
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
@@ -24,12 +23,4 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
             }
         };
     }
-
-    @Override
-    public DistExecutor.SafeRunnable onServer(Supplier<NetworkEvent.Context> ctx) {
-        return null;
-    }
-
-    @Override
-    public void toBytes(FriendlyByteBuf buf) {}
 }

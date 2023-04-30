@@ -42,7 +42,7 @@ public class SinglePlayer {
             tag = NbtIo.read(playerDataFile);
         }
         catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.ERROR, true);
+            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.ERROR);
         }
         return fromCompoundTag(tag, player);
     }
@@ -99,7 +99,7 @@ public class SinglePlayer {
             NbtIo.write(tag, playerFile);
         }
         catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.ERROR, true);
+            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.ERROR);
         }
     }
 

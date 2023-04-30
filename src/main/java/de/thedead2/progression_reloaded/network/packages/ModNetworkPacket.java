@@ -10,18 +10,32 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 public interface ModNetworkPacket {
 
-    DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx);
+    /**Due to the way how classes are compiled this cannot be a lambda, it has to be an anonymous inner class**/
+    DistExecutor.SafeRunnable EMPTY_SAFE_RUNNABLE = new DistExecutor.SafeRunnable() {
+        @Override
+        public void run() {}
+    };
 
-    DistExecutor.SafeRunnable onServer(Supplier<NetworkEvent.Context> ctx);
+    default DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx){
+        return EMPTY_SAFE_RUNNABLE;
+    }
 
-    void toBytes(FriendlyByteBuf buf);
+    default DistExecutor.SafeRunnable onServer(Supplier<NetworkEvent.Context> ctx){
+        return EMPTY_SAFE_RUNNABLE;
+    }
+
+    default void toBytes(FriendlyByteBuf buf){}
 
     static <T extends ModNetworkPacket> T fromBytes(FriendlyByteBuf buf, Class<T> packetClass) {
         try {
             return packetClass.getConstructor(buf.getClass()).newInstance(buf);
         }
-        catch (InstantiationException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-            CrashHandler.getInstance().handleException("Failed to invoke new Instance of class: " + packetClass.getName(), e, Level.ERROR, true);
+        catch (NoSuchMethodException e) {
+            CrashHandler.getInstance().handleException("Failed to invoke new Instance of class: " + packetClass.getName() + " -> The needed constructor doesn't exist!", e, Level.ERROR);
+            return null;
+        }
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+            CrashHandler.getInstance().handleException("Failed to invoke new Instance of class: " + packetClass.getName(), e, Level.ERROR);
             return null;
         }
     }
