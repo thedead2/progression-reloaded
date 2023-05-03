@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.network;
 import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
 import de.thedead2.progression_reloaded.network.packages.ModNetworkPacket;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -47,6 +48,22 @@ public abstract class ModNetworkHandler {
     }
 
     private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet){
+        try {
+            packet.getConstructor(FriendlyByteBuf.class);
+            if(packet.getName().contains("Login")){
+                boolean flag = false;
+                for (Class<?> anInterface : packet.getInterfaces()) {
+                    if (anInterface.getName().equals("java.util.function.Supplier")) {
+                        flag = true;
+                        break;
+                    }
+                }
+                if(!flag) throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
+            }
+        } catch (Throwable e) {
+            CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
+            return;
+        }
         INSTANCE.messageBuilder(packet, messageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
     }
 

@@ -13,6 +13,7 @@ public interface ModNetworkPacket {
     /**
      * Due to the way how classes are compiled this cannot be a lambda, it has to be an anonymous inner class
      * **/
+    @SuppressWarnings("all")
     DistExecutor.SafeRunnable EMPTY_SAFE_RUNNABLE = new DistExecutor.SafeRunnable() {
         @Override
         public void run() {}
@@ -32,11 +33,7 @@ public interface ModNetworkPacket {
         try {
             return packetClass.getConstructor(buf.getClass()).newInstance(buf);
         }
-        catch (NoSuchMethodException e) {
-            CrashHandler.getInstance().handleException("Failed to invoke new Instance of class: " + packetClass.getName() + " -> The needed constructor doesn't exist!", e, Level.ERROR);
-            return null;
-        }
-        catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        catch (InstantiationException | InvocationTargetException | IllegalAccessException | NoSuchMethodException e) {
             CrashHandler.getInstance().handleException("Failed to invoke new Instance of class: " + packetClass.getName(), e, Level.ERROR);
             return null;
         }

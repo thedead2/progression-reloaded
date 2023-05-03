@@ -16,6 +16,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
     public ClientOpenProgressionBookPacket(FriendlyByteBuf buf){
     }
     @Override
+    @SuppressWarnings("all")
     public DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
         return new DistExecutor.SafeRunnable() {
             @Override
