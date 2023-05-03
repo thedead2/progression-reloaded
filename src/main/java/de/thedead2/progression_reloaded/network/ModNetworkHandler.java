@@ -60,11 +60,11 @@ public abstract class ModNetworkHandler {
                 }
                 if(!flag) throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
             }
-        } catch (Throwable e) {
-            CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
-            return;
+            INSTANCE.messageBuilder(packet, messageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
         }
-        INSTANCE.messageBuilder(packet, messageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
+        catch (Throwable e) {
+            CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
+        }
     }
 
     private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet){

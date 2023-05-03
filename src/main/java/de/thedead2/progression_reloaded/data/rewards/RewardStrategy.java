@@ -18,11 +18,11 @@ public enum RewardStrategy {
             case RANDOM -> {
                 Random rand = new Random();
                 int index = rand.nextInt(teamMembers.size());
-                Iterator<SinglePlayer> iter = teamMembers.iterator();
+                Iterator<SinglePlayer> iterator = teamMembers.iterator();
                 for (int i = 0; i < index; i++) {
-                    iter.next();
+                    iterator.next();
                 }
-                SinglePlayer player = iter.next();
+                SinglePlayer player = iterator.next();
                 questRewards.forEach(reward -> reward.rewardPlayer(player.getPlayer()));
             }
         }
@@ -30,7 +30,7 @@ public enum RewardStrategy {
 
     public void reward(Set<IReward> questRewards, SinglePlayer player) {
         if(player.isInTeam()){
-            this.reward(questRewards, player.getTeam().get());
+            this.reward(questRewards, player.getTeam().orElseThrow());
         }
         else {
             questRewards.forEach(reward -> reward.rewardPlayer(player.getPlayer()));

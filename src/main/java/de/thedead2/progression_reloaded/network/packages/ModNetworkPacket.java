@@ -11,7 +11,7 @@ import java.util.function.Supplier;
 public interface ModNetworkPacket {
 
     /**
-     * Due to the way how classes are compiled this cannot be a lambda, it has to be an anonymous inner class
+     * Due to the way how classes are compiled this cannot be a lambda, it has to be an inner class
      * **/
     @SuppressWarnings("all")
     DistExecutor.SafeRunnable EMPTY_SAFE_RUNNABLE = new DistExecutor.SafeRunnable() {

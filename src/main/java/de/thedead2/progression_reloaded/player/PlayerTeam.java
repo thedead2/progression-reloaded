@@ -9,9 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class PlayerTeam {
     private final String teamName;
@@ -20,10 +18,15 @@ public class PlayerTeam {
     private final Set<SinglePlayer> activeMembers = new HashSet<>();
     private final Set<KnownPlayer> knownMembers = new HashSet<>();
 
-    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers) {
+    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, ProgressionLevel level) {
         this.teamName = teamName;
         this.id = id;
         this.knownMembers.addAll(knownMembers);
+        this.progressionLevel = level;
+    }
+
+    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers) {
+        this(teamName, id, knownMembers, null);
     }
 
     public static PlayerTeam fromCompoundTag(CompoundTag tag) {
@@ -32,9 +35,9 @@ public class PlayerTeam {
         String name = tag.getString("name");
         String id = tag.getString("id");
         CompoundTag members = tag.getCompound("members");
-        Set<KnownPlayer> memberIds = new HashSet<>();
+        List<KnownPlayer> memberIds = new ArrayList<>();
         members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
-        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds);
+        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level), !memberIds.isEmpty() ? PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(memberIds.get(0)) : null));
     }
 
     public static PlayerTeam fromRegistry(String teamName, ServerPlayer player) {
@@ -94,7 +97,7 @@ public class PlayerTeam {
 
     public CompoundTag toCompoundTag() {
         CompoundTag tag = new CompoundTag();
-        tag.putString("level", this.progressionLevel.getId().toString());
+        if(this.progressionLevel != null) tag.putString("level", this.progressionLevel.getId().toString());
         tag.putString("name", this.teamName);
         tag.putString("id", this.id.toString());
         CompoundTag members = new CompoundTag();
