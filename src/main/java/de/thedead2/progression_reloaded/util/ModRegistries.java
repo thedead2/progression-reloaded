@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.util;
 
-import de.thedead2.progression_reloaded.data.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;

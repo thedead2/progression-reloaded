@@ -13,6 +13,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -75,6 +76,10 @@ public class ProgressionReloaded {
 
     private void onCommandsRegistration(final RegisterCommandsEvent event) {
         ModCommand.registerCommands(event.getDispatcher());
+    }
+
+    private void onServerTick(final TickEvent.ServerTickEvent event){
+        PlayerDataHandler.tick();
     }
 
     private void onGameShuttingDown(final GameShuttingDownEvent event){

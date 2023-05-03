@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.player;
 
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.io.File;
@@ -13,7 +14,7 @@ public abstract class PlayerDataHandler {
     private static PlayerData playerData = null;
 
     public static void loadPlayerData(File playerDataFile, Player player){
-        getPlayerData().orElseThrow().addActivePlayer(player, playerDataFile);
+        getPlayerData().orElseThrow().addActivePlayer((ServerPlayer) player, playerDataFile);
     }
 
     public static void loadData(ServerLevel level){
@@ -35,5 +36,12 @@ public abstract class PlayerDataHandler {
 
     public static Optional<PlayerData> getPlayerData(){
         return Optional.ofNullable(playerData);
+    }
+
+    public static void tick() {
+        getPlayerData().ifPresent(playerData1 -> playerData1.allPlayersData().forEach(singlePlayer -> {
+            if(!singlePlayer.isInTeam()) singlePlayer.getProgressionLevel().tick();
+        }));
+        getTeamData().ifPresent(teamData1 -> teamData1.allTeams().forEach(team -> team.getProgressionLevel().tick()));
     }
 }

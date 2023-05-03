@@ -12,6 +12,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
 
     public ClientOpenProgressionBookPacket(){
     }
+    @SuppressWarnings("unused")
     public ClientOpenProgressionBookPacket(FriendlyByteBuf buf){
     }
     @Override
@@ -23,4 +24,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
             }
         };
     }
+
+    @Override
+    public void toBytes(FriendlyByteBuf buf) {}
 }

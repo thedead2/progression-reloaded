@@ -10,7 +10,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.function.Supplier;
 public interface ModNetworkPacket {
 
-    /**Due to the way how classes are compiled this cannot be a lambda, it has to be an anonymous inner class**/
+    /**
+     * Due to the way how classes are compiled this cannot be a lambda, it has to be an anonymous inner class
+     * **/
     DistExecutor.SafeRunnable EMPTY_SAFE_RUNNABLE = new DistExecutor.SafeRunnable() {
         @Override
         public void run() {}
@@ -24,7 +26,7 @@ public interface ModNetworkPacket {
         return EMPTY_SAFE_RUNNABLE;
     }
 
-    default void toBytes(FriendlyByteBuf buf){}
+    void toBytes(FriendlyByteBuf buf);
 
     static <T extends ModNetworkPacket> T fromBytes(FriendlyByteBuf buf, Class<T> packetClass) {
         try {

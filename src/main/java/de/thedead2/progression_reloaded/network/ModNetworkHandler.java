@@ -3,7 +3,6 @@ package de.thedead2.progression_reloaded.network;
 import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
 import de.thedead2.progression_reloaded.network.packages.ModNetworkPacket;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
-import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.api.distmarker.Dist;
@@ -15,7 +14,9 @@ import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Level;
 
-import java.util.function.Function;
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
@@ -40,21 +41,33 @@ public abstract class ModNetworkHandler {
     public static void registerPackets(){
         LOGGER.debug("Registering network packages...");
 
-        registerPacket(ClientOpenProgressionBookPacket.class, messageId());
+        registerPacket(ClientOpenProgressionBookPacket.class);
 
         LOGGER.debug("Network registration complete.");
     }
 
-    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, int id){
-        registerPacket(packet, id, null);
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet){
+        INSTANCE.messageBuilder(packet, messageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
     }
 
-    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, int id, NetworkDirection direction){
-        registerPacket(packet, buf -> ModNetworkPacket.fromBytes(buf, packet), id, direction);
-    }
-
-    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, Function<FriendlyByteBuf, T> decoder, int id, NetworkDirection direction){
-        INSTANCE.messageBuilder(packet, id, direction).decoder(decoder).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
+    private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet){
+        Set<String> methodNames = new HashSet<>();
+        String clazzName = packet.getName();
+        for (Method declaredMethod : packet.getDeclaredMethods()) {
+            if(declaredMethod.getName().equals("onClient") || declaredMethod.getName().equals("onServer")){
+                methodNames.add(declaredMethod.getName());
+            }
+        }
+        if(methodNames.containsAll(Set.of("onClient", "onServer"))) return null;
+        else if (methodNames.contains("onClient")){
+            if (clazzName.contains("Login")) return NetworkDirection.LOGIN_TO_CLIENT;
+            else return NetworkDirection.PLAY_TO_CLIENT;
+        }
+        else if (methodNames.contains("onServer")) {
+            if (clazzName.contains("Login")) return NetworkDirection.LOGIN_TO_SERVER;
+            else return NetworkDirection.PLAY_TO_SERVER;
+        }
+        else return null;
     }
 
     public static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){

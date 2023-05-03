@@ -2,10 +2,11 @@ package de.thedead2.progression_reloaded.player;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import de.thedead2.progression_reloaded.data.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.Collection;
@@ -19,10 +20,9 @@ public class PlayerTeam {
     private final Set<SinglePlayer> activeMembers = new HashSet<>();
     private final Set<KnownPlayer> knownMembers = new HashSet<>();
 
-    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, ProgressionLevel progressionLevel) {
+    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers) {
         this.teamName = teamName;
         this.id = id;
-        this.progressionLevel = progressionLevel;
         this.knownMembers.addAll(knownMembers);
     }
 
@@ -34,10 +34,10 @@ public class PlayerTeam {
         CompoundTag members = tag.getCompound("members");
         Set<KnownPlayer> memberIds = new HashSet<>();
         members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
-        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
+        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds);
     }
 
-    public static PlayerTeam fromRegistry(String teamName, Player player) {
+    public static PlayerTeam fromRegistry(String teamName, ServerPlayer player) {
         var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(ResourceLocation.tryParse(teamName));
         if(team != null && team.accept(player)) return team;
         else return null;
@@ -47,12 +47,16 @@ public class PlayerTeam {
         return this.isPlayerInTeam(KnownPlayer.fromPlayer(player));
     }
 
+    private boolean accept(SinglePlayer player) {
+        return this.isPlayerInTeam(KnownPlayer.fromSinglePlayer(player));
+    }
+
     public static ResourceLocation createId(String name) {
         return ResourceLocation.tryBuild(ModHelper.MOD_ID, name.toLowerCase().replaceAll(" ", "_"));
     }
 
     public void addActivePlayer(SinglePlayer singlePlayer){
-        if (singlePlayer == null) return;
+        if (singlePlayer == null || !this.accept(singlePlayer)) return;
         activeMembers.add(singlePlayer);
         singlePlayer.setTeam(this);
     }
@@ -73,9 +77,11 @@ public class PlayerTeam {
         return teamName;
     }
 
-    public void updateProgressionLevel(ProgressionLevel level){
+    public void updateProgressionLevel(ProgressionLevel level, SinglePlayer player){
         this.progressionLevel = level;
-        this.activeMembers.forEach(player -> player.updateProgressionLevel(level));
+        this.activeMembers.forEach(player1 -> {
+            if(!player1.equals(player)) player1.updateProgressionLevel(level);
+        });
     }
 
     public ProgressionLevel getProgressionLevel() {

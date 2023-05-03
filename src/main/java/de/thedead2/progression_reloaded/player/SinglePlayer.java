@@ -1,11 +1,13 @@
 package de.thedead2.progression_reloaded.player;
 
-import de.thedead2.progression_reloaded.data.ProgressionLevel;
+import com.google.common.base.Objects;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.Level;
 
@@ -18,25 +20,25 @@ public class SinglePlayer {
     private PlayerTeam team;
     private final UUID uuid;
     private final ResourceLocation id;
-    private final Player player;
+    private final ServerPlayer player;
     private ProgressionLevel progressionLevel;
     private boolean isOffline;
 
-    public SinglePlayer(Player player, ResourceLocation id, ProgressionLevel progressionLevel) {
-        this(null, player, id, progressionLevel);
+    public SinglePlayer(ServerPlayer player, ResourceLocation id) {
+        this(null, player, id, new ResourceLocation(ModHelper.MOD_ID, "base_level"));
     }
 
-    public SinglePlayer(PlayerTeam team, Player player, ResourceLocation id, ProgressionLevel progressionLevel) {
+    public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId) {
         this.playerName = player.getScoreboardName();
         this.team = team;
         this.uuid = player.getUUID();
         this.id = id;
         this.player = player;
-        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : progressionLevel;
+        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId, this);
         this.isOffline = false;
     }
 
-    public static SinglePlayer fromFile(File playerDataFile, net.minecraft.world.entity.player.Player player) {
+    public static SinglePlayer fromFile(File playerDataFile, ServerPlayer player) {
         CompoundTag tag = null;
         try {
             tag = NbtIo.read(playerDataFile);
@@ -47,12 +49,12 @@ public class SinglePlayer {
         return fromCompoundTag(tag, player);
     }
 
-    public static SinglePlayer fromCompoundTag(CompoundTag tag, Player player) {
-        if(tag == null || tag.isEmpty()) return new SinglePlayer(player, createId(player.getStringUUID()), ProgressionLevel.lowest());
+    public static SinglePlayer fromCompoundTag(CompoundTag tag, ServerPlayer player) {
+        if(tag == null || tag.isEmpty()) return new SinglePlayer(player, createId(player.getStringUUID()));
         UUID uuid = tag.getUUID("uuid");
         String level = tag.getString("level");
         String team = tag.getString("team");
-        if(player.getUUID().equals(uuid)) return new SinglePlayer(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
+        if(player.getUUID().equals(uuid)) return new SinglePlayer(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ResourceLocation.tryParse(level));
         throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
     }
 
@@ -82,7 +84,11 @@ public class SinglePlayer {
     }
 
     public void updateProgressionLevel(ProgressionLevel level){
+        this.progressionLevel.rewardPlayer();
+        this.progressionLevel.stopListening();
         this.progressionLevel = level;
+        if(this.isInTeam()) this.team.updateProgressionLevel(this.progressionLevel, this);
+        this.progressionLevel.startListening();
     }
 
     public ProgressionLevel getProgressionLevel() {
@@ -129,5 +135,18 @@ public class SinglePlayer {
 
     public void setTeam(PlayerTeam playerTeam) {
         this.team = playerTeam;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SinglePlayer player1 = (SinglePlayer) o;
+        return isOffline == player1.isOffline && Objects.equal(playerName, player1.playerName) && Objects.equal(team, player1.team) && Objects.equal(uuid, player1.uuid) && Objects.equal(id, player1.id) && Objects.equal(player, player1.player) && Objects.equal(progressionLevel, player1.progressionLevel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(playerName, team, uuid, id, player, progressionLevel, isOffline);
     }
 }

@@ -2,7 +2,6 @@ package de.thedead2.progression_reloaded.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import de.thedead2.progression_reloaded.data.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.KnownPlayer;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.PlayerTeam;
@@ -43,7 +42,7 @@ public class TeamCommands {
                 source.sendFailure(TranslationKeyProvider.chatMessage("team_name_invalid", ChatFormatting.RED, name));
                 return COMMAND_FAILURE;
             }
-            PlayerDataHandler.getTeamData().ifPresent(teamData -> teamData.addTeam(new PlayerTeam(name, id, Collections.emptySet(), ProgressionLevel.lowest())));
+            PlayerDataHandler.getTeamData().ifPresent(teamData -> teamData.addTeam(new PlayerTeam(name, id, Collections.emptySet())));
             source.sendSuccess(TranslationKeyProvider.chatMessage("team_created", ChatFormatting.GREEN, name), false);
             return COMMAND_SUCCESS;
         });

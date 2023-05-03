@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
@@ -62,7 +63,7 @@ public class PlayerData extends SavedData {
         removePlayerFromActive(SinglePlayer.createId(player.getStringUUID()));
     }
 
-    public void addActivePlayer(Player player, File playerFile) {
+    public void addActivePlayer(ServerPlayer player, File playerFile) {
         this.addActivePlayer(SinglePlayer.fromFile(playerFile, player));
     }
 
