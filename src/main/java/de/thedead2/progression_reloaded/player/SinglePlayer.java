@@ -36,6 +36,8 @@ public class SinglePlayer {
         this.player = player;
         this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId, this);
         this.isOffline = false;
+
+        this.progressionLevel.startListening();
     }
 
     public static SinglePlayer fromFile(File playerDataFile, ServerPlayer player) {
@@ -59,7 +61,7 @@ public class SinglePlayer {
     }
 
 
-    public Player getPlayer() {
+    public ServerPlayer getPlayer() {
         return player;
     }
 
@@ -84,8 +86,6 @@ public class SinglePlayer {
     }
 
     public void updateProgressionLevel(ProgressionLevel level){
-        this.progressionLevel.rewardPlayer();
-        this.progressionLevel.stopListening();
         this.progressionLevel = level;
         if(this.isInTeam()) this.team.updateProgressionLevel(this.progressionLevel, this);
         this.progressionLevel.startListening();

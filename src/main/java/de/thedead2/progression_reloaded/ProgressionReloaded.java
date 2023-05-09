@@ -1,20 +1,31 @@
 package de.thedead2.progression_reloaded;
 
 import de.thedead2.progression_reloaded.commands.ModCommand;
+import de.thedead2.progression_reloaded.data.criteria.UsedItemTrigger;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
+import de.thedead2.progression_reloaded.data.trigger.TickTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModRegistries;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.CrashReportCallables;
@@ -48,6 +59,11 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(this::onPlayerFileSave);
         forgeEventBus.addListener(this::onPlayerLoggedOut);
         forgeEventBus.addListener(this::onGameShuttingDown);
+        forgeEventBus.addListener(this::onItemUse);
+        forgeEventBus.addListener(this::onPlayerTick);
+        forgeEventBus.addListener(this::onPlayerWakeUp);
+        forgeEventBus.addListener(this::onEntityDeath);
+
         forgeEventBus.register(this);
     }
 
@@ -57,20 +73,18 @@ public class ProgressionReloaded {
     }
 
     private void onServerStarting(final ServerStartingEvent event){
-        MinecraftServer server = event.getServer();
-        ServerLevel level = server.overworld();
-        PlayerDataHandler.loadData(level);
+        PlayerDataHandler.loadData(event.getServer().overworld());
     }
 
-    private void onPlayerFileLoad(PlayerEvent.LoadFromFile event){
+    private void onPlayerFileLoad(final PlayerEvent.LoadFromFile event){
         PlayerDataHandler.loadPlayerData(event.getPlayerFile(MOD_ID), event.getEntity());
     }
 
-    private void onPlayerFileSave(PlayerEvent.SaveToFile event){
+    private void onPlayerFileSave(final PlayerEvent.SaveToFile event){
         PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
     }
 
-    private void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event){
+    private void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event){
         PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
     }
 
@@ -78,8 +92,37 @@ public class ProgressionReloaded {
         ModCommand.registerCommands(event.getDispatcher());
     }
 
-    private void onServerTick(final TickEvent.ServerTickEvent event){
-        PlayerDataHandler.tick();
+    private void onItemUse(final LivingEntityUseItemEvent.Start event){
+        if(event.getEntity() instanceof Player player){
+            SinglePlayer singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(player);
+            ProgressionLevel level = singlePlayer.getProgressionLevel();
+            level.fireTriggers(UsedItemTrigger.class, singlePlayer, event.getItem());
+            if(!level.canPlayerUseItem(event.getItem())){
+                event.setCanceled(true);
+            }
+        }
+    }
+
+    private void onPlayerTick(final LivingEvent.LivingTickEvent event){
+        if(event.getEntity() instanceof Player player) {
+            SinglePlayer singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(player);
+            ProgressionLevel level = singlePlayer.getProgressionLevel();
+            level.fireTriggers(TickTrigger.class, singlePlayer);
+        }
+    }
+
+    private void onPlayerWakeUp(final PlayerSleepInBedEvent event){
+        SinglePlayer singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(event.getEntity());
+        ProgressionLevel level = singlePlayer.getProgressionLevel();
+        level.fireTriggers(SleepTrigger.class, singlePlayer);
+    }
+
+    private void onEntityDeath(final LivingDeathEvent event){
+        if(event.getSource().getEntity() instanceof Player player){
+            SinglePlayer singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(player);
+            ProgressionLevel level = singlePlayer.getProgressionLevel();
+            level.fireTriggers(KillTrigger.class, singlePlayer, event.getEntity(), event.getSource());
+        }
     }
 
     private void onGameShuttingDown(final GameShuttingDownEvent event){

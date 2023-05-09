@@ -7,19 +7,20 @@ import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.SinglePlayer;
+import de.thedead2.progression_reloaded.util.ModHelper;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
-public class SimpleTrigger {
+public abstract class SimpleTrigger {
     private final Map<ProgressionLevel, Set<Listener<? extends SimpleTrigger>>> players = Maps.newIdentityHashMap();
-    public void addListener(ProgressionLevel progressionLevel, Listener<SimpleTrigger> listener){
+    public void addListener(ProgressionLevel progressionLevel, Listener<? extends SimpleTrigger> listener){
         this.players.computeIfAbsent(progressionLevel, (level) -> Sets.newHashSet()).add(listener);
     }
 
-    public void removeListener(ProgressionLevel progressionLevel, Listener<SimpleTrigger> listener){
+    public void removeListener(ProgressionLevel progressionLevel, Listener<? extends SimpleTrigger> listener){
         Set<Listener<? extends SimpleTrigger>> set = this.players.get(progressionLevel);
         if (set != null) {
             set.remove(listener);
@@ -30,6 +31,7 @@ public class SimpleTrigger {
     }
 
     protected void trigger(SinglePlayer player, Predicate<SinglePlayer> triggerTest) {
+        ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
         ProgressionLevel progressionLevel = player.getProgressionLevel();
         Set<Listener<? extends SimpleTrigger>> set = this.players.get(progressionLevel);
         if (set != null && !set.isEmpty()) {
@@ -47,6 +49,9 @@ public class SimpleTrigger {
             }
         }
     }
+
+    public abstract void trigger(SinglePlayer player, Object... data);
+
 
     public static class Listener<T extends SimpleTrigger> {
         private final T trigger;

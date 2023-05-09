@@ -1,9 +1,13 @@
 package de.thedead2.progression_reloaded.util;
 
+import de.thedead2.progression_reloaded.data.criteria.UsedItemTrigger;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.IForgeRegistry;
@@ -22,6 +26,8 @@ public class ModRegistries {
         //Trigger and criteria per Registry
         //ProgressionLevel per Registry
     }
+
+
 
     public static class Keys{
         public static final ResourceKey<Registry<ProgressionLevel>> LEVEL = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "level"));

@@ -1,16 +1,21 @@
 package de.thedead2.progression_reloaded.data.level;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.criteria.ICriterion;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
+import de.thedead2.progression_reloaded.data.rewards.PlaceBlockReward;
 import de.thedead2.progression_reloaded.data.rewards.RewardStrategy;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Blocks;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -23,6 +28,8 @@ public class ProgressionLevel {
     private final Set<IReward> rewards = new HashSet<>();
     private final RewardStrategy rewardStrategy;
     private final List<ProgressionQuest> quests;
+    private final Set<ProgressionQuest> activeQuests = new HashSet<>();
+    private final Map<ResourceLocation, IAbility> abilities = new HashMap<>();
     private final Map<ProgressionQuest, QuestProgress> mainQuests = new HashMap<>();
     private final Map<ProgressionQuest, QuestProgress> sideQuests = new HashMap<>();
     @Nullable private final ProgressionLevel previousLevel;
@@ -30,6 +37,7 @@ public class ProgressionLevel {
 
     private final SinglePlayer player;
     private final Set<ProgressionQuest> progressChanged = Sets.newLinkedHashSet();
+    private boolean rewarded = false;
 
     public ProgressionLevel(int index, String name, ResourceLocation id, RewardStrategy rewardStrategy, List<ProgressionQuest> quests, @Nullable ProgressionLevel previousLevel, @Nullable ProgressionLevel nextLevel, SinglePlayer player) {
         this.index = index;
@@ -40,6 +48,8 @@ public class ProgressionLevel {
         this.previousLevel = previousLevel;
         this.nextLevel = nextLevel;
         this.player = player;
+
+        this.rewards.add(new PlaceBlockReward(Blocks.AMETHYST_BLOCK.defaultBlockState()));
     }
 
     public ProgressionLevel(String name, ResourceLocation id, SinglePlayer player, RewardStrategy rewardStrategy, ProgressionLevel nextLevel, List<ProgressionQuest> quests) {
@@ -51,11 +61,11 @@ public class ProgressionLevel {
     }
 
     public static ProgressionLevel lowest(SinglePlayer player) {
-        return new ProgressionLevel("base", new ResourceLocation(ModHelper.MOD_ID, "base_level"), player, RewardStrategy.ALL, null, Collections.emptyList());
+        return new ProgressionLevel("base", new ResourceLocation(ModHelper.MOD_ID, "base_level"), player, RewardStrategy.ALL, null, List.of(ProgressionQuest.Test(), ProgressionQuest.Test2()));
     }
 
     public void startListening(){
-        this.quests.forEach(this::registerListeners);
+        this.updateActiveQuests();
     }
 
 
@@ -83,15 +93,7 @@ public class ProgressionLevel {
 
     public void rewardPlayer() {
         this.rewardStrategy.reward(this.rewards, this.player);
-    }
-
-    public void tick() {
-        if(this.isDone()){
-            this.player.updateProgressionLevel(this.nextLevel);
-        }
-        else {
-
-        }
+        this.rewarded = true;
     }
 
     public QuestProgress getOrStartProgress(ProgressionQuest quest) {
@@ -155,18 +157,47 @@ public class ProgressionLevel {
             flag = true;
             if (!flag1 && questProgress.isDone()) {
                 quest.rewardPlayer(this.player);
+                quest.setActive(false);
             }
         }
 
         return flag;
     }
 
+    private void updateActiveQuests() {
+        if(this.isDone()){
+            if(!this.hasBeenRewarded()){
+                ModHelper.LOGGER.debug("Completed {} Progression Level", id);
+                this.rewardPlayer();
+                this.stopListening();
+                if(this.nextLevel != null) this.player.updateProgressionLevel(this.nextLevel);
+            }
+            return;
+        }
+        activeQuests.forEach(progressionQuest -> {
+            if(this.getOrStartProgress(progressionQuest).isDone()){
+                this.unregisterListeners(progressionQuest);
+                progressionQuest.setActive(false);
+            }
+        });
+        activeQuests.removeIf(progressionQuest -> !progressionQuest.isActive());
+        quests.stream().filter(progressionQuest -> (!progressionQuest.hasParent() && !progressionQuest.isDone(this)) || (progressionQuest.isParentDone(this) && !progressionQuest.isDone(this))).forEach(quest -> quest.setActive(true));
+        activeQuests.addAll(quests.stream().filter(ProgressionQuest::isActive).toList());
+        activeQuests.forEach(this::registerListeners);
+    }
+
+    private boolean hasBeenRewarded() {
+        return this.rewarded;
+    }
+
     public boolean revoke(ProgressionQuest quest, String criterionName) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest);
-        if (questProgress.revokeProgress(criterionName)) {
+        if (questProgress.revokeProgress(criterionName) && quest.isParentDone(this)) {
+            quest.setActive(true);
             this.registerListeners(quest);
             this.progressChanged.add(quest);
+            this.updateActiveQuests();
             flag = true;
         }
 
@@ -228,6 +259,29 @@ public class ProgressionLevel {
     }
 
     public void stopListening() {
-        this.quests.forEach(this::unregisterListeners);
+        this.activeQuests.forEach(this::unregisterListeners);
+    }
+
+    public boolean canPlayerUseItem(ItemStack item) {
+        return getAbilityFor("item").isPlayerAbleTo(item);
+    }
+
+    private IAbility getAbilityFor(String name){
+        return abilities.get(IAbility.createId(name));
+    }
+
+    public ImmutableList<ProgressionQuest> getQuests() {
+        return ImmutableList.copyOf(this.quests);
+    }
+
+
+    public <T extends SimpleTrigger> void fireTriggers(Class<T> triggerClass, SinglePlayer player, Object... data) {
+        activeQuests.forEach(quest -> quest.getCriteria().forEach((s, iCriterion) -> {
+            SimpleTrigger trigger = iCriterion.getTrigger();
+            if (trigger.getClass().equals(triggerClass)){
+                trigger.trigger(player, data);
+            }
+        }));
+        this.updateActiveQuests();
     }
 }

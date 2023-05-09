@@ -37,11 +37,4 @@ public abstract class PlayerDataHandler {
     public static Optional<PlayerData> getPlayerData(){
         return Optional.ofNullable(playerData);
     }
-
-    public static void tick() {
-        getPlayerData().ifPresent(playerData1 -> playerData1.allPlayersData().forEach(singlePlayer -> {
-            if(!singlePlayer.isInTeam()) singlePlayer.getProgressionLevel().tick();
-        }));
-        getTeamData().ifPresent(teamData1 -> teamData1.allTeams().forEach(team -> team.getProgressionLevel().tick()));
-    }
 }
