@@ -9,6 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import javax.annotation.Nullable;
+
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 
 public class CriterionProgress {
@@ -60,5 +63,21 @@ public class CriterionProgress {
         } catch (ParseException parseexception) {
             throw new JsonSyntaxException("Invalid datetime: " + pDateTime, parseexception);
         }
+    }
+    public static CriterionProgress loadFromCompoundTag(CompoundTag tag) {
+        CriterionProgress criterionprogress = new CriterionProgress();
+        String date = tag.getString("obtained");
+        try {
+            if(!date.equals("null")) criterionprogress.obtained = DATE_FORMAT.parse(date);
+            return criterionprogress;
+        } catch (ParseException parseexception) {
+            throw new JsonSyntaxException("Invalid datetime: " + date, parseexception);
+        }
+    }
+
+    public CompoundTag saveToCompoundTag() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("obtained", this.obtained != null ? DATE_FORMAT.format(this.obtained) : "null");
+        return tag;
     }
 }

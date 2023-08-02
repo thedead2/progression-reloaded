@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.util.exceptions;
 
 import com.google.common.io.ByteStreams;
 import de.thedead2.progression_reloaded.ProgressionReloaded;
+import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import de.thedead2.progression_reloaded.util.logger.ConsoleColors;
 import joptsimple.internal.Strings;
 import net.minecraft.CrashReport;
@@ -33,6 +34,7 @@ public class CrashHandler implements ISystemReportExtender {
     private File activeFile;
     private final Set<CrashReportException> crashReportExceptions = new HashSet<>();
     private final List<CrashReportSection> sections = new ArrayList<>();
+    private final Set<Runnable> listeners = new HashSet<>();
 
     private CrashHandler(){
         instance = this;
@@ -52,13 +54,24 @@ public class CrashHandler implements ISystemReportExtender {
 
     @Override
     public String get() {
-        StringBuilder stringBuilder = new StringBuilder();
-        this.sections.forEach(stringBuilder::append);
-        stringBuilder.append("\n\n");
-        return stringBuilder.toString();
+        try {
+            StringBuilder stringBuilder = new StringBuilder();
+            this.sections.forEach(stringBuilder::append);
+            stringBuilder.append("\n\n");
+            return stringBuilder.toString();
+
+        }
+        catch (Throwable throwable){
+            return "\n\tERROR: " + throwable + "\n";
+        }
     }
 
-    private static void onCrash(){
+    private void onCrash(){
+        this.listeners.forEach(Runnable::run);
+    }
+
+    public void registerCrashListener(Runnable runnable){
+        this.listeners.add(runnable);
     }
 
     private void gatherDetails(){
@@ -234,25 +247,11 @@ public class CrashHandler implements ISystemReportExtender {
         Bootstrap.realStdoutPrintln(crashReport.getFriendlyReport());
     }
 
-    public static String getCallerCallerClassName() {
-        StackTraceElement[] stElements = Thread.currentThread().getStackTrace();
-        String callerClassName = null;
-        for (int i=1; i<stElements.length; i++) {
-            StackTraceElement ste = stElements[i];
-            if (!ste.getClassName().equals(CrashHandler.class.getName())&& ste.getClassName().indexOf("java.lang.Thread")!=0) {
-                if (callerClassName==null) {
-                    callerClassName = ste.getClassName();
-                } else if (!callerClassName.equals(ste.getClassName())) {
-                    String clazzName = ste.getClassName();
-                    return clazzName.substring(clazzName.lastIndexOf(".") + 1);
-                }
-            }
-        }
-        return null;
-    }
+
 
     public void handleException(String description, String callingClass, Throwable e, Level level) {
-        String exceptionClass = callingClass != null ? callingClass : getCallerCallerClassName();
+        String callingClassName = ReflectionHelper.getCallerCallerClassName();
+        String exceptionClass = callingClass != null ? callingClass : callingClassName.substring(callingClassName.lastIndexOf(".") + 1);;
         Marker marker = new MarkerManager.Log4jMarker(exceptionClass);
         if (level.equals(Level.DEBUG))LOGGER.debug(marker, description);
         else if(level.equals(Level.WARN)) LOGGER.warn(marker, description);
@@ -339,6 +338,7 @@ public class CrashHandler implements ISystemReportExtender {
         }
 
         private Throwable trimStacktrace(Throwable throwable, int length) {
+            if(length > throwable.getStackTrace().length) return throwable;
             StackTraceElement[] stackTraceElements = throwable.getStackTrace();
             StackTraceElement[] astacktraceelement = new StackTraceElement[length];
             System.arraycopy(stackTraceElements, 0, astacktraceelement, 0, astacktraceelement.length);
@@ -373,7 +373,7 @@ public class CrashHandler implements ISystemReportExtender {
 
         @Override
         public String toString() {
-            return super.toString() + "\n" +
+            return super.toString() + "\n\n" +
                     Strings.repeat('-', 200);
         }
     }
@@ -454,7 +454,13 @@ public class CrashHandler implements ISystemReportExtender {
             stringBuilder1.append("\t").append(name);
             if(in != null){
                 stringBuilder1.append(": ");
-                stringBuilder1.append(in);
+                if (in instanceof List<?> list) {
+                    list.forEach((o) -> {
+                        stringBuilder1.append("\n\t\t\t");
+                        stringBuilder1.append(o);
+                    });
+                }
+                else stringBuilder1.append(in);
             }
             return stringBuilder1.toString();
         }

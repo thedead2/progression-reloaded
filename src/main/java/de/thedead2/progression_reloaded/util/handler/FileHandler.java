@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.util.handler;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.exceptions.FileCopyException;
+import org.apache.logging.log4j.Level;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,45 +13,41 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public abstract class FileHandler extends ModHelper {
 
-    private final File directory;
-
-    public FileHandler(File directory){
-        this.directory = directory;
-    }
-
     public static void checkForMainDirectories() {
         createDirectory(DIR_PATH.toFile());
+        createDirectory(LEVELS_PATH.toFile());
     }
 
-    public void start() {
-        if (this.directory.exists()){
-            File[] folders = this.directory.listFiles();
+    public static void readDirectory(File directory, Consumer<File> fileReader) {
+        if (directory.exists()){
+            File[] folders = directory.listFiles();
 
             assert folders != null;
             if(Arrays.stream(folders).anyMatch(File::isFile)){
-                this.readFiles(this.directory);
+                fileReader.accept(directory);
             }
 
             for(File subfolder : folders){
                 if(subfolder.isDirectory()){
-                    this.readFiles(subfolder);
+                    fileReader.accept(subfolder);
 
-                    readSubDirectories(subfolder);
+                    readSubDirectories(subfolder, fileReader);
                 }
             }
         }
     }
 
 
-    private void readSubDirectories(File folderIn){
+    private static void readSubDirectories(File folderIn, Consumer<File> fileReader){
         for(File folder: Objects.requireNonNull(folderIn.listFiles())){
             if(folder.isDirectory()){
-                this.readFiles(folder);
-                readSubDirectories(folder);
+                fileReader.accept(folder);
+                readSubDirectories(folder, fileReader);
             }
         }
     }
@@ -65,8 +62,8 @@ public abstract class FileHandler extends ModHelper {
                 return true;
             }
             else {
-                LOGGER.fatal("Failed to create directory at: " + directoryIn.toPath());
-                throw new RuntimeException("Unable to create directory! Maybe something is blocking file access?!");
+                CrashHandler.getInstance().handleException("Failed to create directory at: " + directoryIn.toPath(), new RuntimeException("Unable to create directory! Maybe something is blocking file access?!"), Level.FATAL);
+                return false;
             }
         }
         else {
@@ -99,7 +96,7 @@ public abstract class FileHandler extends ModHelper {
 
 
     public static void copyModFiles(String pathIn, Path pathOut, String filter) throws FileCopyException {
-        Path filespath = THIS_MOD_FILE.findResource(pathIn);
+        Path filespath = THIS_MOD_FILE().findResource(pathIn);
 
         try (Stream<Path> paths = Files.list(filespath)) {
             paths.filter(path -> path.toString().endsWith(filter)).forEach(path -> {
@@ -120,6 +117,4 @@ public abstract class FileHandler extends ModHelper {
             throw copyException;
         }
     }
-
-    protected abstract void readFiles(File directory);
 }

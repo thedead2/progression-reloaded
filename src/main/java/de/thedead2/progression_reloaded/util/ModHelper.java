@@ -18,24 +18,31 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 
 
 public abstract class ModHelper {
+    public static final ModProperties MOD_PROPERTIES = ModProperties.fromInputStream(ReflectionHelper.findResource("META-INF/mod.properties"));
 
     public static final String MOD_ID = "progression_reloaded";
-    public static final IModFile THIS_MOD_FILE = ModList.get().getModFileById(MOD_ID).getFile();
-    public static final ModContainer THIS_MOD_CONTAINER = ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for id: " + MOD_ID));
-    public static final ModProperties MOD_PROPERTIES = ModProperties.fromPath(THIS_MOD_FILE.findResource("META-INF/mod.properties"));
+    public static IModFile THIS_MOD_FILE() {
+            return ModList.get().getModFileById(MOD_ID).getFile();
+    }
+    public static ModContainer THIS_MOD_CONTAINER(){
+        return ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for id: " + MOD_ID));
+    }
 
     public static final String MOD_VERSION = MOD_PROPERTIES.getProperty("mod_version");
-    public static final String MOD_NAME = "Progression Reloaded";
+    public static final String MOD_NAME = MOD_PROPERTIES.getProperty("mod_name");
     public static final String MOD_UPDATE_LINK = "";
     public static final String MOD_ISSUES_LINK = "";
     public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
     public static final char PATH_SEPARATOR = File.separatorChar;
     public static final Path DIR_PATH = GAME_DIR.resolve(MOD_ID);
+    public static final Path LEVELS_PATH = DIR_PATH.resolve("levels");
+    public static final Path QUESTS_PATH = DIR_PATH.resolve("quests");
 
 
     public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
@@ -45,14 +52,14 @@ public abstract class ModHelper {
     }
 
     public static void reloadAll(MinecraftServer server){
-        Timer timer = new Timer(true);
+        Timer timer = new Timer();
         LOGGER.info("Reloading...");
 
         init();
         reloadGameData(server);
 
         LOGGER.info("Reload completed in {} ms!", timer.getTime());
-        timer.stop(true);
+        timer.stop();
     }
 
 

@@ -2,9 +2,9 @@ package de.thedead2.progression_reloaded.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import de.thedead2.progression_reloaded.player.KnownPlayer;
+import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.PlayerTeam;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -21,13 +21,13 @@ import static de.thedead2.progression_reloaded.commands.ModCommand.COMMAND_SUCCE
 
 public class TeamCommands {
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_TEAMS = (context, suggestionsBuilder) -> {
-        Collection<PlayerTeam> teams = PlayerDataHandler.getTeamData().orElseThrow().allTeams();
+        Collection<PlayerTeam> teams = PlayerDataHandler.allTeams();
         return SharedSuggestionProvider.suggest(teams.stream().map(PlayerTeam::getName), suggestionsBuilder);
     };
 
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_MEMBERS = (context, suggestionsBuilder) -> {
         String teamName = StringArgumentType.getString(context, "team");
-        var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(teamName);
+        var team = PlayerDataHandler.getTeam(teamName);
 
         Collection<KnownPlayer> members = team != null ? team.getMembers() : Collections.emptySet();
         return SharedSuggestionProvider.suggest(members.stream().map(KnownPlayer::name), suggestionsBuilder);
@@ -67,7 +67,7 @@ public class TeamCommands {
         ModCommand.Builder.newModCommand("teams/[team]/add/[player]", Map.of("[team]", StringArgumentType.string(), "[player]", EntityArgument.players()), Map.of("[team]", SUGGEST_TEAMS), context -> {
             var source = context.getSource();
             String teamName = StringArgumentType.getString(context, "team");
-            var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(teamName);
+            var team = PlayerDataHandler.getTeam(teamName);
             if(team == null){
                 source.sendFailure(TranslationKeyProvider.chatMessage("unknown_team", ChatFormatting.RED, teamName));
                 return COMMAND_FAILURE;
@@ -77,7 +77,7 @@ public class TeamCommands {
             player.forEach(serverPlayer -> players.add(KnownPlayer.fromPlayer(serverPlayer)));
 
             Set<KnownPlayer> invalidPlayers = new HashSet<>();
-            PlayerDataHandler.getTeamData().orElseThrow().allTeams().forEach(team1 -> players.forEach(knownPlayer -> {
+            PlayerDataHandler.allTeams().forEach(team1 -> players.forEach(knownPlayer -> {
                 if(team1.isPlayerInTeam(knownPlayer)) {
                     invalidPlayers.add(knownPlayer);
                     source.sendFailure(TranslationKeyProvider.chatMessage("player_already_in_other_team", ChatFormatting.RED, knownPlayer.name(), teamName));
@@ -92,14 +92,14 @@ public class TeamCommands {
         ModCommand.Builder.newModCommand("teams/all", context -> {
             var source = context.getSource();
             source.sendSuccess(TranslationKeyProvider.chatMessage("known_teams"), false);
-            PlayerDataHandler.getTeamData().orElseThrow().allTeams().forEach(team -> source.sendSuccess(Component.literal(team.getName()), false));
+            PlayerDataHandler.allTeams().forEach(team -> source.sendSuccess(Component.literal(team.getName()), false));
             return COMMAND_SUCCESS;
         });
 
         ModCommand.Builder.newModCommand("teams/[team]/remove/[player]", Map.of("[team]", StringArgumentType.string(), "[player]", EntityArgument.players()), Map.of("[team]", SUGGEST_TEAMS, "[player]", SUGGEST_MEMBERS), context -> {
             var source = context.getSource();
             String teamName = StringArgumentType.getString(context, "team");
-            var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(teamName);
+            var team = PlayerDataHandler.getTeam(teamName);
             if(team == null){
                 source.sendFailure(TranslationKeyProvider.chatMessage("unknown_team", ChatFormatting.RED, teamName));
                 return COMMAND_FAILURE;
@@ -123,7 +123,7 @@ public class TeamCommands {
         ModCommand.Builder.newModCommand("teams/[team]/members", Map.of("[team]", StringArgumentType.string()), Map.of("[team]", SUGGEST_TEAMS), context -> {
             var source = context.getSource();
             String teamName = StringArgumentType.getString(context, "team");
-            var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(teamName);
+            var team = PlayerDataHandler.getTeam(teamName);
             if(team == null){
                 source.sendFailure(TranslationKeyProvider.chatMessage("unknown_team", ChatFormatting.RED, teamName));
                 return COMMAND_FAILURE;

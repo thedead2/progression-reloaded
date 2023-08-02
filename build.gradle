@@ -88,6 +88,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     minecraft 'net.minecraftforge:forge:1.19.3-44.1.0'
     implementation('com.google.guava:guava:31.1-jre')
+    implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 

@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
-import de.thedead2.progression_reloaded.player.PlayerTeam;
-import de.thedead2.progression_reloaded.player.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
+import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 
 import java.util.Iterator;
 import java.util.Random;

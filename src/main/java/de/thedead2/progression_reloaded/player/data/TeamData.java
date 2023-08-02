@@ -1,7 +1,8 @@
-package de.thedead2.progression_reloaded.player;
+package de.thedead2.progression_reloaded.player.data;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.saveddata.SavedData;

@@ -1,11 +1,17 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
 
 public class TeleportReward implements IReward{
-
-
+    public static final ResourceLocation ID = IReward.createId("teleport");
     private final TeleportDestination destination;
 
     public TeleportReward(TeleportDestination destination) {
@@ -17,15 +23,29 @@ public class TeleportReward implements IReward{
         this.destination.teleportPlayer(player);
     }
 
+    public static TeleportReward fromJson(JsonElement jsonObject){
+        return new TeleportReward(TeleportDestination.fromJson(jsonObject.getAsJsonObject()));
+    }
+
+    @Override
+    public JsonElement toJson() {
+        return this.destination.toJson();
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return ID;
+    }
+
     public static class TeleportDestination{
         private final double pX;
         private final double pY;
         private final double pZ;
         private final float yaw;
         private final float pitch;
-        private final ServerLevel level;
+        private final ResourceKey<Level> level;
 
-        public TeleportDestination(double pX, double pY, double pZ, float yaw, float pitch, ServerLevel level) {
+        public TeleportDestination(double pX, double pY, double pZ, float yaw, float pitch, ResourceKey<Level> level) {
             this.pX = pX;
             this.pY = pY;
             this.pZ = pZ;
@@ -34,8 +54,34 @@ public class TeleportReward implements IReward{
             this.level = level;
         }
 
+        public static TeleportDestination fromJson(JsonObject jsonObject) {
+            double pX, pY, pZ;
+            float yaw, pitch;
+            ResourceKey<Level> level;
+            pX = jsonObject.get("x").getAsDouble();
+            pY = jsonObject.get("y").getAsDouble();
+            pZ = jsonObject.get("z").getAsDouble();
+            yaw = jsonObject.get("yaw").getAsFloat();
+            pitch = jsonObject.get("pitch").getAsFloat();
+            level = ResourceKey.create(Registries.DIMENSION, new ResourceLocation(jsonObject.get("level").getAsString()));
+
+            return new TeleportDestination(pX, pY, pZ, yaw, pitch, level);
+        }
+
+        public JsonObject toJson(){
+            JsonObject jsonObject = new JsonObject();
+            jsonObject.addProperty("x", this.pX);
+            jsonObject.addProperty("y", this.pY);
+            jsonObject.addProperty("z", this.pZ);
+            jsonObject.addProperty("yaw", this.yaw);
+            jsonObject.addProperty("pitch", this.pitch);
+            jsonObject.addProperty("level", this.level.location().toString());
+
+            return jsonObject;
+        }
+
         public void teleportPlayer(ServerPlayer player){
-            if(level != null) player.teleportTo(level, pX, pY, pZ, yaw, pitch);
+            if(level != null) player.teleportTo(player.getServer().getLevel(level), pX, pY, pZ, yaw, pitch);
             else player.teleportTo(pX, pY, pZ);
         }
     }

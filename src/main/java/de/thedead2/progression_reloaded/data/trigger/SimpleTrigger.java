@@ -1,88 +1,148 @@
 package de.thedead2.progression_reloaded.data.trigger;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
+import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
-import de.thedead2.progression_reloaded.player.SinglePlayer;
+import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
+import org.apache.logging.log4j.Level;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class SimpleTrigger {
-    private final Map<ProgressionLevel, Set<Listener<? extends SimpleTrigger>>> players = Maps.newIdentityHashMap();
-    public void addListener(ProgressionLevel progressionLevel, Listener<? extends SimpleTrigger> listener){
-        this.players.computeIfAbsent(progressionLevel, (level) -> Sets.newHashSet()).add(listener);
+    protected final ResourceLocation id;
+    protected final PlayerPredicate player;
+    private final Multimap<SinglePlayer, Listener> playerListeners = HashMultimap.create();
+    public void addListener(SinglePlayer player, Listener listener){
+        if(!this.playerListeners.containsKey(player) || !this.playerListeners.get(player).contains(listener)) this.playerListeners.put(player, listener);
     }
 
-    public void removeListener(ProgressionLevel progressionLevel, Listener<? extends SimpleTrigger> listener){
-        Set<Listener<? extends SimpleTrigger>> set = this.players.get(progressionLevel);
-        if (set != null) {
-            set.remove(listener);
-            if (set.isEmpty()) {
-                this.players.remove(progressionLevel);
+    public void removeListener(SinglePlayer player, Listener listener){
+        this.playerListeners.get(player).remove(listener);
+        if(this.playerListeners.get(player).isEmpty()) this.playerListeners.remove(player, listener);
+    }
+
+    public static void register(ResourceLocation id, Class<SimpleTrigger> trigger){
+        DynamicRegistries.register(id, trigger, DynamicRegistries.PROGRESSION_TRIGGER, SimpleTrigger.class);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends SimpleTrigger> T fromJson(JsonElement jsonElement) {
+        if(jsonElement.isJsonObject()){
+            ResourceLocation resourceLocation = new ResourceLocation(((JsonObject) jsonElement).get("id").getAsString());
+            Class<? extends SimpleTrigger> triggerClass = DynamicRegistries.PROGRESSION_TRIGGER.get(resourceLocation);
+            try {
+                return (T) triggerClass.getDeclaredMethod("fromJson", JsonElement.class).invoke(null, ((JsonObject) jsonElement).get("data").getAsJsonObject());
+            }
+            catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e){
+                throw new RuntimeException(e);
             }
         }
+        else throw new IllegalArgumentException("Can't read data from: " + jsonElement);
     }
 
-    protected void trigger(SinglePlayer player, Predicate<SinglePlayer> triggerTest) {
-        ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
+    protected SimpleTrigger(ResourceLocation id, PlayerPredicate player){
+        this.id = id;
+        this.player = player;
+    }
+
+    protected void trigger(SinglePlayer player, Predicate<SimpleTrigger> triggerPredicate) {
         ProgressionLevel progressionLevel = player.getProgressionLevel();
-        Set<Listener<? extends SimpleTrigger>> set = this.players.get(progressionLevel);
-        if (set != null && !set.isEmpty()) {
-            List<Listener<? extends SimpleTrigger>> list = Lists.newArrayList();
+        List<Listener> list = Lists.newArrayList();
 
-            for(Listener<? extends SimpleTrigger> listener : set) {
-                //SimpleTrigger trigger = listener.getTrigger();
-                if (triggerTest.test(player)) {
-                    list.add(listener);
-                }
+        for(Listener listener : this.playerListeners.get(player)) {
+            if (triggerPredicate.test(this) && this.player.matches(player)) {
+                list.add(listener);
             }
+        }
 
-            for (Listener<? extends SimpleTrigger> listener1 : list) {
-                listener1.award(progressionLevel);
-            }
+        for (Listener listener1 : list) {
+            ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
+            listener1.award(progressionLevel, player);
         }
     }
 
     public abstract void trigger(SinglePlayer player, Object... data);
 
+    protected static void fireTrigger(Class<? extends SimpleTrigger> triggerClass, Entity entity, Object... addArgs){
+        if(entity instanceof Player player){
+            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+            ProgressionLevel level = singlePlayer.getProgressionLevel();
+            level.getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs);
+        }
+    }
 
-    public static class Listener<T extends SimpleTrigger> {
-        private final T trigger;
+    public Iterable<ITriggerPredicate<?>> getPredicates(){
+        Stream<ITriggerPredicate<?>> stream = Stream.of(this.player);
+        return Stream.concat(stream,
+                Arrays.stream(this.getClass().getDeclaredFields())
+                .filter(field -> Arrays.stream(field.getType().getInterfaces()).anyMatch(aClass -> aClass.getName().equals(ITriggerPredicate.class.getName())))
+                .map(field -> {
+                    try {
+                        field.setAccessible(true);
+                        return (ITriggerPredicate<?>) field.get(this);
+                    }
+                    catch (IllegalAccessException e) {
+                        CrashHandler.getInstance().handleException("Unable to get field value of field: " + field.getName(), e, Level.ERROR);
+                        return null;
+                    }
+                })).collect(Collectors.toList());
+    }
+    public JsonElement toJson(){
+        JsonObject jsonObject = new JsonObject();
+            jsonObject.add("id", new JsonPrimitive(this.id.toString()));
+            JsonObject data = new JsonObject();
+                data.add("player", this.player.toJson());
+                this.toJson(data);
+            jsonObject.add("data", data);
+        return jsonObject;
+    }
+    public abstract void toJson(JsonObject data);
+
+    public static ResourceLocation createId(String name){
+        return new ResourceLocation(ModHelper.MOD_ID, name + "_trigger");
+    }
+
+    public static class Listener {
         private final ProgressionQuest quest;
         private final String criterion;
 
-        public Listener(T trigger, ProgressionQuest quest, String criterionName) {
-            this.trigger = trigger;
+        public Listener(ProgressionQuest quest, String criterionName) {
             this.quest = quest;
             this.criterion = criterionName;
         }
 
-        public T getTrigger() {
-            return this.trigger;
-        }
-
-        public void award(ProgressionLevel progressionLevel) {
-            progressionLevel.award(this.quest, this.criterion);
+        public void award(ProgressionLevel progressionLevel, SinglePlayer player) {
+            progressionLevel.getQuestManager().award(this.quest, this.criterion, player);
         }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            Listener<?> listener = (Listener<?>) o;
-            return Objects.equal(trigger, listener.trigger) && Objects.equal(quest, listener.quest) && Objects.equal(criterion, listener.criterion);
+            Listener listener = (Listener) o;
+            return Objects.equal(quest, listener.quest) && Objects.equal(criterion, listener.criterion);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(trigger, quest, criterion);
+            return Objects.hashCode(quest, criterion);
         }
     }
 }

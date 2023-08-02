@@ -8,7 +8,7 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
+public class ClientOpenProgressionBookPacket implements ModNetworkPacket{
 
     public ClientOpenProgressionBookPacket(){
     }

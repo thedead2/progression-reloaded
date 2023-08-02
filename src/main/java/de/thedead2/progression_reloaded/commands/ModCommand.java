@@ -6,7 +6,6 @@ import com.mojang.brigadier.arguments.ArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import de.thedead2.progression_reloaded.util.CommandWrapperFunction;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
@@ -23,7 +22,7 @@ import java.util.Map;
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
-public class ModCommand {
+public class ModCommand { //TODO: better commands + new commands
 
     public static final int COMMAND_FAILURE = -1;
     public static final int COMMAND_SUCCESS = 1;
@@ -42,6 +41,7 @@ public class ModCommand {
         TeamCommands.register();
         PlayerCommands.register();
         TestCommands.register();
+        DevCommands.register();
 
         commands.forEach(modCommand -> {
             dispatcher.register(modCommand.getShortLA());

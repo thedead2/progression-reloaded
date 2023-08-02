@@ -1,30 +1,52 @@
 package de.thedead2.progression_reloaded.data.abilities;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
-public class UseItemAbility implements IAbility{
-    private final Set<ItemStack> usableItems = new HashSet<>();
-    private final boolean blacklist;
-
-    public UseItemAbility(boolean blacklist, Collection<ItemStack> items){
-        this.blacklist = blacklist;
-        usableItems.addAll(items);
+public class UseItemAbility extends ListAbility<ItemStack> {
+    public static final ResourceLocation ID = IAbility.createId("used_item");
+    protected UseItemAbility(boolean blacklist, Collection<ItemStack> usable) {
+        super(blacklist, usable);
     }
+
     @Override
     public ResourceLocation getId() {
-        return IAbility.createId("item");
+        return ID;
     }
 
     @Override
-    public <T> boolean isPlayerAbleTo(T t) {
-        if(t instanceof ItemStack itemStack){
-            return blacklist == usableItems.contains(itemStack);
-        }
-        return false;
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("blacklist", this.blacklist);
+        JsonArray jsonArray = new JsonArray();
+        this.usable.forEach(itemStack -> jsonArray.add(Item.getId(itemStack.getItem())));
+        jsonObject.add("usable", jsonArray);
+        return jsonObject;
+    }
+
+    public static UseItemAbility fromJson(JsonElement jsonElement){
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        boolean blacklist = jsonObject.get("blacklist").getAsBoolean();
+        Set<ItemStack> itemStacks = new HashSet<>();
+        JsonArray jsonArray = jsonObject.get("usable").getAsJsonArray();
+        jsonArray.forEach(jsonElement1 -> itemStacks.add(Item.byId(jsonElement1.getAsInt()).getDefaultInstance()));
+        return new UseItemAbility(blacklist, itemStacks);
+    }
+
+    @SubscribeEvent
+    public static void onItemUse(final LivingEntityUseItemEvent.Start event){
+        AbilityManager.handleAbilityRequest(UseItemAbility.class, event.getEntity(), event.getItem(), item -> event.setCanceled(true));
     }
 }

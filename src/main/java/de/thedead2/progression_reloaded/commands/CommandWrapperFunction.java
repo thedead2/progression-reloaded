@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.util;
+package de.thedead2.progression_reloaded.commands;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;

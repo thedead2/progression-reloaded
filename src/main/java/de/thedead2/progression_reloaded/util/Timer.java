@@ -3,21 +3,14 @@ package de.thedead2.progression_reloaded.util;
 import org.apache.commons.lang3.time.StopWatch;
 
 public class Timer extends StopWatch {
-
     public Timer(){
-        this(false);
-    }
-
-    public Timer(boolean start){
-        if(start){
-            this.start();
-        }
+        this.start();
     }
 
     @Override
     public void start() {
         if(this.isStarted()){
-            this.stop(true);
+            this.stop();
             super.start();
         }
         else {
@@ -27,9 +20,8 @@ public class Timer extends StopWatch {
         }
     }
 
-    public void stop(boolean reset) {
-        this.stop();
-        if(reset)
-            this.reset();
+    public void stop() {
+        super.stop();
+        this.reset();
     }
 }

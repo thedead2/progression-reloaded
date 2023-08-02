@@ -1,8 +1,10 @@
-package de.thedead2.progression_reloaded.player;
+package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -17,6 +19,7 @@ public class PlayerTeam {
     private ProgressionLevel progressionLevel;
     private final Set<SinglePlayer> activeMembers = new HashSet<>();
     private final Set<KnownPlayer> knownMembers = new HashSet<>();
+    private final Map<ResourceLocation, IAbility<?>> teamAbilities = new HashMap<>();
 
     public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, ProgressionLevel level) {
         this.teamName = teamName;
@@ -37,11 +40,11 @@ public class PlayerTeam {
         CompoundTag members = tag.getCompound("members");
         List<KnownPlayer> memberIds = new ArrayList<>();
         members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
-        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level), !memberIds.isEmpty() ? PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(memberIds.get(0)) : null));
+        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
     }
 
     public static PlayerTeam fromRegistry(String teamName, ServerPlayer player) {
-        var team = PlayerDataHandler.getTeamData().orElseThrow().getTeam(ResourceLocation.tryParse(teamName));
+        var team = PlayerDataHandler.getTeam(ResourceLocation.tryParse(teamName));
         if(team != null && team.accept(player)) return team;
         else return null;
     }
@@ -112,7 +115,7 @@ public class PlayerTeam {
 
     private void addPlayer(KnownPlayer knownPlayer) {
         this.knownMembers.add(knownPlayer);
-        this.addActivePlayer(PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(knownPlayer));
+        this.addActivePlayer(PlayerDataHandler.getActivePlayer(knownPlayer));
     }
 
     public void removePlayers(Collection<KnownPlayer> players) {
@@ -128,5 +131,27 @@ public class PlayerTeam {
 
     public ImmutableCollection<KnownPlayer> getMembers() {
         return ImmutableSet.copyOf(this.knownMembers);
+    }
+
+    public void addAbilities(Collection<IAbility<?>> abilities) {
+        abilities.forEach(this::addAbility);
+    }
+
+    public void addAbility(IAbility<?> ability) {
+        this.teamAbilities.put(ability.getId(), ability);
+        this.activeMembers.forEach(player -> player.addAbility(ability));
+    }
+
+    public void removeAbilities(Collection<IAbility<?>> abilities){
+        abilities.forEach(this::removeAbility);
+    }
+
+    public void removeAbility(IAbility<?> ability) {
+        this.teamAbilities.remove(ability.getId());
+        this.activeMembers.forEach(player -> player.removeAbility(ability));
+    }
+
+    public boolean hasAbility(IAbility<?> ability) {
+        return this.teamAbilities.containsValue(ability);
     }
 }

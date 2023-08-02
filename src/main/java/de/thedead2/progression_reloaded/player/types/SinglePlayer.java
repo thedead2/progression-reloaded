@@ -1,6 +1,7 @@
-package de.thedead2.progression_reloaded.player;
+package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.base.Objects;
+import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
@@ -8,12 +9,11 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.Level;
 
 import java.io.*;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SinglePlayer {
     private final String playerName;
@@ -22,10 +22,11 @@ public class SinglePlayer {
     private final ResourceLocation id;
     private final ServerPlayer player;
     private ProgressionLevel progressionLevel;
+    private final Map<ResourceLocation, IAbility<?>> playerAbilities = new HashMap<>();
     private boolean isOffline;
 
     public SinglePlayer(ServerPlayer player, ResourceLocation id) {
-        this(null, player, id, new ResourceLocation(ModHelper.MOD_ID, "base_level"));
+        this(null, player, id, ProgressionLevel.CREATIVE.getId());
     }
 
     public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId) {
@@ -34,10 +35,8 @@ public class SinglePlayer {
         this.uuid = player.getUUID();
         this.id = id;
         this.player = player;
-        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId, this);
+        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId);
         this.isOffline = false;
-
-        this.progressionLevel.startListening();
     }
 
     public static SinglePlayer fromFile(File playerDataFile, ServerPlayer player) {
@@ -46,7 +45,7 @@ public class SinglePlayer {
             tag = NbtIo.read(playerDataFile);
         }
         catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.ERROR);
+            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.FATAL);
         }
         return fromCompoundTag(tag, player);
     }
@@ -86,9 +85,9 @@ public class SinglePlayer {
     }
 
     public void updateProgressionLevel(ProgressionLevel level){
+        if(level == null) return;
         this.progressionLevel = level;
         if(this.isInTeam()) this.team.updateProgressionLevel(this.progressionLevel, this);
-        this.progressionLevel.startListening();
     }
 
     public ProgressionLevel getProgressionLevel() {
@@ -105,7 +104,7 @@ public class SinglePlayer {
             NbtIo.write(tag, playerFile);
         }
         catch (IOException e) {
-            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.ERROR);
+            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.FATAL);
         }
     }
 
@@ -148,5 +147,33 @@ public class SinglePlayer {
     @Override
     public int hashCode() {
         return Objects.hashCode(playerName, team, uuid, id, player, progressionLevel, isOffline);
+    }
+
+    public void addAbilities(Collection<IAbility<?>> abilities) {
+        abilities.forEach(this::addAbility);
+    }
+
+    public void addAbility(IAbility<?> ability) {
+        if(this.isInTeam() && !this.team.hasAbility(ability)) this.team.addAbility(ability);
+        else this.playerAbilities.put(ability.getId(), ability);
+    }
+
+    public void removeAbilities(Collection<IAbility<?>> abilities){
+        abilities.forEach(this::removeAbility);
+    }
+
+    public void removeAbility(IAbility<?> ability) {
+        if(this.isInTeam() && this.team.hasAbility(ability)) this.team.removeAbility(ability);
+        else this.playerAbilities.remove(ability.getId());
+    }
+
+    public <T> IAbility<T> getAbility(Class<? extends IAbility<T>> abilityClass) {
+        AtomicReference<IAbility<T>> ability = new AtomicReference<>();
+        this.playerAbilities.forEach((resourceLocation, iAbility) -> {
+            if(iAbility.getClass().getName().equals(abilityClass.getName())){
+                ability.set((IAbility<T>) iAbility);
+            }
+        });
+        return ability.get();
     }
 }

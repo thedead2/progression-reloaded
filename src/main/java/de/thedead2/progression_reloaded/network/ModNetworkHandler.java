@@ -35,7 +35,7 @@ public abstract class ModNetworkHandler {
     private static int messageId = 0;
 
 
-    private static int messageId(){
+    private static int nextMessageId(){
         return messageId++;
     }
 
@@ -60,7 +60,7 @@ public abstract class ModNetworkHandler {
                 }
                 if(!flag) throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
             }
-            INSTANCE.messageBuilder(packet, messageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
+            INSTANCE.messageBuilder(packet, nextMessageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
         }
         catch (Throwable e) {
             CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
@@ -87,14 +87,14 @@ public abstract class ModNetworkHandler {
         else return null;
     }
 
-    public static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
+    private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
         try {
             DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
             DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
             ctx.get().setPacketHandled(true);
         }
         catch (Throwable throwable){
-            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), "NetworkHandler", throwable, Level.ERROR);
+            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), "NetworkHandler", throwable, Level.FATAL);
             ctx.get().setPacketHandled(false);
         }
     }

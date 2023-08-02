@@ -1,11 +1,15 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 
 public class SpawnEntityReward implements IReward{
-
+    public static final ResourceLocation ID = IReward.createId("spawn_entity");
     private final EntityType<?> entityType;
     private final int amount;
     public SpawnEntityReward(EntityType<?> entityType, int amount){
@@ -21,5 +25,25 @@ public class SpawnEntityReward implements IReward{
     public void rewardPlayer(ServerPlayer player) {
         for (int i = 0; i < amount; i++)
             entityType.spawn(player.getLevel(), null, player, player.blockPosition(), MobSpawnType.COMMAND, true, false);
+    }
+
+    public static SpawnEntityReward fromJson(JsonElement jsonElement){
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        EntityType<?> entityType1 = EntityType.byString(jsonObject.get("entity_type").getAsString()).orElseThrow(() -> new RuntimeException("Unknown Entity with id: " + jsonObject.get("entity_type").getAsString()));
+        int amount = jsonObject.get("amount").getAsInt();
+        return new SpawnEntityReward(entityType1, amount);
+    }
+
+    @Override
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("entity_type", EntityType.getKey(this.entityType).toString());
+        jsonObject.addProperty("amount", this.amount);
+        return jsonObject;
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return ID;
     }
 }

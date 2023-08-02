@@ -1,11 +1,17 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.Level;
 
 public class CommandReward implements IReward{
+    public static final ResourceLocation ID = IReward.createId("command");
     private final String command;
 
     public CommandReward(String command) {
@@ -20,5 +26,18 @@ public class CommandReward implements IReward{
         catch (CommandSyntaxException e){
             CrashHandler.getInstance().handleException("Failed to execute command reward: " + command, e, Level.ERROR);
         }
+    }
+
+    public static CommandReward fromJson(JsonElement jsonElement){
+        return new CommandReward(jsonElement.getAsString());
+    }
+    @Override
+    public JsonElement toJson() {
+        return new JsonPrimitive(this.command);
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return ID;
     }
 }

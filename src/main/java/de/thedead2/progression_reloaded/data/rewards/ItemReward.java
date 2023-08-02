@@ -1,11 +1,16 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public class ItemReward implements IReward{
-
+    public static final ResourceLocation ID = IReward.createId("item");
     private final ItemStack item;
     private final int amount;
 
@@ -18,5 +23,25 @@ public class ItemReward implements IReward{
     public void rewardPlayer(ServerPlayer player) {
         this.item.setCount(this.amount);
         player.getInventory().add(this.item);
+    }
+
+    public static ItemReward fromJson(JsonElement jsonElement){
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        ItemStack item = Item.byId(jsonObject.get("item").getAsInt()).getDefaultInstance();
+        int amount = jsonObject.get("amount").getAsInt();
+        return new ItemReward(item, amount);
+    }
+
+    @Override
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("item", Item.getId(this.item.getItem()));
+        jsonObject.addProperty("amount", this.amount);
+        return jsonObject;
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return ID;
     }
 }

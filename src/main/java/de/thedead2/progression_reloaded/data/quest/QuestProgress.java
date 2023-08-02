@@ -4,30 +4,48 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
-import de.thedead2.progression_reloaded.data.criteria.ICriterion;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+/**
+ * Progress of a quest is dependent on the player or the team. Different players or teams can have different progress of a quest.
+ * **/
 
 public class QuestProgress implements Comparable<QuestProgress>{
-    final Map<String, CriterionProgress> criteria;
-    private CriteriaStrategy criteriaStrategy;
+    private final Map<String, CriterionProgress> criteria;
+    private final CriteriaStrategy criteriaStrategy;
 
-    private QuestProgress(Map<String, CriterionProgress> pCriteria) {
-        this.criteria = pCriteria;
+    /** Corresponding quest of this Progress**/
+    private final ProgressionQuest quest;
+
+    private QuestProgress(Map<String, CriterionProgress> criteria, ProgressionQuest quest) {
+        this.criteria = criteria;
+        this.quest = quest;
+        this.criteriaStrategy = this.quest.getCriteriaStrategy();
     }
 
-    public QuestProgress() {
-        this.criteria = Maps.newHashMap();
+    public QuestProgress(ProgressionQuest quest) {
+        this(Maps.newHashMap(), quest);
+    }
+
+    public static QuestProgress loadFromCompoundTag(CompoundTag tag) {
+        Map<String, CriterionProgress> criteria = new HashMap<>();
+        ProgressionQuest quest;
+
+        tag.getAllKeys().stream().filter(s -> !s.equals("quest")).forEach(s -> criteria.put(s, CriterionProgress.loadFromCompoundTag(tag.getCompound(s))));
+        quest = ModRegistries.QUESTS.get().getValue(new ResourceLocation(tag.getString("quest")));
+
+        return new QuestProgress(criteria, quest);
     }
 
 
-    public void update(Map<String, ICriterion> pCriteria, CriteriaStrategy criteriaStrategy) {
-        Set<String> set = pCriteria.keySet();
+    public void updateProgress() {
+        Set<String> set = this.quest.getCriteria().keySet();
         this.criteria.entrySet().removeIf((entry) -> !set.contains(entry.getKey()));
 
         for(String s : set) {
@@ -35,8 +53,6 @@ public class QuestProgress implements Comparable<QuestProgress>{
                 this.criteria.put(s, new CriterionProgress());
             }
         }
-
-        this.criteriaStrategy = criteriaStrategy;
     }
 
     public boolean isDone() {
@@ -45,7 +61,7 @@ public class QuestProgress implements Comparable<QuestProgress>{
             CriterionProgress criterionprogress = this.getCriterion(s);
             if (criterionprogress != null && criterionprogress.isDone()) {
                 flag = true;
-                if(criteriaStrategy.equals(CriteriaStrategy.OR)) break;
+                if(this.criteriaStrategy.equals(CriteriaStrategy.OR)) break;
             }
             else {
                 flag = false;
@@ -66,6 +82,7 @@ public class QuestProgress implements Comparable<QuestProgress>{
         return false;
     }
 
+    /** Grants the given criterion to this progress **/
     public boolean grantProgress(String criterionName) {
         CriterionProgress criterionprogress = this.criteria.get(criterionName);
         if (criterionprogress != null && !criterionprogress.isDone()) {
@@ -76,6 +93,7 @@ public class QuestProgress implements Comparable<QuestProgress>{
         }
     }
 
+    /** Revokes the given criterion for this progress **/
     public boolean revokeProgress(String criterionName) {
         CriterionProgress criterionprogress = this.criteria.get(criterionName);
         if (criterionprogress != null && criterionprogress.isDone()) {
@@ -91,11 +109,6 @@ public class QuestProgress implements Comparable<QuestProgress>{
         buf.writeMap(this.criteria, FriendlyByteBuf::writeUtf, (buf1, criterionProgress) -> {
             criterionProgress.serializeToNetwork(buf1);
         });
-    }
-
-    public static QuestProgress fromNetwork(FriendlyByteBuf buf) {
-        Map<String, CriterionProgress> map = buf.readMap(FriendlyByteBuf::readUtf, CriterionProgress::fromNetwork);
-        return new QuestProgress(map);
     }
 
     @Nullable
@@ -173,5 +186,22 @@ public class QuestProgress implements Comparable<QuestProgress>{
         } else {
             return date == null ? 0 : date.compareTo(date1);
         }
+    }
+
+    public void complete() {
+        this.criteria.forEach((s, criterionProgress) -> this.grantProgress(s));
+    }
+
+    public ProgressionQuest getQuest() {
+        return this.quest;
+    }
+
+    public CompoundTag saveToCompoundTag() {
+        CompoundTag tag = new CompoundTag();
+        this.criteria.forEach((s, criterionProgress) -> {
+            tag.put(s, criterionProgress.saveToCompoundTag());
+        });
+        tag.putString("quest", this.quest.getId().toString());
+        return tag;
     }
 }
