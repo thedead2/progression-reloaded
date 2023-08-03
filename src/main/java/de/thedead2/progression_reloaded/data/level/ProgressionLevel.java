@@ -123,7 +123,7 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
         return this.nextLevel;
     }
 
-    public void updateQuestManager(QuestManager active) {
-        this.quests = active;
+    public void updateQuestManager() {
+        this.quests = this.quests.convert();
     }
 }

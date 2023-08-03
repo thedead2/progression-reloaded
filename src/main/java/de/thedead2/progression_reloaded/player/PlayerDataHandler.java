@@ -79,4 +79,8 @@ public abstract class PlayerDataHandler {
     public static SinglePlayer getActivePlayer(ResourceLocation player) {
         return getPlayerData().orElseThrow().getActivePlayer(player);
     }
+
+    public static ImmutableCollection<SinglePlayer> allPlayers() {
+        return getPlayerData().orElseThrow().allPlayersData();
+    }
 }

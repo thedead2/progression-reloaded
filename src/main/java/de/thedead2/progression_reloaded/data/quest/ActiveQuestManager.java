@@ -5,24 +5,30 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.level.LevelManager;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 
 import java.util.*;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
 /**
- * Handles and tracks all quests of a level. Each level has its own QuestManager.
+ * Handles and tracks all quests of the active level of a player. This includes all incomplete quests of other levels for each player.
+ * Each level has its own QuestManager.
  * **/
 
 public class ActiveQuestManager implements QuestManager {
     /** All quests of the level **/
     private final ImmutableMap<ResourceLocation, ProgressionQuest> quests;
+    /** Additional quests of other levels that haven't been completed yet **/
+    private final Map<ResourceLocation, ProgressionQuest> additionalQuests = new HashMap<>();
     /** All active quests of each player that has this level. A player can have multiple active quests at once.
      * A quest is active if it's parent has been completed and itself isn't completed yet.
      * **/
@@ -37,10 +43,13 @@ public class ActiveQuestManager implements QuestManager {
      * **/
     private final Multimap<SinglePlayer, QuestProgress> sideQuestsProgress = HashMultimap.create();
 
+    /** The resource location of the corresponding level for this quest manager **/
     private final ResourceLocation levelId;
+    private final Marker marker;
 
     public ActiveQuestManager(Set<ResourceLocation> quests, ResourceLocation levelId){
         this.levelId = levelId;
+        marker = new MarkerManager.Log4jMarker("QuestManager/" + this.levelId.getPath());
         Map<ResourceLocation, ProgressionQuest> questMap = new HashMap<>();
         quests.forEach(resourceLocation -> questMap.put(resourceLocation, ModRegistries.QUESTS.get().getValue(resourceLocation)));
 
@@ -49,12 +58,22 @@ public class ActiveQuestManager implements QuestManager {
     }
 
     private void loadData(){
-        loadQuestProgress();
+        //loadAdditionalQuests();
         loadActiveQuests();
+        loadQuestProgress();
     }
 
+    /*private void loadAdditionalQuests() {
+        ProgressionLevel thisLevel = ModRegistries.LEVELS.get().getValue(this.levelId);
+        if(thisLevel.getPreviousLevel() == null) return;
+
+        ProgressionLevel previousLevel = ModRegistries.LEVELS.get().getValue(thisLevel.getPreviousLevel());
+        QuestManager previousQuestManager = previousLevel.getQuestManager();
+        PlayerDataHandler.allPlayers().stream().filter(player -> player.hasProgressionLevel(thisLevel)).forEach(player -> this.loadAdditionalActiveQuests(previousQuestManager, player));
+    }*/
+
     private void loadActiveQuests() {
-        var activeQuests = PlayerDataHandler.getProgressData().orElseThrow().getActiveQuests(this.quests.values());
+        var activeQuests = PlayerDataHandler.getProgressData().orElseThrow().getActiveQuests(this.getAllQuests());
         activeQuests.keySet().forEach(knownPlayer -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(knownPlayer);
             if(player != null){
@@ -68,11 +87,11 @@ public class ActiveQuestManager implements QuestManager {
             }
         });
 
-        LOGGER.debug("Loaded active quests: {}", this.activeQuests);
+        LOGGER.debug(marker,"Loaded active quests: {}", this.activeQuests);
     }
 
     private void loadQuestProgress() {
-        var questProgress = PlayerDataHandler.getProgressData().orElseThrow().getQuestProgress(this.quests.values());
+        var questProgress = PlayerDataHandler.getProgressData().orElseThrow().getQuestProgress(this.getAllQuests());
         questProgress.keySet().forEach(knownPlayer -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(knownPlayer);
             if(player != null){
@@ -101,6 +120,7 @@ public class ActiveQuestManager implements QuestManager {
 
     private void resetData() {
         this.activeQuests.clear();
+        this.additionalQuests.clear();
         this.mainQuestsProgress.clear();
         this.sideQuestsProgress.clear();
     }
@@ -111,37 +131,45 @@ public class ActiveQuestManager implements QuestManager {
      * **/
     @Override
     public void updateStatus(SinglePlayer player) {
-        if(player == null) return;
-        LOGGER.debug("Updating quests for player: {}", player.getPlayerName());
+        LOGGER.debug(marker, "Updating quests for player: {}", player.getPlayerName());
+        LOGGER.debug(marker,"Currently all active player quests: {}", activeQuests);
         Collection<ProgressionQuest> activePlayerQuests = activeQuests.get(player);
-        //LOGGER.debug("Currently active player quests: {}", activePlayerQuests);
-        activePlayerQuests.forEach(progressionQuest -> {
+        /*LOGGER.debug(marker,"Currently active player quests: {}", activePlayerQuests);
+        activeQuests.removeAll(activePlayerQuests);
+        LOGGER.debug(marker,"Currently all active player quests after removal: {}", activeQuests);
+        */activePlayerQuests.forEach(progressionQuest -> {
             if(this.getOrStartProgress(progressionQuest, player).isDone()){
-                //LOGGER.debug("Quest progress is done for quest {} for player {}", progressionQuest.getId(), player.getPlayerName());
+                LOGGER.debug(marker,"Quest progress is done for quest {} for player {}", progressionQuest.getId(), player.getPlayerName());
                 this.unregisterListeners(progressionQuest, player);
                 progressionQuest.setActive(false, player);
             }
             else {
-                //LOGGER.warn("Quest progress is not done for quest {} for player {}", progressionQuest.getId(), player.getPlayerName());
+                LOGGER.warn(marker,"Quest progress is not done for quest {} for player {}", progressionQuest.getId(), player.getPlayerName());
                 progressionQuest.setActive(true, player);
             }
         });
         activePlayerQuests.removeIf(progressionQuest -> !progressionQuest.isActive(player));
-        //LOGGER.debug("Currently active player quests after removal: {}", activePlayerQuests);
+        LOGGER.debug(marker,"Currently active player quests after removal: {}", activePlayerQuests);
         searchQuestsForActive(player).forEach(quest -> quest.setActive(true, player));
-        activePlayerQuests.addAll(quests.values().stream().filter(quest -> quest.isActive(player)).toList());
-        //LOGGER.debug("Currently active player quests after adding: {}", activePlayerQuests);
+        activePlayerQuests.addAll(this.getAllQuests().stream().filter(quest -> quest.isActive(player)).toList());
+        LOGGER.debug(marker,"Currently active player quests after adding: {}", activePlayerQuests);
         activePlayerQuests.forEach(quest -> this.registerListeners(quest, player));
-        activeQuests.replaceValues(player, Sets.newHashSet(activePlayerQuests));
-        LOGGER.debug("all Currently active player quests: {}", activeQuests);
+        LOGGER.debug(marker,"all Currently active player quests: {}", activeQuests);
     }
 
     private Collection<ProgressionQuest> searchQuestsForActive(SinglePlayer player){
-        return quests.values().stream().filter(progressionQuest -> {
-            LOGGER.debug("Quest: " + progressionQuest.getId());
-            LOGGER.debug("is quest done: " + progressionQuest.isDone(this, player));
+        return this.getAllQuests().stream().filter(progressionQuest -> {
+            LOGGER.debug(marker,"Quest: " + progressionQuest.getId());
+            LOGGER.debug(marker,"is quest done: " + progressionQuest.isDone(this, player));
             return ((!progressionQuest.hasParent() || progressionQuest.isParentDone(this, player)) && !progressionQuest.isDone(this, player));
         }).toList();
+    }
+
+    private Collection<ProgressionQuest> getAllQuests(){
+        Collection<ProgressionQuest> quests = new HashSet<>();
+        quests.addAll(this.quests.values());
+        quests.addAll(this.additionalQuests.values());
+        return quests;
     }
 
 
@@ -159,6 +187,32 @@ public class ActiveQuestManager implements QuestManager {
 
     public void stopListening(SinglePlayer player) {
         this.activeQuests.get(player).forEach(quest -> this.unregisterListeners(quest, player));
+    }
+
+    /*@Override
+    public void loadAdditionalActiveQuests(QuestManager questManager, SinglePlayer player) {
+        Map<ProgressionQuest, QuestProgress> remainingQuests = questManager.getRemainingQuests(player);
+        remainingQuests.forEach((quest, progress) -> {
+            this.additionalQuests.put(quest.getId(), quest);
+            if(quest.isMainQuest()) this.mainQuestsProgress.put(player, progress);
+            else this.sideQuestsProgress.put(player, progress);
+        });
+    }*/
+
+    /** Returns the remaining active quests with their corresponding progress data for the given player **/
+    @Override
+    public Map<ProgressionQuest, QuestProgress> getRemainingQuests(SinglePlayer player) {
+        Map<ProgressionQuest, QuestProgress> questProgressMap = new HashMap<>();
+        this.activeQuests.get(player).forEach(quest -> {
+            QuestProgress progress = this.getOrStartProgress(quest, player);
+            questProgressMap.put(quest, progress);
+        });
+        return questProgressMap;
+    }
+
+    @Override
+    public ResourceLocation getLevel() {
+        return this.levelId;
     }
 
 
@@ -231,7 +285,7 @@ public class ActiveQuestManager implements QuestManager {
 
 
     private void registerListeners(ProgressionQuest quest, SinglePlayer player) {
-        LOGGER.debug("Registering listeners for quest: {}" , quest.getId());
+        LOGGER.debug(marker,"Registering listeners for quest: {}" , quest.getId());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
         if (!questProgress.isDone()) {
             for(Map.Entry<String, SimpleTrigger> entry : quest.getCriteria().entrySet()) {
@@ -248,7 +302,7 @@ public class ActiveQuestManager implements QuestManager {
     }
 
     private void unregisterListeners(ProgressionQuest quest, SinglePlayer player) {
-        LOGGER.debug("Unregistering listeners for quest {} for player {}", quest.getId(), player.getPlayerName());
+        LOGGER.debug(marker,"Unregistering listeners for quest {} for player {}", quest.getId(), player.getPlayerName());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
 
         for(Map.Entry<String, SimpleTrigger> entry : quest.getCriteria().entrySet()) {
@@ -264,12 +318,12 @@ public class ActiveQuestManager implements QuestManager {
     }
 
     public ProgressionQuest findQuest(ResourceLocation questId){
-        return Optional.ofNullable(this.quests.get(questId)).orElseThrow(() -> new IllegalArgumentException("Unknown quest with id " + questId.toString() + " for level " + levelId.toString()));
+        return Optional.ofNullable(this.quests.get(questId)).orElseGet(() -> Optional.ofNullable(additionalQuests.get(questId)).orElseThrow(() -> new IllegalArgumentException("Unknown quest with id " + questId.toString()/* + " for level " + levelId.toString()*/)));
     }
 
     public <T extends SimpleTrigger> void fireTriggers(Class<T> triggerClass, SinglePlayer player, Object... data) {
-        LOGGER.debug("Firing trigger: {}", triggerClass.getName());
-        Collections.unmodifiableCollection(activeQuests.get(player)).forEach(quest -> quest.getCriteria().forEach((s, trigger) -> {
+        LOGGER.debug(marker,"Firing trigger: {}", triggerClass.getName());
+        new HashSet<>(activeQuests.get(player)).forEach(quest -> quest.getCriteria().forEach((s, trigger) -> {
             if (trigger.getClass().equals(triggerClass)){
                 trigger.trigger(player, data);
             }

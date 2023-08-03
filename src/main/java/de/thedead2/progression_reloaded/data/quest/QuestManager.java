@@ -2,10 +2,13 @@ package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.Map;
 
 public interface QuestManager {
     JsonElement toJson();
@@ -37,4 +40,10 @@ public interface QuestManager {
 
     void updateStatus(SinglePlayer player);
     void stopListening(SinglePlayer player);
+
+    //void loadAdditionalActiveQuests(QuestManager oldManager, SinglePlayer player);
+
+    Map<ProgressionQuest, QuestProgress> getRemainingQuests(SinglePlayer player);
+
+    ResourceLocation getLevel();
 }

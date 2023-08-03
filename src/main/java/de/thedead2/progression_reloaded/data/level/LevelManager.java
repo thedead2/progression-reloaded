@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.data.level;
 
+import de.thedead2.progression_reloaded.data.quest.QuestManager;
+import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
@@ -51,7 +53,7 @@ public class LevelManager {
     }
 
     private void convertQuestManagers() {
-        this.levelOrder.forEach(level -> level.updateQuestManager(level.getQuestManager().convert()));
+        this.levelOrder.forEach(ProgressionLevel::updateQuestManager);
     }
 
     public static LevelManager create() {
@@ -73,16 +75,21 @@ public class LevelManager {
                 }
             }
             else {
-                level.getQuestManager().updateStatus(singlePlayer);
+//                level.getQuestManager().updateStatus(singlePlayer);
+                if(singlePlayer == null) return;
+                this.levelOrder.stream().filter(singlePlayer::hasProgressionLevel).forEach(level1 -> level1.getQuestManager().updateStatus(singlePlayer));
             }
         });
     }
 
     public void updateLevel(SinglePlayer player, ResourceLocation nextLevel){
         if(nextLevel == null) return;
+//        QuestManager oldQuestManager = player.getProgressionLevel().getQuestManager();//TODO: quests of other levels don't get listen to --> why?
+//        oldQuestManager.stopListening(player);
         player.updateProgressionLevel(ModRegistries.LEVELS.get().getValue(nextLevel));
         this.playerLevels.replace(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
         PlayerDataHandler.getProgressData().orElseThrow().updatePlayerLevels(this.playerLevels);
+//        player.getProgressionLevel().getQuestManager().loadAdditionalActiveQuests(oldQuestManager, player);
         this.updateStatus();
     }
 
@@ -135,7 +142,10 @@ public class LevelManager {
     }
 
     public void changeLevel(SinglePlayer player, ResourceLocation level) {
-        player.getProgressionLevel().getQuestManager().stopListening(player); //TODO: quests of other levels don't get listen to --> why?
         this.updateLevel(player, level);
+    }
+
+    public void fireTriggers(Class<? extends SimpleTrigger> triggerClass, SinglePlayer singlePlayer, Object... addArgs) {
+        this.levelOrder.stream().filter(singlePlayer::hasProgressionLevel).forEach(level -> level.getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs));
     }
 }

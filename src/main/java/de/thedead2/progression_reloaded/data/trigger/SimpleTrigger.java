@@ -5,6 +5,7 @@ import com.google.common.collect.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import de.thedead2.progression_reloaded.data.level.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
@@ -83,8 +84,7 @@ public abstract class SimpleTrigger {
     protected static void fireTrigger(Class<? extends SimpleTrigger> triggerClass, Entity entity, Object... addArgs){
         if(entity instanceof Player player){
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            ProgressionLevel level = singlePlayer.getProgressionLevel();
-            level.getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs);
+            LevelManager.getInstance().fireTriggers(triggerClass, singlePlayer, addArgs);
         }
     }
 

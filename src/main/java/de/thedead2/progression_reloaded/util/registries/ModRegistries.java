@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
 import net.minecraft.resources.ResourceLocation;
@@ -25,10 +26,8 @@ import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
 public abstract class ModRegistries {
     private static final MarkerManager.Log4jMarker MARKER = new MarkerManager.Log4jMarker("ModRegistryManager");
-    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = DeferredRegisters.LEVEL_REGISTER.makeRegistry(RegistryBuilder::new);
-    public static final Supplier<IForgeRegistry<ProgressionQuest>> QUESTS = DeferredRegisters.QUEST_REGISTER.makeRegistry(RegistryBuilder::new);
-
-    //TODO: Maybe better to use just maps not IForgeRegistry?
+    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = DeferredRegisters.LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().setDefaultKey(new ResourceLocation(MOD_ID, "default_level")));
+    public static final Supplier<IForgeRegistry<ProgressionQuest>> QUESTS = DeferredRegisters.QUEST_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionQuest>().setDefaultKey(new ResourceLocation(MOD_ID, "default_quest")));
 
     private static void load(){}
 

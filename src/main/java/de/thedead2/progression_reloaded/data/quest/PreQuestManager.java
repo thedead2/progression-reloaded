@@ -9,15 +9,18 @@ import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+/**
+ * Dummy QuestManager for Level Registration. Throws an exception if any other method than fromJson, toJson, covert and getLevel is called!
+ * **/
 public class PreQuestManager implements QuestManager {
     private final Set<ResourceLocation> quests;
     private final ResourceLocation levelId;
-
     private final RuntimeException EXCEPTION;
+
     public PreQuestManager(Set<ResourceLocation> quests, ResourceLocation levelId){
         this.quests = quests;
         this.levelId = levelId;
@@ -126,5 +129,20 @@ public class PreQuestManager implements QuestManager {
     @Override
     public void stopListening(SinglePlayer player) {
         throw EXCEPTION;
+    }
+
+    /*@Override
+    public void loadAdditionalActiveQuests(QuestManager oldManager, SinglePlayer player) {
+        throw EXCEPTION;
+    }*/
+
+    @Override
+    public Map<ProgressionQuest, QuestProgress> getRemainingQuests(SinglePlayer player) {
+        throw EXCEPTION;
+    }
+
+    @Override
+    public ResourceLocation getLevel() {
+        return this.levelId;
     }
 }
