@@ -42,6 +42,7 @@ public class ModCommand { //TODO: better commands + new commands
         PlayerCommands.register();
         TestCommands.register();
         DevCommands.register();
+        ModCommands.register();
 
         commands.forEach(modCommand -> {
             dispatcher.register(modCommand.getShortLA());

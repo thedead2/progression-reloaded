@@ -1,15 +1,17 @@
-package de.thedead2.progression_reloaded.data.level;
+package de.thedead2.progression_reloaded.data;
 
-import de.thedead2.progression_reloaded.data.quest.QuestManager;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.level.LevelProgress;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
-import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import de.thedead2.progression_reloaded.util.language.ChatMessageHandler;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
+import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import java.util.*;
@@ -17,11 +19,12 @@ import java.util.*;
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
 /**
- * Handles and tracks all known levels, there progress and there corresponding QuestManagers. There's only one instance
+ * Handles and tracks all known levels, there progress and there corresponding quests. There's only one instance
  * of this class active per world.
  * **/
 public class LevelManager {
     private static LevelManager instance = null;
+    private static final Marker MARKER = new MarkerManager.Log4jMarker("LevelManager");
 
     /**
      * Map of all known players and their corresponding level.
@@ -33,27 +36,23 @@ public class LevelManager {
     private final Map<ProgressionLevel, LevelProgress> levelProgress = new HashMap<>();
 
     private final List<ProgressionLevel> levelOrder = new ArrayList<>(ModRegistries.LEVELS.get().getValues());
+    private final QuestManager questManager;
 
     private LevelManager(){
         instance = this;
+        this.questManager = new QuestManager();
         init();
     }
 
     public void reset() {
-        convertQuestManagers();
         instance = null;
     }
 
     private void init(){
         loadLevelOrder();
-        convertQuestManagers();
         loadPlayerLevels();
         loadLevelProgress();
         this.updateStatus();
-    }
-
-    private void convertQuestManagers() {
-        this.levelOrder.forEach(ProgressionLevel::updateQuestManager);
     }
 
     public static LevelManager create() {
@@ -61,53 +60,51 @@ public class LevelManager {
     }
 
     public void updateStatus(){
-        LOGGER.debug("Updating level status for player levels: {}", this.playerLevels);
         this.playerLevels.forEach((player, level) -> {
+            LOGGER.debug(MARKER,"Updating level status for player: {}", player.name());
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelProgress progress = this.getOrStartProgress(level);
-            if(progress.isDone(singlePlayer)){
-                if(!progress.hasBeenRewarded(singlePlayer)){
-                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing this level!", true, singlePlayer.getPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
-                    LOGGER.debug("Completed {} Progression Level", level.getId());
+            LevelProgress progress = this.levelProgress.get(level);
+            if(progress.isDone(player)){
+                if(!progress.hasBeenRewarded(player)){
+                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
+                    LOGGER.debug(MARKER,"Player {} completed level {}", player.name(), level.getId());
                     level.rewardPlayer(singlePlayer);
-                    progress.setRewarded(singlePlayer, true);
+                    progress.setRewarded(player, true);
                     this.updateLevel(singlePlayer, level.getNextLevel());
                 }
             }
-            else {
-//                level.getQuestManager().updateStatus(singlePlayer);
-                if(singlePlayer == null) return;
-                this.levelOrder.stream().filter(singlePlayer::hasProgressionLevel).forEach(level1 -> level1.getQuestManager().updateStatus(singlePlayer));
-            }
+            else questManager.updateStatus(player);
         });
     }
 
     public void updateLevel(SinglePlayer player, ResourceLocation nextLevel){
         if(nextLevel == null) return;
-//        QuestManager oldQuestManager = player.getProgressionLevel().getQuestManager();//TODO: quests of other levels don't get listen to --> why?
-//        oldQuestManager.stopListening(player);
         player.updateProgressionLevel(ModRegistries.LEVELS.get().getValue(nextLevel));
         this.playerLevels.replace(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-        PlayerDataHandler.getProgressData().orElseThrow().updatePlayerLevels(this.playerLevels);
-//        player.getProgressionLevel().getQuestManager().loadAdditionalActiveQuests(oldQuestManager, player);
+        this.saveData();
         this.updateStatus();
     }
 
     private void loadPlayerLevels(){
         this.playerLevels.putAll(PlayerDataHandler.getProgressData().orElseThrow().getPlayerLevels());
-        PlayerDataHandler.getPlayerData().orElseThrow().allPlayersData().forEach(player -> this.playerLevels.putIfAbsent(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel()));
+        PlayerDataHandler.allPlayers().forEach(player -> this.playerLevels.putIfAbsent(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel()));
     }
 
     private void loadLevelProgress() {
         this.levelProgress.putAll(PlayerDataHandler.getProgressData().orElseThrow().getLevelProgress());
-        ModRegistries.LEVELS.get().getValues().forEach(level -> this.levelProgress.computeIfAbsent(level, t -> new LevelProgress(level)));
+        ModRegistries.LEVELS.get().getValues().forEach(level -> this.levelProgress.computeIfAbsent(level, LevelProgress::new));
     }
 
     private void loadLevelOrder(){
         levelOrder.sort(Comparator.comparingInt(ProgressionLevel::getIndex));
     }
 
-    public LevelProgress getOrStartProgress(ProgressionLevel level) {
+    public ProgressionLevel getLevelForQuest(ProgressionQuest quest){
+        ResourceLocation id = quest.getId();
+        return this.levelOrder.stream().filter(level -> level.getQuests().contains(id)).findAny().orElseThrow(() -> new IllegalArgumentException("Unknown level for quest: " + id));
+    }
+
+    /*public LevelProgress getOrStartProgress(ProgressionLevel level) {
         LevelProgress levelProgress = this.levelProgress.get(level);
         if (levelProgress == null) {
             levelProgress = new LevelProgress(level);
@@ -119,7 +116,7 @@ public class LevelManager {
     private void startProgress(ProgressionLevel level, LevelProgress levelProgress) {
         this.levelProgress.put(level, levelProgress);
         this.saveData();
-    }
+    }*/
 
     public static LevelManager getInstance() {
         return instance;
@@ -129,23 +126,19 @@ public class LevelManager {
         this.saveData();
         this.loadPlayerLevels();
         this.loadLevelProgress();
-        this.levelOrder.forEach(level -> level.getQuestManager().reloadData());
+        questManager.updateData();
         this.updateStatus();
     }
 
     public void saveData() {
-        LOGGER.debug(new MarkerManager.Log4jMarker("LevelManager"), "Saving data!");
+        LOGGER.debug(MARKER, "Saving data!");
         ProgressData progressData = PlayerDataHandler.getProgressData().orElseThrow();
         progressData.updateLevelProgressData(this.levelProgress);
         progressData.updatePlayerLevels(this.playerLevels);
-        this.levelOrder.forEach(level -> level.getQuestManager().saveData());
+        questManager.saveData();
     }
 
-    public void changeLevel(SinglePlayer player, ResourceLocation level) {
-        this.updateLevel(player, level);
-    }
-
-    public void fireTriggers(Class<? extends SimpleTrigger> triggerClass, SinglePlayer singlePlayer, Object... addArgs) {
-        this.levelOrder.stream().filter(singlePlayer::hasProgressionLevel).forEach(level -> level.getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs));
+    public QuestManager getQuestManager() {
+        return this.questManager;
     }
 }

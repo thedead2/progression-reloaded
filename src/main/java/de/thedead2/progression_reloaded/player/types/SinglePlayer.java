@@ -26,7 +26,7 @@ public class SinglePlayer {
     private boolean isOffline;
 
     public SinglePlayer(ServerPlayer player, ResourceLocation id) {
-        this(null, player, id, ProgressionLevel.CREATIVE.getId());
+        this(null, player, id, new ResourceLocation(ModHelper.MOD_ID, "creative_level"));
     }
 
     public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId) {
@@ -141,12 +141,12 @@ public class SinglePlayer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         SinglePlayer player1 = (SinglePlayer) o;
-        return isOffline == player1.isOffline && Objects.equal(playerName, player1.playerName) && Objects.equal(team, player1.team) && Objects.equal(uuid, player1.uuid) && Objects.equal(id, player1.id) && Objects.equal(player, player1.player) && Objects.equal(progressionLevel, player1.progressionLevel);
+        return isOffline == player1.isOffline && Objects.equal(playerName, player1.playerName) && Objects.equal(team, player1.team) && Objects.equal(uuid, player1.uuid) && Objects.equal(id, player1.id) && Objects.equal(player, player1.player) && Objects.equal(progressionLevel, player1.progressionLevel) && Objects.equal(playerAbilities, player1.playerAbilities);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(playerName, team, uuid, id, player, progressionLevel, isOffline);
+        return Objects.hashCode(playerName, team, uuid, id, player, progressionLevel, playerAbilities, isOffline);
     }
 
     public void addAbilities(Collection<IAbility<?>> abilities) {

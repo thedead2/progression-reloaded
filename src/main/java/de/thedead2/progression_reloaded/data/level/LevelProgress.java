@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.data.level;
 
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
@@ -41,9 +42,9 @@ public class LevelProgress {
     /**
      * Returns true if all main quests of the level have been completed by the given player
      **/
-    public boolean isDone(SinglePlayer player) {
+    public boolean isDone(KnownPlayer player) {
         boolean flag = false;
-        for (QuestProgress questProgress : this.level.getQuestManager().getMainQuestProgressFor(player)) {
+        for (QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, player)) {
             if (questProgress != null && questProgress.isDone()) {
                 flag = true;
             } else {
@@ -55,7 +56,7 @@ public class LevelProgress {
         return flag;
     }
 
-    public float getPercent(SinglePlayer player) {
+    /*public float getPercent(SinglePlayer player) {
         if (this.level.getQuestManager().isEmpty()) {
             return 0.0F;
         } else {
@@ -76,14 +77,14 @@ public class LevelProgress {
         }
 
         return i;
+    }*/
+
+    public boolean hasBeenRewarded(KnownPlayer player) {
+        return this.rewarded.get(player) != null ? this.rewarded.get(player) : false;
     }
 
-    boolean hasBeenRewarded(SinglePlayer player) {
-        return this.rewarded.get(KnownPlayer.fromSinglePlayer(player)) != null ? this.rewarded.get(KnownPlayer.fromSinglePlayer(player)) : false;
-    }
-
-    public void setRewarded(SinglePlayer singlePlayer, boolean value) {
-        this.rewarded.put(KnownPlayer.fromSinglePlayer(singlePlayer), value);
+    public void setRewarded(KnownPlayer player, boolean value) {
+        this.rewarded.put(player, value);
     }
 
     public CompoundTag saveToCompoundTag() {

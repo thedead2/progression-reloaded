@@ -4,6 +4,9 @@ import com.google.common.base.Objects;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.QuestManager;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.predicates.EntityPredicate;
@@ -25,33 +28,6 @@ import net.minecraft.world.item.Items;
 import java.util.*;
 
 public class ProgressionQuest implements ModRegistriesDynamicSerializer {
-    public static ProgressionQuest Test() {
-        ProgressionQuest quest = new ProgressionQuest(new ResourceLocation(ModHelper.MOD_ID, "quest_test"), Component.literal("Test Quest"), Component.literal("This is a test quest!"), Items.ACACIA_BOAT.getDefaultInstance(), new HashSet<>(), new HashMap<>(), CriteriaStrategy.AND, RewardStrategy.ALL, true, null);
-        quest.addTrigger("testSleep", new SleepTrigger(PlayerPredicate.ANY));
-        quest.addTrigger("testKill", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.ZOMBIE)));
-        quest.addReward(new SpawnEntityReward(EntityType.ALLAY));
-        quest.addReward(new ItemReward(Items.DIAMOND.getDefaultInstance(), 25));
-        //quest.addCriterion("testTick", new TickTrigger());
-        return quest;
-    }
-
-    public static ProgressionQuest Test2() {
-        ProgressionQuest quest = new ProgressionQuest(new ResourceLocation(ModHelper.MOD_ID, "quest_test2"), Component.literal("Test Quest2"), Component.literal("This is a test quest2!"), Items.ACACIA_BOAT.getDefaultInstance(), new HashSet<>(), new HashMap<>(), CriteriaStrategy.OR, RewardStrategy.ALL, false, null);
-        quest.addTrigger("testKill", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.HORSE)));
-        quest.addReward(new SpawnEntityReward(EntityType.CHICKEN));
-        quest.addReward(new ItemReward(Items.EMERALD.getDefaultInstance(), 25));
-        //quest.addCriterion("testTick", new TickTrigger());
-        return quest;
-    }
-
-    public static ProgressionQuest Test3(){
-        return new ProgressionQuest(new ResourceLocation(ModHelper.MOD_ID, "quest_test3"), Component.literal("Test Quest3"), Component.literal("This is a test quest3!"), Items.ACACIA_BOAT.getDefaultInstance(), Set.of(new CommandReward("/time set midnight")),
-                Map.of("test1", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.CHICKEN))), CriteriaStrategy.AND, RewardStrategy.ALL, true, null);
-    }
-    public static ProgressionQuest Test4(){
-        return new ProgressionQuest(new ResourceLocation(ModHelper.MOD_ID, "quest_test4"), Component.literal("Test Quest4"), Component.literal("This is a test quest4!"), Items.ACACIA_BOAT.getDefaultInstance(), Set.of(new TeleportReward(new TeleportReward.TeleportDestination(5, 120, 120, 0, 0, ServerLevel.END))),
-                Map.of("test2", new SleepTrigger(PlayerPredicate.ANY)), CriteriaStrategy.AND, RewardStrategy.ALL, true, new ResourceLocation(ModHelper.MOD_ID, "quest_test3"));
-    }
 
     public static ProgressionQuest fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
@@ -76,11 +52,11 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         return new ProgressionQuest(id, title, description, displayIcon, questRewards, questCriteria, criteriaStrategy1, rewardStrategy1, mainQuest, parent);
     }
 
-    private void addReward(IReward reward) {
+    public void addReward(IReward reward) {
         this.questRewards.add(reward);
     }
 
-    private void addTrigger(String name, SimpleTrigger trigger) {
+    public void addTrigger(String name, SimpleTrigger trigger) {
         this.questCriteria.put(name, trigger);
     }
 
@@ -94,7 +70,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
     private final RewardStrategy rewardStrategy;
     private final boolean mainQuest;
     private final ResourceLocation parentQuest;
-    private final Map<KnownPlayer, Boolean> active = new HashMap<>();
+    //private final Map<KnownPlayer, Boolean> active = new HashMap<>();
 
     public ProgressionQuest(ResourceLocation id, Component questTitle, Component questDescription, ItemStack displayIcon, Set<IReward> questRewards, Map<String, SimpleTrigger> questCriteria, CriteriaStrategy criteriaStrategy, RewardStrategy rewardStrategy, boolean mainQuest, ResourceLocation parentQuest) {
         this.id = id;
@@ -157,12 +133,12 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         ProgressionQuest quest = (ProgressionQuest) o;
-        return mainQuest == quest.mainQuest && Objects.equal(id, quest.id) && Objects.equal(questTitle, quest.questTitle) && Objects.equal(questDescription, quest.questDescription) && Objects.equal(displayIcon, quest.displayIcon) && Objects.equal(questRewards, quest.questRewards) && Objects.equal(questCriteria, quest.questCriteria) && criteriaStrategy == quest.criteriaStrategy && rewardStrategy == quest.rewardStrategy && Objects.equal(parentQuest, quest.parentQuest) && Objects.equal(active, quest.active);
+        return mainQuest == quest.mainQuest && Objects.equal(id, quest.id) && Objects.equal(questTitle, quest.questTitle) && Objects.equal(questDescription, quest.questDescription) && Objects.equal(displayIcon, quest.displayIcon) && Objects.equal(questRewards, quest.questRewards) && Objects.equal(questCriteria, quest.questCriteria) && criteriaStrategy == quest.criteriaStrategy && rewardStrategy == quest.rewardStrategy && Objects.equal(parentQuest, quest.parentQuest) /*&& Objects.equal(active, quest.active)*/;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(id, questTitle, questDescription, displayIcon, questRewards, questCriteria, criteriaStrategy, rewardStrategy, mainQuest, parentQuest, active);
+        return Objects.hashCode(id, questTitle, questDescription, displayIcon, questRewards, questCriteria, criteriaStrategy, rewardStrategy, mainQuest, parentQuest /*active*/);
     }
 
     public Map<String, SimpleTrigger> getCriteria() {
@@ -173,23 +149,20 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         return this.criteriaStrategy;
     }
 
-    public boolean isActive(SinglePlayer player) {
-        if(this.active.get(KnownPlayer.fromSinglePlayer(player)) == null){
-            this.setActive(false, player); //default value for every quest
+    public boolean isParentDone(QuestManager questManager, KnownPlayer player) {
+        if(this.parentQuest == null) {
+            ProgressionLevel level = LevelManager.getInstance().getLevelForQuest(this);
+            ResourceLocation previousLevelId = level.getPreviousLevel();
+            if(previousLevelId != null){
+                ProgressionQuest quest = LevelManager.getInstance().getQuestManager().getLastMainQuestForLevel(ModRegistries.LEVELS.get().getValue(previousLevelId));
+                if(quest != null) return questManager.getOrStartProgress(quest, player).isDone();
+            }
         }
-        return this.active.get(KnownPlayer.fromSinglePlayer(player));
+        return this.parentQuest == null || questManager.getOrStartProgress(ModRegistries.QUESTS.get().getValue(this.parentQuest), player).isDone();
     }
 
-    public void setActive(boolean active, SinglePlayer player) {
-        this.active.put(KnownPlayer.fromSinglePlayer(player), active);
-    }
-
-    public boolean isParentDone(ActiveQuestManager activeQuestManager, SinglePlayer player) {
-        return this.parentQuest == null || activeQuestManager.getOrStartProgress(ModRegistries.QUESTS.get().getValue(this.parentQuest), player).isDone();
-    }
-
-    public boolean isDone(ActiveQuestManager activeQuestManager, SinglePlayer player) {
-        return activeQuestManager.getOrStartProgress(this, player).isDone();
+    public boolean isDone(QuestManager questManager, KnownPlayer player) {
+        return questManager.getOrStartProgress(this, player).isDone();
     }
 
     public boolean hasParent() {
@@ -204,5 +177,9 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
             if(flag) break;
         }
         return flag;
+    }
+
+    public boolean hasChild() {
+        return LevelManager.getInstance().getQuestManager().findChildQuest(this) != null;
     }
 }

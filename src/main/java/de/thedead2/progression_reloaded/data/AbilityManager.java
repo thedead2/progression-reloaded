@@ -1,12 +1,13 @@
-package de.thedead2.progression_reloaded.data.abilities;
+package de.thedead2.progression_reloaded.data;
 
+import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 public class AbilityManager { //TODO: implement abilities
-    static <T> void handleAbilityRequest(Class<? extends IAbility<T>> abilityClass, Entity entity, T t, Action<T> abilityAction) {
+    public static <T> void handleAbilityRequest(Class<? extends IAbility<T>> abilityClass, Entity entity, T t, Action<T> abilityAction) {
         if(entity instanceof Player player){
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
             if(!singlePlayer.getPlayer().isCreative()) {
@@ -18,7 +19,7 @@ public class AbilityManager { //TODO: implement abilities
     }
 
     @FunctionalInterface
-    interface Action<T>{
+    public interface Action<T>{
         void run(T t);
     }
 }

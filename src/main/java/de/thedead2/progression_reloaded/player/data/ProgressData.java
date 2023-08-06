@@ -1,7 +1,6 @@
 package de.thedead2.progression_reloaded.player.data;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
@@ -14,17 +13,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.saveddata.SavedData;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class ProgressData extends SavedData {
-    private final Multimap<KnownPlayer, ProgressionQuest> activeQuests;
-    private final Multimap<KnownPlayer, QuestProgress> questProgress;
+    private final Map<KnownPlayer, Set<ProgressionQuest>> activeQuests;
+    private final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress;
     private final Map<ProgressionLevel, LevelProgress> levelProgress;
     private final Map<KnownPlayer, ProgressionLevel> playerLevels;
 
-    public ProgressData(Multimap<KnownPlayer, ProgressionQuest> activeQuests, Multimap<KnownPlayer, QuestProgress> questProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels) {
+    public ProgressData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests, Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels) {
         this.activeQuests = activeQuests;
         this.questProgress = questProgress;
         this.levelProgress = levelProgress;
@@ -35,19 +35,19 @@ public class ProgressData extends SavedData {
     @Override
     public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
         CompoundTag tag1 = new CompoundTag();
-        this.activeQuests.keySet().forEach(knownPlayer -> {
+        this.activeQuests.forEach((knownPlayer, progressionQuests) -> {
             tag1.put(knownPlayer.id() + "-player", knownPlayer.toCompoundTag());
             CompoundTag tag2 = new CompoundTag();
-            this.activeQuests.get(knownPlayer).forEach(quest -> tag2.putBoolean(quest.getId().toString(), quest.isMainQuest()));
+            progressionQuests.forEach(quest -> tag2.putBoolean(quest.getId().toString(), quest.isMainQuest()));
             tag1.put(knownPlayer.id() + "-activeQuests", tag2);
         });
         tag.put("activeQuests", tag1);
 
         CompoundTag tag2 = new CompoundTag();
-        this.questProgress.keySet().forEach(knownPlayer -> {
+        this.questProgress.forEach((knownPlayer, questProgressMap) -> {
             tag2.put(knownPlayer.id() + "-player", knownPlayer.toCompoundTag());
             CompoundTag tag3 = new CompoundTag();
-            this.questProgress.get(knownPlayer).forEach(questProgress1 -> tag3.put(questProgress1.getQuest().getId().toString(), questProgress1.saveToCompoundTag()));
+            questProgressMap.forEach((quest, progress) -> tag3.put(quest.getId().toString(), progress.saveToCompoundTag()));
             tag2.put(knownPlayer.id() + "-progress", tag3);
         });
         tag.put("questProgress", tag2);
@@ -67,8 +67,8 @@ public class ProgressData extends SavedData {
     }
 
     public static ProgressData load(CompoundTag tag) {
-        final Multimap<KnownPlayer, ProgressionQuest> activeQuests = HashMultimap.create();
-        final Multimap<KnownPlayer, QuestProgress> questProgress = HashMultimap.create();
+        final Map<KnownPlayer, Set<ProgressionQuest>> activeQuests = new HashMap<>();
+        final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress = new HashMap<>();
         final Map<ProgressionLevel, LevelProgress> levelProgress = new HashMap<>();
         final Map<KnownPlayer, ProgressionLevel> playerLevels = new HashMap<>();
 
@@ -76,17 +76,21 @@ public class ProgressData extends SavedData {
         activeQuestsTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
             KnownPlayer player = KnownPlayer.fromCompoundTag(activeQuestsTag.getCompound(s));
             CompoundTag tag1 = activeQuestsTag.getCompound(player.id() + "-activeQuests");
-            tag1.getAllKeys().forEach(s1 -> activeQuests.put(player, ModRegistries.QUESTS.get().getValue(new ResourceLocation(s1))));
+            Set<ProgressionQuest> quests = new HashSet<>();
+            tag1.getAllKeys().forEach(s1 -> quests.add(ModRegistries.QUESTS.get().getValue(new ResourceLocation(s1))));
+            activeQuests.put(player, quests);
         });
 
         CompoundTag questTag = tag.getCompound("questProgress");
         questTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
             KnownPlayer player = KnownPlayer.fromCompoundTag(questTag.getCompound(s));
             CompoundTag tag1 = questTag.getCompound(player.id() + "-progress");
+            Map<ProgressionQuest, QuestProgress> progressMap = new HashMap<>();
             tag1.getAllKeys().forEach(s1 -> {
                 QuestProgress progress = QuestProgress.loadFromCompoundTag(tag1.getCompound(s1));
-                questProgress.put(player, progress);
+                progressMap.put(progress.getQuest(), progress);
             });
+            questProgress.put(player, progressMap);
         });
 
         CompoundTag levelProgressTag = tag.getCompound("levelProgress");
@@ -102,38 +106,21 @@ public class ProgressData extends SavedData {
         return new ProgressData(activeQuests, questProgress, levelProgress, playerLevels);
     }
 
-    public Multimap<KnownPlayer, QuestProgress> getQuestProgress(Collection<ProgressionQuest> quests) {
-        Multimap<KnownPlayer, QuestProgress> levelQuestsProgress = HashMultimap.create();
-        this.questProgress.keySet().forEach(knownPlayer -> this.questProgress.get(knownPlayer).stream().filter(progress -> progress.getQuest().equalsAny(quests)).forEach(progress -> levelQuestsProgress.put(knownPlayer, progress)));
-        return levelQuestsProgress;
+    public ImmutableMap<KnownPlayer, Map<ProgressionQuest, QuestProgress>> getQuestProgressData() {
+        return ImmutableMap.copyOf(this.questProgress);
     }
 
-    public Multimap<KnownPlayer, ProgressionQuest> getActiveQuests(Collection<ProgressionQuest> quests) {
-        Multimap<KnownPlayer, ProgressionQuest> levelQuests = HashMultimap.create();
-        this.activeQuests.keySet().forEach(knownPlayer -> this.activeQuests.get(knownPlayer).stream().filter(quest -> quest.equalsAny(quests)).forEach(quest -> levelQuests.put(knownPlayer, quest)));
-        return levelQuests;
+    public ImmutableMap<KnownPlayer, Set<ProgressionQuest>> getActivePlayerQuests() {
+        return ImmutableMap.copyOf(this.activeQuests);
     }
 
-    public void updateQuestProgressData(Multimap<SinglePlayer, QuestProgress> mainQuestsProgress, Multimap<SinglePlayer, QuestProgress> sideQuestsProgress){
-        final Multimap<KnownPlayer, QuestProgress> questsProgress = HashMultimap.create();
-        mainQuestsProgress.keySet().forEach(player -> {
-            KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
-            questsProgress.putAll(player1, mainQuestsProgress.get(player));
-        });
-        sideQuestsProgress.keySet().forEach(player -> {
-            KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
-            questsProgress.putAll(player1, sideQuestsProgress.get(player));
-        });
-
-        questsProgress.keySet().forEach(knownPlayer -> this.questProgress.putAll(knownPlayer, questsProgress.get(knownPlayer)));
+    public void updateQuestProgressData(Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress){
+        this.questProgress.putAll(questProgress);
         this.setDirty();
     }
 
-    public void updateActiveQuestsData(Multimap<SinglePlayer, ProgressionQuest> activeQuests){
-        activeQuests.keySet().forEach(player -> {
-            KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
-            this.activeQuests.putAll(player1, activeQuests.get(player));
-        });
+    public void updateActiveQuestsData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests){
+        this.activeQuests.putAll(activeQuests);
         this.setDirty();
     }
 
@@ -147,11 +134,11 @@ public class ProgressData extends SavedData {
         this.setDirty();
     }
 
-    public Map<ProgressionLevel, LevelProgress> getLevelProgress() {
-        return levelProgress;
+    public ImmutableMap<ProgressionLevel, LevelProgress> getLevelProgress() {
+        return ImmutableMap.copyOf(this.levelProgress);
     }
 
-    public Map<KnownPlayer, ProgressionLevel> getPlayerLevels() {
-        return playerLevels;
+    public ImmutableMap<KnownPlayer, ProgressionLevel> getPlayerLevels() {
+        return ImmutableMap.copyOf(this.playerLevels);
     }
 }

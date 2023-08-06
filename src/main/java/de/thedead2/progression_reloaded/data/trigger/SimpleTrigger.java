@@ -5,12 +5,13 @@ import com.google.common.collect.*;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import de.thedead2.progression_reloaded.data.level.LevelManager;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
@@ -29,14 +30,13 @@ import java.util.stream.Stream;
 public abstract class SimpleTrigger {
     protected final ResourceLocation id;
     protected final PlayerPredicate player;
-    private final Multimap<SinglePlayer, Listener> playerListeners = HashMultimap.create();
-    public void addListener(SinglePlayer player, Listener listener){
-        if(!this.playerListeners.containsKey(player) || !this.playerListeners.get(player).contains(listener)) this.playerListeners.put(player, listener);
+    private final Multimap<KnownPlayer, Listener> playerListeners = HashMultimap.create();
+    public void addListener(KnownPlayer player, Listener listener){
+        this.playerListeners.put(player, listener);
     }
 
-    public void removeListener(SinglePlayer player, Listener listener){
+    public void removeListener(KnownPlayer player, Listener listener){
         this.playerListeners.get(player).remove(listener);
-        if(this.playerListeners.get(player).isEmpty()) this.playerListeners.remove(player, listener);
     }
 
     public static void register(ResourceLocation id, Class<SimpleTrigger> trigger){
@@ -64,10 +64,9 @@ public abstract class SimpleTrigger {
     }
 
     protected void trigger(SinglePlayer player, Predicate<SimpleTrigger> triggerPredicate) {
-        ProgressionLevel progressionLevel = player.getProgressionLevel();
         List<Listener> list = Lists.newArrayList();
 
-        for(Listener listener : this.playerListeners.get(player)) {
+        for(Listener listener : this.playerListeners.get(KnownPlayer.fromSinglePlayer(player))) {
             if (triggerPredicate.test(this) && this.player.matches(player)) {
                 list.add(listener);
             }
@@ -75,7 +74,7 @@ public abstract class SimpleTrigger {
 
         for (Listener listener1 : list) {
             ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
-            listener1.award(progressionLevel, player);
+            listener1.award(player);
         }
     }
 
@@ -84,7 +83,7 @@ public abstract class SimpleTrigger {
     protected static void fireTrigger(Class<? extends SimpleTrigger> triggerClass, Entity entity, Object... addArgs){
         if(entity instanceof Player player){
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelManager.getInstance().fireTriggers(triggerClass, singlePlayer, addArgs);
+            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs);
         }
     }
 
@@ -128,8 +127,8 @@ public abstract class SimpleTrigger {
             this.criterion = criterionName;
         }
 
-        public void award(ProgressionLevel progressionLevel, SinglePlayer player) {
-            progressionLevel.getQuestManager().award(this.quest, this.criterion, player);
+        public void award(SinglePlayer player) {
+            LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
         }
 
         @Override

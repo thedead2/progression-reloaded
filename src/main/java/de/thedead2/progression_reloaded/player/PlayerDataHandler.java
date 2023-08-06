@@ -37,7 +37,7 @@ public abstract class PlayerDataHandler {
         var dataStorage = level.getDataStorage();
         teamData = dataStorage.computeIfAbsent(TeamData::load, () -> new TeamData(new HashMap<>()), "teams");
         playerData = dataStorage.computeIfAbsent(PlayerData::load, () -> new PlayerData(new HashSet<>()), "players");
-        progressData = dataStorage.computeIfAbsent(ProgressData::load, () -> new ProgressData(HashMultimap.create(), HashMultimap.create(), new HashMap<>(), new HashMap<>()), "progress");
+        progressData = dataStorage.computeIfAbsent(ProgressData::load, () -> new ProgressData(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>()), "progress");
     }
 
     public static void savePlayerData(Player player, File playerFile) {

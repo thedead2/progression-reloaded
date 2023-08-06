@@ -1,8 +1,9 @@
 package de.thedead2.progression_reloaded.commands;
 
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import de.thedead2.progression_reloaded.data.level.LevelManager;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
@@ -19,7 +20,7 @@ public class PlayerCommands {
 
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_QUEST = (context, suggestionsBuilder) -> {
         SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-        return SharedSuggestionProvider.suggest(player.getProgressionLevel().getQuestManager().getQuests().keySet().stream().map(ResourceLocation::toString), suggestionsBuilder);
+        return SharedSuggestionProvider.suggest(ModRegistries.QUESTS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
     };
     private static final SuggestionProvider<CommandSourceStack> SUGGEST_LEVEL = (context, suggestionsBuilder) -> {
         return SharedSuggestionProvider.suggest(ModRegistries.LEVELS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
@@ -37,14 +38,13 @@ public class PlayerCommands {
         });
         ModCommand.Builder.newModCommand("players/reward/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST), context -> {
             ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
-            SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-            player.getProgressionLevel().getQuestManager().award(quest_id, player);
+            LevelManager.getInstance().getQuestManager().award(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
             context.getSource().sendSuccess(Component.literal("Completed quest: " + quest_id), false);
             return ModCommand.COMMAND_SUCCESS;
         });
         ModCommand.Builder.newModCommand("players/level/reward/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL), context -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-            LevelManager.getInstance().changeLevel(player, ResourceLocationArgument.getId(context, "level"));
+            LevelManager.getInstance().updateLevel(player, ResourceLocationArgument.getId(context, "level"));
             context.getSource().sendSuccess(Component.literal("Completed level !"), false);
             return ModCommand.COMMAND_SUCCESS;
         });
