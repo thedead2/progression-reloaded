@@ -5,9 +5,7 @@ import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.data.predicates.EntityPredicate;
-import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
-import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
+import de.thedead2.progression_reloaded.data.predicates.*;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.*;
 import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
@@ -18,13 +16,20 @@ import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.util.*;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.handler.FileHandler;
+import de.thedead2.progression_reloaded.util.logger.MissingAdvancementFilter;
+import de.thedead2.progression_reloaded.util.logger.UnknownAdvancementFilter;
+import de.thedead2.progression_reloaded.util.logger.UnknownRecipeCategoryFilter;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -40,6 +45,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.Map;
@@ -52,6 +59,8 @@ public class ProgressionReloaded {
     //TODO: extra class for event managing
     //TODO: Maybe better use Codecs for serialization and deserialization?
     //TODO: Level and quest builder classes --> + graphical ui of them
+    //TODO: Use Gson and GsonHelper for whole project instead of json --> easier!
+    //TODO: Instead of IForgeRegistry simple Maps for Levels and Quests? --> in game reload possible
 
     public static final String MAIN_PACKAGE = ProgressionReloaded.class.getPackageName();
 
@@ -73,7 +82,44 @@ public class ProgressionReloaded {
                 Component.literal("This is a test quest!"),
                 Items.ACACIA_BOAT.getDefaultInstance(),
                 Set.of(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50)),
-                Map.of("testKill", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.CHICKEN)), "testSleep", new SleepTrigger(PlayerPredicate.ANY)),
+                Map.of(
+                        "testKill", new KillTrigger(PlayerPredicate.ANY,
+                                new EntityPredicate(
+                                        EntityTypePredicate.from(EntityType.CHICKEN),
+                                        DistancePredicate.ANY,
+                                        LocationPredicate.ANY,
+                                        LocationPredicate.ANY,
+                                        EffectsPredicate.ANY,
+                                        NbtPredicate.ANY,
+                                        new EntityFlagsPredicate(true, null, null, null, null),
+                                        EntityEquipmentPredicate.ANY
+                                )
+                        ),
+                        "testKill2", new KillTrigger(PlayerPredicate.ANY,
+                                new EntityPredicate(
+                                        EntityTypePredicate.from(EntityType.SPIDER),
+                                        DistancePredicate.ANY,
+                                        LocationPredicate.ANY,
+                                        LocationPredicate.ANY,
+                                        EffectsPredicate.ANY,
+                                        NbtPredicate.ANY,
+                                        EntityFlagsPredicate.ANY,
+                                        EntityEquipmentPredicate.ANY
+                                )
+                        ),
+                        "testSleep", new SleepTrigger(PlayerPredicate.ANY,
+                                new LocationPredicate(
+                                        MinMax.Doubles.ANY,
+                                        MinMax.Doubles.ANY,
+                                        MinMax.Doubles.ANY,
+                                        Biomes.DESERT,
+                                        null,
+                                        null,
+                                        BlockPredicate.ANY,
+                                        FluidPredicate.ANY
+                                )
+                        )
+                ),
                 CriteriaStrategy.AND,
                 RewardStrategy.ALL,
                 true,
@@ -85,7 +131,16 @@ public class ProgressionReloaded {
                 Component.literal("This is a test quest2!"),
                 Items.ACACIA_BOAT.getDefaultInstance(),
                 Set.of(new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART), new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34)),
-                Map.of("testKill2", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.HORSE))),
+                Map.of("testKill2", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
+                        EntityTypePredicate.from(EntityType.HORSE),
+                        DistancePredicate.ANY,
+                        LocationPredicate.ANY,
+                        LocationPredicate.ANY,
+                        EffectsPredicate.ANY,
+                        NbtPredicate.ANY,
+                        EntityFlagsPredicate.ANY,
+                        EntityEquipmentPredicate.ANY
+                ))),
                 CriteriaStrategy.OR,
                 RewardStrategy.ALL,
                 false,
@@ -97,7 +152,16 @@ public class ProgressionReloaded {
                 Component.literal("This is a test quest3!"),
                 Items.ACACIA_BOAT.getDefaultInstance(),
                 Set.of(new CommandReward("weather rain")),
-                Map.of("test1", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.CREEPER))),
+                Map.of("test1", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
+                        EntityTypePredicate.from(EntityType.CREEPER),
+                        DistancePredicate.ANY,
+                        LocationPredicate.ANY,
+                        LocationPredicate.ANY,
+                        EffectsPredicate.ANY,
+                        NbtPredicate.ANY,
+                        EntityFlagsPredicate.ANY,
+                        EntityEquipmentPredicate.ANY
+                ))),
                 CriteriaStrategy.AND,
                 RewardStrategy.ALL,
                 true,
@@ -165,6 +229,7 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(this::onGameTick);
 
         forgeEventBus.register(this);
+        registerLoggerFilter();
         VersionManager.register(modEventBus, forgeEventBus);
     }
 
@@ -188,6 +253,7 @@ public class ProgressionReloaded {
 
     private void setup(final FMLCommonSetupEvent event) {
         LOGGER.info("Starting {}, Version: {}", MOD_NAME, MOD_VERSION);
+        FileHandler.checkForMainDirectories();
         ModNetworkHandler.registerPackets();
     }
 
@@ -228,6 +294,19 @@ public class ProgressionReloaded {
 
     private void onGameTick(final TickEvent.ServerTickEvent event){
 
+    }
+
+    private void registerLoggerFilter(){
+        Logger rootLogger = LogManager.getRootLogger();
+
+        if (rootLogger instanceof org.apache.logging.log4j.core.Logger logger) {
+            logger.addFilter(new MissingAdvancementFilter());
+            logger.addFilter(new UnknownRecipeCategoryFilter());
+            logger.addFilter(new UnknownAdvancementFilter());
+        }
+        else {
+            LOGGER.error("Unable to register filter for Logger with unexpected class: {}", rootLogger.getClass().getName());
+        }
     }
 
     static {

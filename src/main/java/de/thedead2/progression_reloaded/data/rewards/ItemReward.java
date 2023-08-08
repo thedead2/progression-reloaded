@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.data.rewards;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.util.JsonHelper;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -27,7 +28,7 @@ public class ItemReward implements IReward{
 
     public static ItemReward fromJson(JsonElement jsonElement){
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        ItemStack item = Item.byId(jsonObject.get("item").getAsInt()).getDefaultInstance();
+        ItemStack item = JsonHelper.itemFromJson(jsonObject.get("item").getAsJsonObject());
         int amount = jsonObject.get("amount").getAsInt();
         return new ItemReward(item, amount);
     }
@@ -35,7 +36,7 @@ public class ItemReward implements IReward{
     @Override
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("item", Item.getId(this.item.getItem()));
+        jsonObject.add("item", JsonHelper.itemToJson(this.item));
         jsonObject.addProperty("amount", this.amount);
         return jsonObject;
     }

@@ -4,8 +4,10 @@ import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.PlayerTeamSynchronizer;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.language.ChatMessageHandler;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
@@ -66,21 +68,22 @@ public class LevelManager {
             LevelProgress progress = this.levelProgress.get(level);
             if(progress.isDone(player)){
                 if(!progress.hasBeenRewarded(player)){
-                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
+                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
                     LOGGER.debug(MARKER,"Player {} completed level {}", player.name(), level.getId());
                     level.rewardPlayer(singlePlayer);
                     progress.setRewarded(player, true);
                     this.updateLevel(singlePlayer, level.getNextLevel());
                 }
             }
-            else questManager.updateStatus(player);
+            else questManager.updateStatus(player, true);
         });
     }
 
     public void updateLevel(SinglePlayer player, ResourceLocation nextLevel){
         if(nextLevel == null) return;
-        player.updateProgressionLevel(ModRegistries.LEVELS.get().getValue(nextLevel));
-        this.playerLevels.replace(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+        PlayerTeamSynchronizer.updateProgressionLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
+        this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+        this.syncLevels(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
         this.saveData();
         this.updateStatus();
     }
@@ -140,5 +143,26 @@ public class LevelManager {
 
     public QuestManager getQuestManager() {
         return this.questManager;
+    }
+
+    private void syncLevels(KnownPlayer player, ProgressionLevel level){
+        PlayerTeam team = PlayerDataHandler.getTeam(player);
+        if(team == null) return;
+        team.forEachMember(player1 -> this.playerLevels.put(player1, level));
+    }
+
+    public void revoke(SinglePlayer player, ResourceLocation level) {
+        KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
+        ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
+        this.levelProgress.get(level1).setRewarded(player1, false);
+        level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
+        this.updateLevel(player, level);
+    }
+
+    public void award(SinglePlayer player, ResourceLocation level) {
+        KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
+        ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
+        level1.getQuests().forEach(id -> this.questManager.award(id, player1));
+        this.updateLevel(player, level);
     }
 }

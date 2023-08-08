@@ -36,7 +36,10 @@ public class CraftingTrigger extends SimpleTrigger{
             craftCounter++;
             return;
         }
-        this.trigger(player, trigger -> this.craftingResult.matches(craftedItem));
+        this.trigger(player, trigger -> {
+            craftCounter = 0;
+            return this.craftingResult.matches(craftedItem);
+        });
     }
 
     @Override

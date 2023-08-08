@@ -1,8 +1,6 @@
 package de.thedead2.progression_reloaded.data.level;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
@@ -13,6 +11,8 @@ import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
 import java.util.*;
+
+import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
 public class ProgressionLevel implements ModRegistriesDynamicSerializer {
     private final int index;
@@ -59,6 +59,8 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
     }
 
     public JsonObject toJson(){
+        /*Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        LOGGER.debug("Level {}: \n{}", this.name, gson.toJson(this));*/
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("index", this.index);
         jsonObject.addProperty("name", this.name);

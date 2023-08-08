@@ -60,7 +60,7 @@ public class SinglePlayer {
     }
 
 
-    public ServerPlayer getPlayer() {
+    public ServerPlayer getServerPlayer() {
         return player;
     }
 
@@ -85,9 +85,7 @@ public class SinglePlayer {
     }
 
     public void updateProgressionLevel(ProgressionLevel level){
-        if(level == null) return;
         this.progressionLevel = level;
-        if(this.isInTeam()) this.team.updateProgressionLevel(this.progressionLevel, this);
     }
 
     public ProgressionLevel getProgressionLevel() {

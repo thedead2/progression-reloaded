@@ -21,6 +21,7 @@ public abstract class FileHandler extends ModHelper {
     public static void checkForMainDirectories() {
         createDirectory(DIR_PATH.toFile());
         createDirectory(LEVELS_PATH.toFile());
+        createDirectory(QUESTS_PATH.toFile());
     }
 
     public static void readDirectory(File directory, Consumer<File> fileReader) {

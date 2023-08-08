@@ -11,8 +11,7 @@ public abstract class ConfigManager {
      * All Config fields for Progression Reloaded
      **/
     public static final ForgeConfigSpec.BooleanValue OUT_DATED_MESSAGE;
-    public static final ForgeConfigSpec.ConfigValue<Boolean> TILE_CLAIMER_RECIPE;
-    public static final ForgeConfigSpec.ConfigValue<Integer> MAXIMUM_CRITERIA_BACKUPS;
+    public static final ForgeConfigSpec.BooleanValue DISABLE_ADVANCEMENTS;
 
 
     static {
@@ -20,16 +19,14 @@ public abstract class ConfigManager {
 
         OUT_DATED_MESSAGE = newBoolean("Whether the mod should send a chat message if an update is available","warnMessage", true);
 
-        TILE_CLAIMER_RECIPE = newBoolean("Add Recipe for Tile Entity Claimer","tileClaimerRecipe", true);
-
-        MAXIMUM_CRITERIA_BACKUPS = newRange("Maximum Criteria Backups","maxCriteriaBackups", 25, 1, 100);
+        DISABLE_ADVANCEMENTS = newBoolean("Whether the mod should disable minecrafts in-game advancements", "disableAdvancements", true);
 
         CONFIG_BUILDER.pop();
         CONFIG_SPEC = CONFIG_BUILDER.build();
     }
 
     public static ForgeConfigSpec.BooleanValue newBoolean(String comment, String name, boolean defaultValue){
-        return CONFIG_BUILDER.comment(comment).define(name, defaultValue);
+        return CONFIG_BUILDER.comment(comment + ".\ndefault = " + defaultValue).define(name, defaultValue);
     }
 
     @SuppressWarnings("unchecked")

@@ -23,7 +23,7 @@ public class PlaceBlockReward implements IReward{
     }
 
     public static PlaceBlockReward fromJson(JsonElement jsonElement){
-        BlockState state = Block.stateById(jsonElement.getAsInt());
+        BlockState state = Block.stateById(jsonElement.getAsInt()); //TODO: Better by id!
         return new PlaceBlockReward(state);
     }
     @Override

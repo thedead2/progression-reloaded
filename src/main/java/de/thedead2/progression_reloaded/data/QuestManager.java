@@ -7,6 +7,7 @@ import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -43,7 +44,7 @@ public class QuestManager {
     }
 
     private void loadQuestProgress() {
-        this.questProgress.putAll(PlayerDataHandler.getProgressData().orElseThrow().getQuestProgressData());
+        this.questProgress.putAll(PlayerDataHandler.getProgressData().orElseThrow().getPlayerQuestProgressData());
         PlayerDataHandler.allPlayers().forEach(player -> this.questProgress.putIfAbsent(KnownPlayer.fromSinglePlayer(player), new HashMap<>()));
     }
 
@@ -71,11 +72,12 @@ public class QuestManager {
     /**
      * Updates the quests of a player depending on whether the quest has been completed or not.
      * */
-    public void updateStatus(KnownPlayer player) {
+    public void updateStatus(KnownPlayer player, boolean shouldSync) {
         LOGGER.debug(MARKER, "Updating quests for player: {}", player.name());
         this.activePlayerQuests.replace(player, searchQuestsForActive(player));
         searchQuestsForComplete(player).forEach(quest -> this.unregisterListeners(quest, player));
         this.activePlayerQuests.get(player).forEach(quest -> this.registerListeners(quest, player));
+        if (shouldSync) this.syncQuestProgress(player);
     }
 
     public void registerListeners(ProgressionQuest quest, KnownPlayer player) {
@@ -177,7 +179,7 @@ public class QuestManager {
             this.unregisterListeners(quest, player);
             flag = true;
             if (!flag1 && questProgress.isDone()) {
-                quest.rewardPlayer(singlePlayer);
+                quest.rewardPlayer(singlePlayer); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
             }
         }
 
@@ -185,12 +187,19 @@ public class QuestManager {
 
         return flag;
     }
+    public boolean revoke(ProgressionQuest quest, KnownPlayer player) {
+        return revoke(quest, null, player);
+    }
+    public boolean revoke(ResourceLocation quest, KnownPlayer player) {
+        return revoke(findQuest(quest), null, player);
+    }
 
     /** Revokes the given quest for the given player **/
     public boolean revoke(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        if (questProgress.revokeProgress(criterionName) && quest.isParentDone(this, player)) {
+        if ((criterionName == null || questProgress.revokeProgress(criterionName)) && quest.isParentDone(this, player)) {
+            if(criterionName == null) questProgress.reset();
             this.registerListeners(quest, player);
             LevelManager.getInstance().updateStatus();
             flag = true;
@@ -205,7 +214,6 @@ public class QuestManager {
             questProgress = new QuestProgress(quest);
             this.startProgress(quest, questProgress, player);
         }
-
         return questProgress;
     }
 
@@ -224,7 +232,7 @@ public class QuestManager {
                 trigger.trigger(player, data);
             }
         }));
-        this.updateStatus(knownPlayer);
+        this.updateStatus(knownPlayer, true);
     }
 
     public ProgressionQuest getLastMainQuestForLevel(ProgressionLevel level) {
@@ -238,5 +246,28 @@ public class QuestManager {
     public ProgressionQuest findChildQuest(ProgressionQuest quest) {
         ResourceLocation id = quest.getId();
         return ModRegistries.QUESTS.get().getValues().stream().filter(quest1 -> quest1.getParentQuest() != null && quest1.getParentQuest().equals(id)).findAny().orElse(null);
+    }
+
+    /*private void syncActiveQuests(KnownPlayer player){
+        PlayerTeam team = PlayerDataHandler.getTeam(player);
+        Set<ProgressionQuest> activeQuests = this.activePlayerQuests.get(player);
+        if(team == null) return;
+        team.forEachMember(player1 -> {
+            if(!player1.equals(player)){
+                this.activePlayerQuests.compute(player1, (player2, progressionQuests) -> progressionQuests == null ? new HashSet<>() : progressionQuests).addAll(activeQuests);
+                this.updateStatus(player1);
+            }
+        });
+    }*/
+    private void syncQuestProgress(KnownPlayer player){
+        PlayerTeam team = PlayerDataHandler.getTeam(player);
+        var questProgress = this.questProgress.get(player);
+        if(team == null) return;
+        team.forEachMember(player1 -> {
+            if(!player1.equals(player)) {
+                this.questProgress.compute(player1, (player2, map) -> map == null ? new HashMap<>() : map).putAll(questProgress);
+                this.updateStatus(player1, false);
+            }
+        });
     }
 }

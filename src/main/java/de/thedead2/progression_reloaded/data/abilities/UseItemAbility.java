@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.AbilityManager;
+import de.thedead2.progression_reloaded.util.JsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -30,7 +31,7 @@ public class UseItemAbility extends ListAbility<ItemStack> {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("blacklist", this.blacklist);
         JsonArray jsonArray = new JsonArray();
-        this.usable.forEach(itemStack -> jsonArray.add(Item.getId(itemStack.getItem())));
+        this.usable.forEach(itemStack -> jsonArray.add(JsonHelper.itemToJson(itemStack)));
         jsonObject.add("usable", jsonArray);
         return jsonObject;
     }
@@ -40,7 +41,7 @@ public class UseItemAbility extends ListAbility<ItemStack> {
         boolean blacklist = jsonObject.get("blacklist").getAsBoolean();
         Set<ItemStack> itemStacks = new HashSet<>();
         JsonArray jsonArray = jsonObject.get("usable").getAsJsonArray();
-        jsonArray.forEach(jsonElement1 -> itemStacks.add(Item.byId(jsonElement1.getAsInt()).getDefaultInstance()));
+        jsonArray.forEach(jsonElement1 -> itemStacks.add(JsonHelper.itemFromJson(jsonElement1.getAsJsonObject())));
         return new UseItemAbility(blacklist, itemStacks);
     }
 

@@ -27,7 +27,7 @@ public class SleepTrigger extends SimpleTrigger {
 
     @Override
     public void trigger(SinglePlayer player, Object... data) {
-        this.trigger(player, trigger -> this.location.matches((BlockPos) data[0]));
+        this.trigger(player, trigger -> this.location.matches((BlockPos) data[0], data[1]));
     }
 
     @Override
@@ -44,6 +44,6 @@ public class SleepTrigger extends SimpleTrigger {
 
     @SubscribeEvent
     public static void onPlayerWakeUp(final PlayerSleepInBedEvent event){
-        fireTrigger(SleepTrigger.class, event.getEntity(), event.getPos());
+        fireTrigger(SleepTrigger.class, event.getEntity(), event.getPos(), event.getEntity().getLevel());
     }
 }

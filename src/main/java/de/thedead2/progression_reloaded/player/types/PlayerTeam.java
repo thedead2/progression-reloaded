@@ -12,6 +12,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class PlayerTeam {
     private final String teamName;
@@ -31,7 +32,7 @@ public class PlayerTeam {
     public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers) {
         this(teamName, id, knownMembers, null);
     }
-
+//TODO: Data doesn't get saved --> members and level
     public static PlayerTeam fromCompoundTag(CompoundTag tag) {
         if(tag == null || tag.isEmpty()) return null;
         String level = tag.getString("level");
@@ -40,11 +41,15 @@ public class PlayerTeam {
         CompoundTag members = tag.getCompound("members");
         List<KnownPlayer> memberIds = new ArrayList<>();
         members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
-        return new PlayerTeam(name, ResourceLocation.tryParse(id), memberIds, ProgressionLevel.fromKey(ResourceLocation.tryParse(level)));
+        return new PlayerTeam(name, new ResourceLocation(id), memberIds, ProgressionLevel.fromKey(new ResourceLocation(level)));
+    }
+
+    public static PlayerTeam fromKey(ResourceLocation teamId){
+        return PlayerDataHandler.getTeam(teamId);
     }
 
     public static PlayerTeam fromRegistry(String teamName, ServerPlayer player) {
-        var team = PlayerDataHandler.getTeam(ResourceLocation.tryParse(teamName));
+        var team = fromKey(ResourceLocation.tryParse(teamName));
         if(team != null && team.accept(player)) return team;
         else return null;
     }
@@ -153,5 +158,9 @@ public class PlayerTeam {
 
     public boolean hasAbility(IAbility<?> ability) {
         return this.teamAbilities.containsValue(ability);
+    }
+
+    public void forEachMember(Consumer<KnownPlayer> action) {
+        this.knownMembers.forEach(action);
     }
 }

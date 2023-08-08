@@ -34,7 +34,7 @@ public class TeamCommands {
     };
 
     public static void register(){
-        ModCommand.Builder.newModCommand("teams/new/[name]", Map.of("[name]", StringArgumentType.string()), Collections.emptyMap(), context -> {
+        ModCommand.Builder.newModCommand("teams/add/[name]", Map.of("[name]", StringArgumentType.string()), Collections.emptyMap(), context -> {
             var source = context.getSource();
             String name = StringArgumentType.getString(context, "name");
             ResourceLocation id = PlayerTeam.createId(name);
@@ -130,6 +130,18 @@ public class TeamCommands {
             }
             source.sendSuccess(TranslationKeyProvider.chatMessage("team_members", team.getName()), false);
             team.getMembers().forEach(member -> source.sendSuccess(Component.literal(member.name()), false));
+            return COMMAND_SUCCESS;
+        });
+        ModCommand.Builder.newModCommand("teams/[team]/level", Map.of("[team]", StringArgumentType.string()), Map.of("[team]", SUGGEST_TEAMS), context -> {
+            var source = context.getSource();
+            String teamName = StringArgumentType.getString(context, "team");
+            var team = PlayerDataHandler.getTeam(teamName);
+            if(team == null){
+                source.sendFailure(TranslationKeyProvider.chatMessage("unknown_team", ChatFormatting.RED, teamName));
+                return COMMAND_FAILURE;
+            }
+            source.sendSuccess(TranslationKeyProvider.chatMessage("team_level", team.getName()), false);
+            source.sendSuccess(Component.literal(team.getProgressionLevel().getId().toString()), false);
             return COMMAND_SUCCESS;
         });
 

@@ -36,21 +36,34 @@ public class PlayerCommands {
             else source.sendFailure(TranslationKeyProvider.chatMessage("player_in_no_team"));
             return ModCommand.COMMAND_SUCCESS;
         });
-        ModCommand.Builder.newModCommand("players/reward/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST), context -> {
+        ModCommand.Builder.newModCommand("players/award/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST), context -> {
             ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
             LevelManager.getInstance().getQuestManager().award(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
             context.getSource().sendSuccess(Component.literal("Completed quest: " + quest_id), false);
             return ModCommand.COMMAND_SUCCESS;
         });
-        ModCommand.Builder.newModCommand("players/level/reward/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL), context -> {
-            SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-            LevelManager.getInstance().updateLevel(player, ResourceLocationArgument.getId(context, "level"));
-            context.getSource().sendSuccess(Component.literal("Completed level !"), false);
+        ModCommand.Builder.newModCommand("players/revoke/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST), context -> {
+            ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
+            LevelManager.getInstance().getQuestManager().revoke(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
+            context.getSource().sendSuccess(Component.literal("Revoked quest: " + quest_id), false);
             return ModCommand.COMMAND_SUCCESS;
         });
         ModCommand.Builder.newModCommand("players/level", context -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
             context.getSource().sendSuccess(Component.literal("Your current level is: " + player.getProgressionLevel().getName()), false);
+            return ModCommand.COMMAND_SUCCESS;
+        });
+
+        ModCommand.Builder.newModCommand("players/award/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL), context -> {
+            SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+            LevelManager.getInstance().award(player, ResourceLocationArgument.getId(context, "level"));
+            context.getSource().sendSuccess(Component.literal("Completed level !"), false);
+            return ModCommand.COMMAND_SUCCESS;
+        });
+        ModCommand.Builder.newModCommand("players/revoke/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL), context -> {
+            SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+            LevelManager.getInstance().revoke(player, ResourceLocationArgument.getId(context, "level"));
+            context.getSource().sendSuccess(Component.literal("Revoked level!"), false);
             return ModCommand.COMMAND_SUCCESS;
         });
     }

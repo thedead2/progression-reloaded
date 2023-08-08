@@ -24,7 +24,7 @@ public class UsedItemTrigger extends SimpleTrigger {
 
     @Override
     public void trigger(SinglePlayer player, Object... data) {
-        this.trigger(player, trigger -> this.item.matches((ItemStack) data[0]));
+        this.trigger(player, listener -> this.item.matches((ItemStack) data[0]));
     }
 
     @Override

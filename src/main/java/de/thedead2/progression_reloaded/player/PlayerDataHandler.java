@@ -68,6 +68,9 @@ public abstract class PlayerDataHandler {
     public static PlayerTeam getTeam(String teamName) {
         return getTeamData().orElseThrow().getTeam(teamName);
     }
+    public static PlayerTeam getTeam(KnownPlayer player) {
+        return getTeamData().orElseThrow().getTeam(player);
+    }
     public static PlayerTeam getTeam(ResourceLocation id) {
         return getTeamData().orElseThrow().getTeam(id);
     }

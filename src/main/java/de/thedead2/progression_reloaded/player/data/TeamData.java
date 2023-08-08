@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.player.data;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -33,6 +34,10 @@ public class TeamData extends SavedData {
     public void addTeam(PlayerTeam team){
         this.teams.put(team.getId(), team);
         this.setDirty();
+    }
+
+    public PlayerTeam getTeam(KnownPlayer player){
+        return this.teams.values().stream().filter(playerTeam -> playerTeam.isPlayerInTeam(player)).findAny().orElse(null);
     }
 
     public PlayerTeam getTeam(ResourceLocation id){

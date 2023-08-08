@@ -23,7 +23,7 @@ public class PlacedBlockTrigger extends SimpleTrigger{
 
     @Override
     public void trigger(SinglePlayer player, Object... data) {
-        this.trigger(player, trigger -> this.block.matches((BlockState) data[0], data[1], data[2]));
+        this.trigger(player, trigger -> this.block.matches((BlockState) data[0], data[1]));
     }
 
     @Override
@@ -39,6 +39,6 @@ public class PlacedBlockTrigger extends SimpleTrigger{
     }
     @SubscribeEvent
     public static void onBlockPlaced(final BlockEvent.EntityPlaceEvent event){
-        fireTrigger(PlacedBlockTrigger.class, event.getEntity(), event.getPlacedBlock(), event.getLevel(), event.getPlacedAgainst());
+        fireTrigger(PlacedBlockTrigger.class, event.getEntity(), event.getPlacedBlock(), event.getEntity().getLevel().getBlockEntity(event.getPos()));
     }
 }

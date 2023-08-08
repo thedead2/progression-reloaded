@@ -1,12 +1,13 @@
 package de.thedead2.progression_reloaded.player.data;
 
+import com.electronwill.nightconfig.core.Config;
 import com.google.common.collect.*;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -20,13 +21,13 @@ import java.util.Set;
 
 public class ProgressData extends SavedData {
     private final Map<KnownPlayer, Set<ProgressionQuest>> activeQuests;
-    private final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress;
+    private final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress;
     private final Map<ProgressionLevel, LevelProgress> levelProgress;
     private final Map<KnownPlayer, ProgressionLevel> playerLevels;
 
-    public ProgressData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests, Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels) {
+    public ProgressData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests, Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels) {
         this.activeQuests = activeQuests;
-        this.questProgress = questProgress;
+        this.playerProgress = playerProgress;
         this.levelProgress = levelProgress;
         this.playerLevels = playerLevels;
         this.setDirty();
@@ -44,7 +45,7 @@ public class ProgressData extends SavedData {
         tag.put("activeQuests", tag1);
 
         CompoundTag tag2 = new CompoundTag();
-        this.questProgress.forEach((knownPlayer, questProgressMap) -> {
+        this.playerProgress.forEach((knownPlayer, questProgressMap) -> {
             tag2.put(knownPlayer.id() + "-player", knownPlayer.toCompoundTag());
             CompoundTag tag3 = new CompoundTag();
             questProgressMap.forEach((quest, progress) -> tag3.put(quest.getId().toString(), progress.saveToCompoundTag()));
@@ -106,16 +107,16 @@ public class ProgressData extends SavedData {
         return new ProgressData(activeQuests, questProgress, levelProgress, playerLevels);
     }
 
-    public ImmutableMap<KnownPlayer, Map<ProgressionQuest, QuestProgress>> getQuestProgressData() {
-        return ImmutableMap.copyOf(this.questProgress);
+    public ImmutableMap<KnownPlayer, Map<ProgressionQuest, QuestProgress>> getPlayerQuestProgressData() {
+        return ImmutableMap.copyOf(this.playerProgress);
     }
 
     public ImmutableMap<KnownPlayer, Set<ProgressionQuest>> getActivePlayerQuests() {
         return ImmutableMap.copyOf(this.activeQuests);
     }
 
-    public void updateQuestProgressData(Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress){
-        this.questProgress.putAll(questProgress);
+    public void updateQuestProgressData(Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress){
+        this.playerProgress.putAll(playerProgress);
         this.setDirty();
     }
 

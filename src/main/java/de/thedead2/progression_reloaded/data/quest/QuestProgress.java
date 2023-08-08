@@ -192,6 +192,10 @@ public class QuestProgress implements Comparable<QuestProgress>{
         this.criteria.forEach((s, criterionProgress) -> this.grantProgress(s));
     }
 
+    public void reset(){
+        this.criteria.forEach((s, criterionProgress) -> this.revokeProgress(s));
+    }
+
     public ProgressionQuest getQuest() {
         return this.quest;
     }

@@ -6,7 +6,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.LevelManager;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
@@ -63,11 +62,11 @@ public abstract class SimpleTrigger {
         this.player = player;
     }
 
-    protected void trigger(SinglePlayer player, Predicate<SimpleTrigger> triggerPredicate) {
+    protected void trigger(SinglePlayer player, Predicate<Listener> triggerPredicate) {
         List<Listener> list = Lists.newArrayList();
 
         for(Listener listener : this.playerListeners.get(KnownPlayer.fromSinglePlayer(player))) {
-            if (triggerPredicate.test(this) && this.player.matches(player)) {
+            if (triggerPredicate.test(listener) && this.player.matches(player)) {
                 list.add(listener);
             }
         }
@@ -129,6 +128,14 @@ public abstract class SimpleTrigger {
 
         public void award(SinglePlayer player) {
             LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
+        }
+
+        public ProgressionQuest getQuest() {
+            return quest;
+        }
+
+        public String getCriterion() {
+            return criterion;
         }
 
         @Override

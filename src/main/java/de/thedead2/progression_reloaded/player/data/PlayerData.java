@@ -2,7 +2,6 @@ package de.thedead2.progression_reloaded.player.data;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import net.minecraft.nbt.CompoundTag;
@@ -37,7 +36,7 @@ public class PlayerData extends SavedData {
 
     public void addActivePlayer(SinglePlayer singlePlayer){
         this.activePlayers.put(singlePlayer.getId(), singlePlayer);
-        this.addKnownPlayer(singlePlayer.getPlayer());
+        this.addKnownPlayer(singlePlayer.getServerPlayer());
         singlePlayer.getTeam().ifPresent(team -> team.addActivePlayer(singlePlayer));
     }
 

@@ -13,10 +13,6 @@ import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.isDevEnv;
 
-/**
- * Inner Class VersionManager
- * handles every Update related action
- **/
 public abstract class VersionManager {
 
     private static final VersionChecker.CheckResult RESULT = VersionChecker.getResult(ModHelper.THIS_MOD_CONTAINER().getModInfo());

@@ -6,16 +6,11 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.Map;
 
-public interface ITriggerPredicate<T> { //TODO: add predicates
+public interface ITriggerPredicate<T> {
 
     boolean matches(T t, Object... addArgs);
 
-    Map<String, Object> getFields();
-
     JsonElement toJson();
-
-    Builder<? extends ITriggerPredicate<T>> deconstruct();
-    ITriggerPredicate<T> copy();
 
     static ResourceLocation createId(String name){
         return new ResourceLocation(ModHelper.MOD_ID, name + "_predicate");
