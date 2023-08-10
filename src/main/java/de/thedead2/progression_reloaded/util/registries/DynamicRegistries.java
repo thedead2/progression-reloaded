@@ -12,7 +12,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public abstract class DynamicRegistries {
-    public static final Map<ResourceLocation, Class<SimpleTrigger>> PROGRESSION_TRIGGER = new HashMap<>();
+    public static final Map<ResourceLocation, Class<SimpleTrigger<?>>> PROGRESSION_TRIGGER = new HashMap<>();
     public static final Map<ResourceLocation, Class<IReward>> PROGRESSION_REWARDS = new HashMap<>();
     public static final Map<ResourceLocation, Class<ITriggerPredicate<?>>> PROGRESSION_PREDICATES = new HashMap<>();
     public static final Map<ResourceLocation, Class<IAbility<?>>> PROGRESSION_ABILITIES = new HashMap<>();

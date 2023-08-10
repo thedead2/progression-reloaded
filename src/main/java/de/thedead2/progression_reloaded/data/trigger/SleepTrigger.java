@@ -2,7 +2,6 @@ package de.thedead2.progression_reloaded.data.trigger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.LocationPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
@@ -10,8 +9,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
-import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 public class SleepTrigger extends SimpleTrigger {
     public static final ResourceLocation ID = createId("sleep");
@@ -26,8 +23,8 @@ public class SleepTrigger extends SimpleTrigger {
     }
 
     @Override
-    public void trigger(SinglePlayer player, Object... data) {
-        this.trigger(player, trigger -> this.location.matches((BlockPos) data[0], data[1]));
+    public boolean trigger(SinglePlayer player, Object... data) {
+        return this.trigger(player, trigger -> this.location.matches((BlockPos) data[0], data[1]));
     }
 
     @Override

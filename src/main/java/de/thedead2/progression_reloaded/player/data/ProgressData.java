@@ -1,13 +1,11 @@
 package de.thedead2.progression_reloaded.player.data;
 
-import com.electronwill.nightconfig.core.Config;
 import com.google.common.collect.*;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -24,12 +22,14 @@ public class ProgressData extends SavedData {
     private final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress;
     private final Map<ProgressionLevel, LevelProgress> levelProgress;
     private final Map<KnownPlayer, ProgressionLevel> playerLevels;
+    private final Map<KnownPlayer, ProgressionLevel> levelCache;
 
-    public ProgressData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests, Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels) {
+    public ProgressData(Map<KnownPlayer, Set<ProgressionQuest>> activeQuests, Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> playerProgress, Map<ProgressionLevel, LevelProgress> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels, Map<KnownPlayer, ProgressionLevel> levelCache) {
         this.activeQuests = activeQuests;
         this.playerProgress = playerProgress;
         this.levelProgress = levelProgress;
         this.playerLevels = playerLevels;
+        this.levelCache = levelCache;
         this.setDirty();
     }
 
@@ -64,6 +64,13 @@ public class ProgressData extends SavedData {
         });
         tag.put("playerLevels", tag4);
 
+        CompoundTag tag5 = new CompoundTag();
+        this.levelCache.forEach((player, level) -> {
+            tag5.put(player.id() + "-player", player.toCompoundTag());
+            tag5.putString(player.id() + "-level", level.getId().toString());
+        });
+        tag.put("levelCache", tag5);
+
         return tag;
     }
 
@@ -72,6 +79,7 @@ public class ProgressData extends SavedData {
         final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress = new HashMap<>();
         final Map<ProgressionLevel, LevelProgress> levelProgress = new HashMap<>();
         final Map<KnownPlayer, ProgressionLevel> playerLevels = new HashMap<>();
+        final Map<KnownPlayer, ProgressionLevel> levelCache = new HashMap<>();
 
         CompoundTag activeQuestsTag = tag.getCompound("activeQuests");
         activeQuestsTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
@@ -103,8 +111,14 @@ public class ProgressData extends SavedData {
             ProgressionLevel level = ModRegistries.LEVELS.get().getValue(new ResourceLocation(playerLevelsTag.getString(player.id() + "-level")));
             playerLevels.put(player, level);
         });
+        CompoundTag levelCacheTag = tag.getCompound("levelCache");
+                levelCacheTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
+                    KnownPlayer player = KnownPlayer.fromCompoundTag(levelCacheTag.getCompound(s));
+                    ProgressionLevel level = ModRegistries.LEVELS.get().getValue(new ResourceLocation(levelCacheTag.getString(player.id() + "-level")));
+                    levelCache.put(player, level);
+                });
 
-        return new ProgressData(activeQuests, questProgress, levelProgress, playerLevels);
+        return new ProgressData(activeQuests, questProgress, levelProgress, playerLevels, levelCache);
     }
 
     public ImmutableMap<KnownPlayer, Map<ProgressionQuest, QuestProgress>> getPlayerQuestProgressData() {
@@ -141,5 +155,14 @@ public class ProgressData extends SavedData {
 
     public ImmutableMap<KnownPlayer, ProgressionLevel> getPlayerLevels() {
         return ImmutableMap.copyOf(this.playerLevels);
+    }
+
+    public ImmutableMap<KnownPlayer, ProgressionLevel> getLevelCache() {
+        return ImmutableMap.copyOf(this.levelCache);
+    }
+
+    public void updateLevelCache(Map<KnownPlayer, ProgressionLevel> levelCache) {
+        this.levelCache.putAll(levelCache);
+        this.setDirty();
     }
 }

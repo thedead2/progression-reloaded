@@ -116,11 +116,14 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
                     return false;
                 } else if (!this.equipment.matches(entity)) {
                     return false;
-                } else if (!this.vehicle.matches(entity.getVehicle(), addArgs)) {
+                } else if (this.vehicle != this && this.vehicle != ANY && !this.vehicle.matches(entity.getVehicle(), addArgs)) {
                     return false;
-                } else if (this.passenger != ANY && entity.getPassengers().stream().noneMatch((entity1) -> this.passenger.matches(entity1, addArgs))) {
+                } else if (this.passenger != ANY && this.passenger != this && entity.getPassengers().stream().noneMatch((entity1) -> this.passenger.matches(entity1, addArgs))) {
                     return false;
-                } else return this.targetedEntity.matches(entity instanceof Mob mob ? mob.getTarget() : null);
+                } else if(this.targetedEntity != this && this.targetedEntity != ANY && !this.targetedEntity.matches(entity instanceof Mob mob ? mob.getTarget() : null)){
+                    return false;
+                }
+                else return true;
             }
         }
     }
@@ -160,9 +163,9 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             jsonobject.add("nbt", this.nbt.toJson());
             jsonobject.add("flags", this.flags.toJson());
             jsonobject.add("equipment", this.equipment.toJson());
-            jsonobject.add("vehicle", this.vehicle.toJson());
-            jsonobject.add("passenger", this.passenger.toJson());
-            jsonobject.add("targeted_entity", this.targetedEntity.toJson());
+            jsonobject.add("vehicle", this.vehicle != this ? this.vehicle.toJson() : JsonNull.INSTANCE);
+            jsonobject.add("passenger", this.passenger != this ? this.passenger.toJson() : JsonNull.INSTANCE);
+            jsonobject.add("targeted_entity", this.targetedEntity != this ? this.targetedEntity.toJson() : JsonNull.INSTANCE);
             return jsonobject;
         }
     }

@@ -1,9 +1,11 @@
 package de.thedead2.progression_reloaded.util;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import joptsimple.internal.Strings;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
 import net.minecraft.util.GsonHelper;
@@ -74,5 +76,44 @@ public class JsonHelper {
 
 
         return new MobEffectInstance(effect1, duration, amplifier, ambient, visible, showIcon);
+    }
+
+    public static String formatJsonObject(JsonElement jsonElement) {
+        StringBuilder stringBuilder = new StringBuilder();
+        char[] chars = jsonElement.toString().toCharArray();
+        int i = 0;
+        for (int j = 0; j < chars.length; j++) {
+            char c = chars[j];
+            char previousChar = j - 1 < 0 ? c : chars[j - 1];
+            char nextChar = j + 1 >= chars.length ? c : chars[j + 1];
+
+            if (c == '{') {
+                stringBuilder.append(c);
+                if (nextChar != '}') {
+                    i++;
+                    stringBuilder.append('\n').append(Strings.repeat('\t', i));
+                }
+            } else if (c == '}') {
+                if (previousChar != '{') {
+                    i--;
+                    stringBuilder.append("\n").append(Strings.repeat('\t', i));
+                }
+                stringBuilder.append(c);
+                if (nextChar != ',' && nextChar != '\"' && nextChar != '\'' && nextChar != '}' && nextChar != ']') {
+                    stringBuilder.append('\n').append(Strings.repeat('\t', i));
+                }
+            } else if (c == ',') {
+                stringBuilder.append(c).append('\n').append(Strings.repeat('\t', i));
+            } else if (c == '[' && (nextChar == '\"' || nextChar == '[')) {
+                i++;
+                stringBuilder.append(c).append('\n').append(Strings.repeat('\t', i));
+            } else if (c == ']' && (previousChar == '\"' || previousChar == ']')) {
+                i--;
+                stringBuilder.append('\n').append(Strings.repeat('\t', i)).append(c);
+            } else {
+                stringBuilder.append(c);
+            }
+        }
+        return stringBuilder.toString();
     }
 }

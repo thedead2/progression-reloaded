@@ -3,7 +3,6 @@ package de.thedead2.progression_reloaded.data.trigger;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ItemPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
@@ -11,8 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-
-import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 public class CraftingTrigger extends SimpleTrigger{
     public static final ResourceLocation ID = createId("crafting");
@@ -30,13 +27,13 @@ public class CraftingTrigger extends SimpleTrigger{
     }
 
     @Override
-    public void trigger(SinglePlayer player, Object... data) {
+    public boolean trigger(SinglePlayer player, Object... data) {
         ItemStack craftedItem = (ItemStack) data[0];
         if(craftCounter < amountCrafted && this.craftingResult.matches(craftedItem)){
             craftCounter++;
-            return;
+            return false;
         }
-        this.trigger(player, trigger -> {
+        return this.trigger(player, trigger -> {
             craftCounter = 0;
             return this.craftingResult.matches(craftedItem);
         });

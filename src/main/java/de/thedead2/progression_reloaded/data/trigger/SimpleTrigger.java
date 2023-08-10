@@ -26,9 +26,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public abstract class SimpleTrigger {
+public abstract class SimpleTrigger<T extends ITriggerPredicate<T>> {
     protected final ResourceLocation id;
     protected final PlayerPredicate player;
+    protected final T predicate;
     private final Multimap<KnownPlayer, Listener> playerListeners = HashMultimap.create();
     public void addListener(KnownPlayer player, Listener listener){
         this.playerListeners.put(player, listener);
@@ -38,12 +39,8 @@ public abstract class SimpleTrigger {
         this.playerListeners.get(player).remove(listener);
     }
 
-    public static void register(ResourceLocation id, Class<SimpleTrigger> trigger){
-        DynamicRegistries.register(id, trigger, DynamicRegistries.PROGRESSION_TRIGGER, SimpleTrigger.class);
-    }
-
     @SuppressWarnings("unchecked")
-    public static <T extends SimpleTrigger> T fromJson(JsonElement jsonElement) {
+    public static <T extends SimpleTrigger<T>> T fromJson(JsonElement jsonElement) {
         if(jsonElement.isJsonObject()){
             ResourceLocation resourceLocation = new ResourceLocation(((JsonObject) jsonElement).get("id").getAsString());
             Class<? extends SimpleTrigger> triggerClass = DynamicRegistries.PROGRESSION_TRIGGER.get(resourceLocation);
@@ -57,12 +54,13 @@ public abstract class SimpleTrigger {
         else throw new IllegalArgumentException("Can't read data from: " + jsonElement);
     }
 
-    protected SimpleTrigger(ResourceLocation id, PlayerPredicate player){
+    protected SimpleTrigger(ResourceLocation id, PlayerPredicate player, T predicate){
         this.id = id;
         this.player = player;
+        this.predicate = predicate;
     }
 
-    protected void trigger(SinglePlayer player, Predicate<Listener> triggerPredicate) {
+    protected boolean trigger(SinglePlayer player, Predicate<Listener> triggerPredicate) {
         List<Listener> list = Lists.newArrayList();
 
         for(Listener listener : this.playerListeners.get(KnownPlayer.fromSinglePlayer(player))) {
@@ -71,18 +69,20 @@ public abstract class SimpleTrigger {
             }
         }
 
+        boolean flag = false;
         for (Listener listener1 : list) {
             ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
-            listener1.award(player);
+            flag = listener1.award(player);
         }
+        return flag;
     }
 
-    public abstract void trigger(SinglePlayer player, Object... data);
+    public abstract boolean trigger(SinglePlayer player, T t, Object... data);
 
-    protected static void fireTrigger(Class<? extends SimpleTrigger> triggerClass, Entity entity, Object... addArgs){
+    protected static <T extends ITriggerPredicate<T>> void fireTrigger(Class<? extends SimpleTrigger<T>> triggerClass, Entity entity, T t, Object... addArgs){
         if(entity instanceof Player player){
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, singlePlayer, addArgs);
+            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, singlePlayer, t, addArgs);
         }
     }
 
@@ -126,8 +126,8 @@ public abstract class SimpleTrigger {
             this.criterion = criterionName;
         }
 
-        public void award(SinglePlayer player) {
-            LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
+        public boolean award(SinglePlayer player) {
+            return LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
         }
 
         public ProgressionQuest getQuest() {

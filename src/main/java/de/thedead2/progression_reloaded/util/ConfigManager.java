@@ -12,6 +12,7 @@ public abstract class ConfigManager {
      **/
     public static final ForgeConfigSpec.BooleanValue OUT_DATED_MESSAGE;
     public static final ForgeConfigSpec.BooleanValue DISABLE_ADVANCEMENTS;
+    public static final ForgeConfigSpec.BooleanValue CHANGE_LEVEL_ON_CREATIVE;
 
 
     static {
@@ -20,6 +21,8 @@ public abstract class ConfigManager {
         OUT_DATED_MESSAGE = newBoolean("Whether the mod should send a chat message if an update is available","warnMessage", true);
 
         DISABLE_ADVANCEMENTS = newBoolean("Whether the mod should disable minecrafts in-game advancements", "disableAdvancements", true);
+
+        CHANGE_LEVEL_ON_CREATIVE = newBoolean("Whether the level of a player should be changed to creative level when changing gamemode to creative", "changeLevelOnCreative", true);
 
         CONFIG_BUILDER.pop();
         CONFIG_SPEC = CONFIG_BUILDER.build();

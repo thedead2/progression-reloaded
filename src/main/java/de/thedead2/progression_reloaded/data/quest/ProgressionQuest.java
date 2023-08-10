@@ -159,22 +159,14 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
     }
 
     public boolean isParentDone(QuestManager questManager, KnownPlayer player) {
-        if(this.parentQuest == null) {
-            ProgressionLevel level = LevelManager.getInstance().getLevelForQuest(this);
-            ResourceLocation previousLevelId = level.getPreviousLevel();
-            if(previousLevelId != null){
-                ProgressionQuest quest = LevelManager.getInstance().getQuestManager().getLastMainQuestForLevel(ModRegistries.LEVELS.get().getValue(previousLevelId));
-                if(quest != null) return questManager.getOrStartProgress(quest, player).isDone();
-            }
-        }
-        return this.parentQuest == null || questManager.getOrStartProgress(ModRegistries.QUESTS.get().getValue(this.parentQuest), player).isDone();
+        return questManager.isParentDone(this, player);
     }
 
     public boolean isDone(QuestManager questManager, KnownPlayer player) {
         return questManager.getOrStartProgress(this, player).isDone();
     }
 
-    public boolean hasParent() {
+    public boolean hasDirectParent() {
         return this.parentQuest != null;
     }
 
@@ -189,6 +181,10 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
     }
 
     public boolean hasChild() {
-        return LevelManager.getInstance().getQuestManager().findChildQuest(this) != null;
+        return LevelManager.getInstance().getQuestManager().hasChild(this);
+    }
+
+    public String getName() {
+        return this.questTitle.getString();
     }
 }

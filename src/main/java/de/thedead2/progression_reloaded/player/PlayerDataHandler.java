@@ -1,6 +1,5 @@
 package de.thedead2.progression_reloaded.player;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableCollection;
 import de.thedead2.progression_reloaded.player.data.PlayerData;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
@@ -14,7 +13,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
@@ -37,7 +35,7 @@ public abstract class PlayerDataHandler {
         var dataStorage = level.getDataStorage();
         teamData = dataStorage.computeIfAbsent(TeamData::load, () -> new TeamData(new HashMap<>()), "teams");
         playerData = dataStorage.computeIfAbsent(PlayerData::load, () -> new PlayerData(new HashSet<>()), "players");
-        progressData = dataStorage.computeIfAbsent(ProgressData::load, () -> new ProgressData(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>()), "progress");
+        progressData = dataStorage.computeIfAbsent(ProgressData::load, () -> new ProgressData(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>()), "progress");
     }
 
     public static void savePlayerData(Player player, File playerFile) {

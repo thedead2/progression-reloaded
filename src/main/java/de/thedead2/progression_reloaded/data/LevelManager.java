@@ -1,7 +1,10 @@
 package de.thedead2.progression_reloaded.data;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.PlayerTeamSynchronizer;
@@ -9,10 +12,15 @@ import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.language.ChatMessageHandler;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.GameType;
+import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
@@ -38,6 +46,7 @@ public class LevelManager {
     private final Map<ProgressionLevel, LevelProgress> levelProgress = new HashMap<>();
 
     private final List<ProgressionLevel> levelOrder = new ArrayList<>(ModRegistries.LEVELS.get().getValues());
+    private final Map<KnownPlayer, ProgressionLevel> levelCache = new HashMap<>();
     private final QuestManager questManager;
 
     private LevelManager(){
@@ -54,6 +63,7 @@ public class LevelManager {
         loadLevelOrder();
         loadPlayerLevels();
         loadLevelProgress();
+        loadLevelCache();
         this.updateStatus();
     }
 
@@ -98,6 +108,10 @@ public class LevelManager {
         ModRegistries.LEVELS.get().getValues().forEach(level -> this.levelProgress.computeIfAbsent(level, LevelProgress::new));
     }
 
+    private void loadLevelCache(){
+        this.levelCache.putAll(PlayerDataHandler.getProgressData().orElseThrow().getLevelCache());
+    }
+
     private void loadLevelOrder(){
         levelOrder.sort(Comparator.comparingInt(ProgressionLevel::getIndex));
     }
@@ -106,20 +120,6 @@ public class LevelManager {
         ResourceLocation id = quest.getId();
         return this.levelOrder.stream().filter(level -> level.getQuests().contains(id)).findAny().orElseThrow(() -> new IllegalArgumentException("Unknown level for quest: " + id));
     }
-
-    /*public LevelProgress getOrStartProgress(ProgressionLevel level) {
-        LevelProgress levelProgress = this.levelProgress.get(level);
-        if (levelProgress == null) {
-            levelProgress = new LevelProgress(level);
-            this.startProgress(level, levelProgress);
-        }
-        return levelProgress;
-    }
-
-    private void startProgress(ProgressionLevel level, LevelProgress levelProgress) {
-        this.levelProgress.put(level, levelProgress);
-        this.saveData();
-    }*/
 
     public static LevelManager getInstance() {
         return instance;
@@ -138,6 +138,7 @@ public class LevelManager {
         ProgressData progressData = PlayerDataHandler.getProgressData().orElseThrow();
         progressData.updateLevelProgressData(this.levelProgress);
         progressData.updatePlayerLevels(this.playerLevels);
+        progressData.updateLevelCache(this.levelCache);
         questManager.saveData();
     }
 
@@ -164,5 +165,24 @@ public class LevelManager {
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         level1.getQuests().forEach(id -> this.questManager.award(id, player1));
         this.updateLevel(player, level);
+    }
+
+    public static void onGameModeChange(final PlayerEvent.PlayerChangeGameModeEvent event){
+        if(!ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get()) return;
+        if(event.getNewGameMode() == GameType.CREATIVE) LevelManager.getInstance().onCreativeChange(event.getEntity());
+        else if(event.getNewGameMode() != GameType.CREATIVE && event.getCurrentGameMode() == GameType.CREATIVE) LevelManager.getInstance().onSurvivalChange(event.getEntity());
+    }
+
+    private void onSurvivalChange(Player entity) {
+        KnownPlayer player = KnownPlayer.fromPlayer(entity);
+        ProgressionLevel level = levelCache.remove(player);
+        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), level != null ? level.getId() : null);
+    }
+
+    private void onCreativeChange(Player entity) {
+        KnownPlayer player = KnownPlayer.fromPlayer(entity);
+        ProgressionLevel currentLevel = playerLevels.get(player);
+        levelCache.put(player, currentLevel);
+        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), TestLevels.CREATIVE.getId());
     }
 }

@@ -4,7 +4,10 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "progression_reloaded.refmap.json",
   "mixins": [
+    "MixinConsumeItemTrigger",
     "MixinCrashReport",
+    "MixinEffectsTrigger",
+    "MixinEnchantedTrigger",
     "MixinJsonReloadListener"
   ],
   "client": [

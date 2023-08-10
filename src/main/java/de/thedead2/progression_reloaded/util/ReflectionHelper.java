@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.util;
 
 import com.google.common.reflect.ClassPath;
+import de.thedead2.progression_reloaded.util.annotation.ExcludeFromEventBus;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -90,10 +91,12 @@ public abstract class ReflectionHelper {
         findMatchingClasses(baseClass).stream()
                 .map(aClass -> changeClassLoader(aClass, baseClass.getClassLoader()))
                 .forEach(aClass -> {
-                    var list = Arrays.stream(aClass.getMethods()).filter(method-> Modifier.isStatic(method.getModifiers()) && method.isAnnotationPresent(SubscribeEvent.class)).toList();
-                    if(list.isEmpty()) throw new IllegalStateException("Class " + aClass.getName() + " doesn't provide a static @SubscribeEvent method!");
-                    LOGGER.info("Registering class {} to event bus", aClass.getName());
-                    eventBus.register(aClass);
+                    if(!aClass.isAnnotationPresent(ExcludeFromEventBus.class)){
+                        var list = Arrays.stream(aClass.getMethods()).filter(method-> Modifier.isStatic(method.getModifiers()) && method.isAnnotationPresent(SubscribeEvent.class)).toList();
+                        if(list.isEmpty()) throw new IllegalStateException("Class " + aClass.getName() + " doesn't provide a static @SubscribeEvent method! Annotate the class with @ExcludeFromEventBus if it uses some other form of event listening!");
+                        LOGGER.info("Registering class {} to event bus", aClass.getName());
+                        eventBus.register(aClass);
+                    }
                 });
     }
 

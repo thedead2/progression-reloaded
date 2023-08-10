@@ -9,6 +9,7 @@ import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.util.HashBiSetMultiMap;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.Marker;
@@ -29,7 +30,8 @@ public class QuestManager {
      * */
     private final Map<KnownPlayer, Set<ProgressionQuest>> activePlayerQuests;
     private final Map<KnownPlayer, Map<ProgressionQuest, QuestProgress>> questProgress;
-    //TODO: maybe hold Map of Quests parents and children to save time when accessing?
+    private static final HashBiSetMultiMap<ProgressionQuest, ProgressionQuest> questChildren = new HashBiSetMultiMap<>();
+    private static boolean childrenLoaded = false;
     private static final Marker MARKER = new MarkerManager.Log4jMarker("QuestManager");
 
     QuestManager(){
@@ -41,6 +43,44 @@ public class QuestManager {
     private void loadData(){
         this.loadActivePlayerQuests();
         this.loadQuestProgress();
+        this.loadChildren();
+    }
+
+    private void loadChildren() {
+        if(childrenLoaded) return;
+
+        LOGGER.debug(MARKER, "Loading quest children cache...");
+        ModRegistries.QUESTS.get().getValues().forEach(quest -> {
+            ResourceLocation parentId = quest.getParentQuest();
+            ProgressionQuest parentQuest = null;
+            if(parentId != null) {
+                parentQuest = this.findQuest(parentId);
+            }
+            else {
+                ProgressionLevel level = LevelManager.getInstance().getLevelForQuest(quest);
+                ResourceLocation previousLevelId = level.getPreviousLevel();
+                if (previousLevelId != null) {
+                    parentQuest = this.getLastMainQuestForLevel(ModRegistries.LEVELS.get().getValue(previousLevelId));
+                }
+            }
+
+            if(parentQuest != null) questChildren.compute(parentQuest, (quest1, progressionQuests) -> progressionQuests == null ? new HashSet<>() : progressionQuests).add(quest);
+        });
+
+        childrenLoaded = true;
+    }
+
+    private ProgressionQuest getLastMainQuestForLevel(ProgressionLevel level) {
+        Collection<ProgressionQuest> levelQuests = level.getQuests().stream().map(this::findQuest).collect(Collectors.toSet());
+        for (ProgressionQuest quest : levelQuests) {
+            if(quest.isMainQuest() && this.findChildQuest(quest) == null) return quest;
+        }
+        return null;
+    }
+
+    private ProgressionQuest findChildQuest(ProgressionQuest quest) {
+        ResourceLocation id = quest.getId();
+        return ModRegistries.QUESTS.get().getValues().stream().filter(quest1 -> quest1.getParentQuest() != null && quest1.getParentQuest().equals(id)).findAny().orElse(null);
     }
 
     private void loadQuestProgress() {
@@ -224,41 +264,16 @@ public class QuestManager {
     }
 
 
-    public <T extends SimpleTrigger> void fireTriggers(Class<T> triggerClass, SinglePlayer player, Object... data) {
+    public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, SinglePlayer player, T t, Object... data) {
         LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
         KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
         activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().forEach((s, trigger) -> {
-            if (trigger.getClass().equals(triggerClass)){
-                trigger.trigger(player, data);
+            if (trigger.getClass().equals(triggerClass) && trigger.trigger(player, t, data)){
+                this.updateStatus(knownPlayer, true);
             }
         }));
-        this.updateStatus(knownPlayer, true);
     }
 
-    public ProgressionQuest getLastMainQuestForLevel(ProgressionLevel level) {
-        Collection<ProgressionQuest> levelQuests = level.getQuests().stream().map(this::findQuest).collect(Collectors.toSet());
-        for (ProgressionQuest quest : levelQuests) {
-            if(quest.isMainQuest() && !quest.hasChild()) return quest;
-        }
-        return null;
-    }
-
-    public ProgressionQuest findChildQuest(ProgressionQuest quest) {
-        ResourceLocation id = quest.getId();
-        return ModRegistries.QUESTS.get().getValues().stream().filter(quest1 -> quest1.getParentQuest() != null && quest1.getParentQuest().equals(id)).findAny().orElse(null);
-    }
-
-    /*private void syncActiveQuests(KnownPlayer player){
-        PlayerTeam team = PlayerDataHandler.getTeam(player);
-        Set<ProgressionQuest> activeQuests = this.activePlayerQuests.get(player);
-        if(team == null) return;
-        team.forEachMember(player1 -> {
-            if(!player1.equals(player)){
-                this.activePlayerQuests.compute(player1, (player2, progressionQuests) -> progressionQuests == null ? new HashSet<>() : progressionQuests).addAll(activeQuests);
-                this.updateStatus(player1);
-            }
-        });
-    }*/
     private void syncQuestProgress(KnownPlayer player){
         PlayerTeam team = PlayerDataHandler.getTeam(player);
         var questProgress = this.questProgress.get(player);
@@ -269,5 +284,19 @@ public class QuestManager {
                 this.updateStatus(player1, false);
             }
         });
+    }
+
+    public Collection<ProgressionQuest> getActiveQuests(KnownPlayer knownPlayer) {
+        return this.activePlayerQuests.get(knownPlayer);
+    }
+
+    public boolean isParentDone(ProgressionQuest quest, KnownPlayer player) {
+        ProgressionQuest parentQuest = questChildren.inverse().get(quest);
+        if(parentQuest != null) return this.getOrStartProgress(parentQuest, player).isDone();
+        return true;
+    }
+
+    public boolean hasChild(ProgressionQuest quest) {
+        return questChildren.containsKey(quest);
     }
 }

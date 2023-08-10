@@ -10,17 +10,17 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class PlacedBlockTrigger extends SimpleTrigger{
-    public static final ResourceLocation ID = createId("placed_block");
+public class BreakBlockTrigger extends SimpleTrigger{
+    public static final ResourceLocation ID = createId("break_block");
     private final BlockPredicate block;
-    public PlacedBlockTrigger(PlayerPredicate player, BlockPredicate block) {
+    protected BreakBlockTrigger(PlayerPredicate player, BlockPredicate block) {
         super(ID, player);
         this.block = block;
     }
 
     @Override
     public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, trigger -> this.block.matches((BlockState) data[0], data[1]));
+        return this.trigger(player, listener -> this.block.matches((BlockState) data[0], data[1]));
     }
 
     @Override
@@ -28,14 +28,13 @@ public class PlacedBlockTrigger extends SimpleTrigger{
         data.add("block", this.block.toJson());
     }
 
-    public static PlacedBlockTrigger fromJson(JsonElement jsonElement){
+    public static BreakBlockTrigger fromJson(JsonElement jsonElement){
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
-        BlockPredicate block = BlockPredicate.fromJson(jsonObject.get("block"));
-        return new PlacedBlockTrigger(player, block);
+        return new BreakBlockTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), BlockPredicate.fromJson(jsonObject.get("block")));
     }
+
     @SubscribeEvent
-    public static void onBlockPlaced(final BlockEvent.EntityPlaceEvent event){
-        fireTrigger(PlacedBlockTrigger.class, event.getEntity(), event.getPlacedBlock(), event.getEntity().getLevel().getBlockEntity(event.getPos()));
+    public static void onBlockBreak(final BlockEvent.BreakEvent event){
+        fireTrigger(BreakBlockTrigger.class, event.getPlayer(), event.getLevel().getBlockState(event.getPos()), event.getLevel().getBlockEntity(event.getPos()));
     }
 }

@@ -1,12 +1,14 @@
 package de.thedead2.progression_reloaded;
 
 import de.thedead2.progression_reloaded.commands.ModCommand;
-import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.predicates.*;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.data.rewards.*;
 import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
@@ -14,7 +16,12 @@ import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.util.*;
+import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.util.ConfigManager;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.ReflectionHelper;
+import de.thedead2.progression_reloaded.util.VersionManager;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
 import de.thedead2.progression_reloaded.util.logger.MissingAdvancementFilter;
@@ -22,14 +29,17 @@ import de.thedead2.progression_reloaded.util.logger.UnknownAdvancementFilter;
 import de.thedead2.progression_reloaded.util.logger.UnknownRecipeCategoryFilter;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
-import net.minecraft.core.registries.Registries;
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.biome.Biomes;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -45,12 +55,14 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
@@ -61,6 +73,7 @@ public class ProgressionReloaded {
     //TODO: Level and quest builder classes --> + graphical ui of them
     //TODO: Use Gson and GsonHelper for whole project instead of json --> easier!
     //TODO: Instead of IForgeRegistry simple Maps for Levels and Quests? --> in game reload possible
+    //TODO: Add custom Events
 
     public static final String MAIN_PACKAGE = ProgressionReloaded.class.getPackageName();
 
@@ -76,139 +89,13 @@ public class ProgressionReloaded {
 
         ModItems.register(modEventBus);
 
-        ModRegistries.register(new ProgressionQuest(
-                new ResourceLocation(ModHelper.MOD_ID, "quest_test"),
-                Component.literal("Test Quest"),
-                Component.literal("This is a test quest!"),
-                Items.ACACIA_BOAT.getDefaultInstance(),
-                Set.of(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50)),
-                Map.of(
-                        "testKill", new KillTrigger(PlayerPredicate.ANY,
-                                new EntityPredicate(
-                                        EntityTypePredicate.from(EntityType.CHICKEN),
-                                        DistancePredicate.ANY,
-                                        LocationPredicate.ANY,
-                                        LocationPredicate.ANY,
-                                        EffectsPredicate.ANY,
-                                        NbtPredicate.ANY,
-                                        new EntityFlagsPredicate(true, null, null, null, null),
-                                        EntityEquipmentPredicate.ANY
-                                )
-                        ),
-                        "testKill2", new KillTrigger(PlayerPredicate.ANY,
-                                new EntityPredicate(
-                                        EntityTypePredicate.from(EntityType.SPIDER),
-                                        DistancePredicate.ANY,
-                                        LocationPredicate.ANY,
-                                        LocationPredicate.ANY,
-                                        EffectsPredicate.ANY,
-                                        NbtPredicate.ANY,
-                                        EntityFlagsPredicate.ANY,
-                                        EntityEquipmentPredicate.ANY
-                                )
-                        ),
-                        "testSleep", new SleepTrigger(PlayerPredicate.ANY,
-                                new LocationPredicate(
-                                        MinMax.Doubles.ANY,
-                                        MinMax.Doubles.ANY,
-                                        MinMax.Doubles.ANY,
-                                        Biomes.DESERT,
-                                        null,
-                                        null,
-                                        BlockPredicate.ANY,
-                                        FluidPredicate.ANY
-                                )
-                        )
-                ),
-                CriteriaStrategy.AND,
-                RewardStrategy.ALL,
-                true,
-                null
-        ));
-        ModRegistries.register(new ProgressionQuest(
-                new ResourceLocation(ModHelper.MOD_ID, "quest_test2"),
-                Component.literal("Test Quest2"),
-                Component.literal("This is a test quest2!"),
-                Items.ACACIA_BOAT.getDefaultInstance(),
-                Set.of(new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART), new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34)),
-                Map.of("testKill2", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
-                        EntityTypePredicate.from(EntityType.HORSE),
-                        DistancePredicate.ANY,
-                        LocationPredicate.ANY,
-                        LocationPredicate.ANY,
-                        EffectsPredicate.ANY,
-                        NbtPredicate.ANY,
-                        EntityFlagsPredicate.ANY,
-                        EntityEquipmentPredicate.ANY
-                ))),
-                CriteriaStrategy.OR,
-                RewardStrategy.ALL,
-                false,
-                null
-        ));
-        ModRegistries.register(new ProgressionQuest(
-                new ResourceLocation(ModHelper.MOD_ID, "quest_test3"),
-                Component.literal("Test Quest3"),
-                Component.literal("This is a test quest3!"),
-                Items.ACACIA_BOAT.getDefaultInstance(),
-                Set.of(new CommandReward("weather rain")),
-                Map.of("test1", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
-                        EntityTypePredicate.from(EntityType.CREEPER),
-                        DistancePredicate.ANY,
-                        LocationPredicate.ANY,
-                        LocationPredicate.ANY,
-                        EffectsPredicate.ANY,
-                        NbtPredicate.ANY,
-                        EntityFlagsPredicate.ANY,
-                        EntityEquipmentPredicate.ANY
-                ))),
-                CriteriaStrategy.AND,
-                RewardStrategy.ALL,
-                true,
-                null
-        ));
-        ModRegistries.register(new ProgressionQuest(
-                new ResourceLocation(ModHelper.MOD_ID, "quest_test4"),
-                Component.literal("Test Quest4"),
-                Component.literal("This is a test quest4!"),
-                Items.ACACIA_BOAT.getDefaultInstance(),
-                Set.of(new TeleportReward(new TeleportReward.TeleportDestination(5, 120, 120, 0, 0, ServerLevel.END))),
-                Map.of("test2", new SleepTrigger(PlayerPredicate.ANY)),
-                CriteriaStrategy.AND,
-                RewardStrategy.ALL,
-                true,
-                new ResourceLocation(ModHelper.MOD_ID, "quest_test3")
-        ));
-        ModRegistries.register(new ProgressionLevel(
-                -1,
-                "creative-level",
-                new ResourceLocation(ModHelper.MOD_ID, "creative_level"),
-                RewardStrategy.ALL,
-                Collections.emptySet(),
-                Collections.emptySet(),
-                null,
-                null
-        ));
-        ModRegistries.register(new ProgressionLevel(
-                0,
-                "test",
-                ResourceLocation.tryBuild(MOD_ID, "test-level"),
-                RewardStrategy.ALL,
-                Set.of(new ResourceLocation(ModHelper.MOD_ID, "quest_test"), new ResourceLocation(ModHelper.MOD_ID, "quest_test2")),
-                Set.of(new ItemReward(Items.ITEM_FRAME.getDefaultInstance(), 5)),
-                null,
-                ResourceLocation.tryBuild(MOD_ID, "test-level2")
-        ));
-        ModRegistries.register(new ProgressionLevel(
-                1,
-                "test2",
-                ResourceLocation.tryBuild(MOD_ID, "test-level2"),
-                RewardStrategy.ALL,
-                Set.of(new ResourceLocation(ModHelper.MOD_ID, "quest_test3"), new ResourceLocation(ModHelper.MOD_ID, "quest_test4")),
-                Set.of(new ItemReward(Items.HORSE_SPAWN_EGG.getDefaultInstance(), 1)),
-                ResourceLocation.tryBuild(MOD_ID, "test-level"),
-                null
-        ));
+        ModRegistries.register(TestQuests.TEST1);
+        ModRegistries.register(TestQuests.TEST2);
+        ModRegistries.register(TestQuests.TEST3);
+        ModRegistries.register(TestQuests.TEST4);
+        ModRegistries.register(TestLevels.CREATIVE);
+        ModRegistries.register(TestLevels.TEST1);
+        ModRegistries.register(TestLevels.TEST2);
 
         ModRegistries.register(modEventBus);
 
@@ -227,6 +114,7 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(this::onPlayerLoggedOut);
         forgeEventBus.addListener(this::onGameShuttingDown);
         forgeEventBus.addListener(this::onGameTick);
+        forgeEventBus.addListener(LevelManager::onGameModeChange);
 
         forgeEventBus.register(this);
         registerLoggerFilter();

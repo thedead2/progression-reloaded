@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.util.JsonHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
 import net.minecraft.resources.ResourceLocation;
@@ -100,7 +101,7 @@ public abstract class ModRegistries {
     private static <T extends ModRegistriesDynamicSerializer> void save(Path directoryPath, Collection<T> buildObjects) {
         FileHandler.createDirectory(directoryPath.toFile());
         buildObjects.forEach(t -> {
-            ByteArrayInputStream stream = new ByteArrayInputStream(t.toJson().toString().getBytes());
+            ByteArrayInputStream stream = new ByteArrayInputStream(JsonHelper.formatJsonObject(t.toJson()).getBytes());
             try {
                 FileHandler.writeFile(stream, directoryPath.resolve(t.getId().toString() + ".json"));
             } catch (IOException e) {
