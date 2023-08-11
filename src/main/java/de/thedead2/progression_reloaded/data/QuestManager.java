@@ -121,7 +121,7 @@ public class QuestManager {
     }
 
     public void registerListeners(ProgressionQuest quest, KnownPlayer player) {
-        LOGGER.debug("Registering listeners for quest: {}" , quest.getId());
+        //LOGGER.debug("Registering listeners for quest: {}" , quest.getId());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
         if (!questProgress.isDone()) {
             for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
@@ -137,7 +137,7 @@ public class QuestManager {
     }
 
     public void unregisterListeners(ProgressionQuest quest, KnownPlayer player) {
-        LOGGER.debug("Unregistering listeners for quest {} for player {}", quest.getId(), player.name());
+        //LOGGER.debug("Unregistering listeners for quest {} for player {}", quest.getId(), player.name());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
 
         for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
@@ -166,8 +166,8 @@ public class QuestManager {
     }
 
     public boolean isQuestActive(ProgressionQuest quest, KnownPlayer player){
-        LOGGER.debug("Quest: " + quest.getId());
-        LOGGER.debug("is quest done: " + quest.isDone(this, player));
+        /*LOGGER.debug("Quest: " + quest.getId());
+        LOGGER.debug("is quest done: " + quest.isDone(this, player));*/
         return quest.isParentDone(this, player) && !quest.isDone(this, player);
     }
 
@@ -265,7 +265,7 @@ public class QuestManager {
 
     @SuppressWarnings("unchecked")
     public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, SinglePlayer player, T toTest, Object... data) {
-        LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
+        //LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
         KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
         activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().values().stream().filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass)).forEach(trigger -> {
             if (((SimpleTrigger<T>) trigger).trigger(player, toTest, data)){

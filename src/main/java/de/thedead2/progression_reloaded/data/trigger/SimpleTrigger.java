@@ -73,7 +73,6 @@ public abstract class SimpleTrigger<T> {
 
         boolean flag = false;
         for (Listener listener1 : list) {
-            ModHelper.LOGGER.debug("Firing Trigger: " + this.getClass().getName());
             flag = listener1.award(player);
         }
         return flag;
