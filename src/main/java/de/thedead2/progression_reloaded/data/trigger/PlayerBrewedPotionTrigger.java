@@ -14,18 +14,18 @@ import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
 
-public class PlayerBrewedPotionTrigger extends SimpleTrigger{
+public class PlayerBrewedPotionTrigger extends SimpleTrigger<Potion>{
     public static final ResourceLocation ID = createId("brewed_potion");
     @Nullable
     private final Potion potion;
     public PlayerBrewedPotionTrigger(PlayerPredicate player, @Nullable Potion potion) {
-        super(ID, player);
+        super(ID, player, null, "");
         this.potion = potion;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.potion == null || this.potion == data[0]);
+    public boolean trigger(SinglePlayer player, Potion potion, Object... data) {
+        return this.trigger(player, listener -> this.potion == null || this.potion == potion);
     }
 
     @Override

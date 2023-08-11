@@ -10,22 +10,19 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class BreakBlockTrigger extends SimpleTrigger{
+public class BreakBlockTrigger extends SimpleTrigger<BlockState>{
     public static final ResourceLocation ID = createId("break_block");
-    private final BlockPredicate block;
     protected BreakBlockTrigger(PlayerPredicate player, BlockPredicate block) {
-        super(ID, player);
-        this.block = block;
+        super(ID, player, block, "block");
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.block.matches((BlockState) data[0], data[1]));
+    public boolean trigger(SinglePlayer player, BlockState block, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(block, data[0]));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("block", this.block.toJson());
     }
 
     public static BreakBlockTrigger fromJson(JsonElement jsonElement){

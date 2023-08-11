@@ -12,24 +12,21 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.living.LivingConversionEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class PlayerCuredZombieVillagerTrigger extends SimpleTrigger{
+public class PlayerCuredZombieVillagerTrigger extends SimpleTrigger<Entity>{
     public static final ResourceLocation ID = createId("cured_villager");
-    private final EntityPredicate oldZombie;
     private final EntityPredicate newVillager;
     protected PlayerCuredZombieVillagerTrigger(PlayerPredicate player, EntityPredicate oldZombie, EntityPredicate newVillager) {
-        super(ID, player);
-        this.oldZombie = oldZombie;
+        super(ID, player, oldZombie, "zombie");
         this.newVillager = newVillager;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.oldZombie.matches((Entity) data[0], player) && this.newVillager.matches((Entity) data[1], player));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(entity, player) && this.newVillager.matches((Entity) data[0], player));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("zombie", this.oldZombie.toJson());
         data.add("villager", this.newVillager.toJson());
     }
 

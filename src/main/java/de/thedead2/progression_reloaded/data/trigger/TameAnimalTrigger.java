@@ -10,22 +10,19 @@ import net.minecraft.world.entity.Entity;
 import net.minecraftforge.event.entity.living.AnimalTameEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class TameAnimalTrigger extends SimpleTrigger{
+public class TameAnimalTrigger extends SimpleTrigger<Entity>{
     public static final ResourceLocation ID = SimpleTrigger.createId("tame_animal");
-    private final EntityPredicate tamedAnimal;
     public TameAnimalTrigger(PlayerPredicate player, EntityPredicate tamedAnimal) {
-        super(ID, player);
-        this.tamedAnimal = tamedAnimal;
+        super(ID, player, tamedAnimal, "tamed_animal");
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.tamedAnimal.matches((Entity) data[0], player));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(entity, player));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("tamed_animal", this.tamedAnimal.toJson());
     }
 
     public static TameAnimalTrigger fromJson(JsonElement jsonElement){

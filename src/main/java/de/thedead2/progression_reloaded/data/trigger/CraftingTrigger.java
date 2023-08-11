@@ -11,15 +11,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class CraftingTrigger extends SimpleTrigger{
+public class CraftingTrigger extends SimpleTrigger<ItemStack>{
     public static final ResourceLocation ID = createId("crafting");
-    private final ItemPredicate craftingResult;
     private final int amountCrafted;
     private int craftCounter = 0;
 
     public CraftingTrigger(PlayerPredicate player, ItemPredicate craftingResult, int amountCrafted) {
-        super(ID, player);
-        this.craftingResult = craftingResult;
+        super(ID, player, craftingResult, "crafted_item");
         this.amountCrafted = amountCrafted;
     }
     public CraftingTrigger(PlayerPredicate player, ItemPredicate craftingResult) {
@@ -27,21 +25,19 @@ public class CraftingTrigger extends SimpleTrigger{
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        ItemStack craftedItem = (ItemStack) data[0];
-        if(craftCounter < amountCrafted && this.craftingResult.matches(craftedItem)){
+    public boolean trigger(SinglePlayer player, ItemStack craftedItem, Object... data) {
+        if(craftCounter < amountCrafted && this.predicate.matches(craftedItem)){
             craftCounter++;
             return false;
         }
         return this.trigger(player, trigger -> {
             craftCounter = 0;
-            return this.craftingResult.matches(craftedItem);
+            return this.predicate.matches(craftedItem);
         });
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("crafted_item", this.craftingResult.toJson());
         if(this.amountCrafted != 1) data.add("amount", new JsonPrimitive(this.amountCrafted));
     }
 

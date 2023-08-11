@@ -12,24 +12,21 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.TradeWithVillagerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class VillagerTradeTrigger extends SimpleTrigger{
+public class VillagerTradeTrigger extends SimpleTrigger<Entity>{
     public static final ResourceLocation ID = SimpleTrigger.createId("villager_trade");
-    private final EntityPredicate villager;
     private final ItemPredicate tradedItem;
     public VillagerTradeTrigger(PlayerPredicate player, EntityPredicate villager, ItemPredicate tradedItem) {
-        super(ID, player);
-        this.villager = villager;
+        super(ID, player, villager, "villager");
         this.tradedItem = tradedItem;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... addArgs) {
-        return this.trigger(player, listener -> this.villager.matches((Entity) addArgs[0], player) && this.tradedItem.matches((ItemStack) addArgs[1]));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... addArgs) {
+        return this.trigger(player, listener -> this.predicate.matches(entity, player) && this.tradedItem.matches((ItemStack) addArgs[0]));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("villager", this.villager.toJson());
         data.add("traded_item", this.tradedItem.toJson());
     }
 

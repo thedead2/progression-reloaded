@@ -10,22 +10,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class ItemPickupTrigger extends SimpleTrigger{
+public class ItemPickupTrigger extends SimpleTrigger<ItemStack>{
     public static final ResourceLocation ID = createId("item_pickup");
-    private final ItemPredicate item;
     public ItemPickupTrigger(PlayerPredicate player, ItemPredicate item) {
-        super(ID, player);
-        this.item = item;
+        super(ID, player, item, "item");
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.item.matches((ItemStack) data[0]));
+    public boolean trigger(SinglePlayer player, ItemStack item, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(item));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("item", this.item.toJson());
     }
 
     public static ItemPickupTrigger fromJson(JsonElement jsonElement) {

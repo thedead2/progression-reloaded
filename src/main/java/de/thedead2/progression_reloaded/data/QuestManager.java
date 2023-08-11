@@ -124,10 +124,10 @@ public class QuestManager {
         LOGGER.debug("Registering listeners for quest: {}" , quest.getId());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
         if (!questProgress.isDone()) {
-            for(Map.Entry<String, SimpleTrigger> entry : quest.getCriteria().entrySet()) {
+            for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
                 CriterionProgress criterionprogress = questProgress.getCriterion(entry.getKey());
                 if (criterionprogress != null && !criterionprogress.isDone()) {
-                    SimpleTrigger trigger = entry.getValue();
+                    SimpleTrigger<?> trigger = entry.getValue();
                     if (trigger != null) {
                         trigger.addListener(player, new SimpleTrigger.Listener(quest, entry.getKey()));
                     }
@@ -140,10 +140,10 @@ public class QuestManager {
         LOGGER.debug("Unregistering listeners for quest {} for player {}", quest.getId(), player.name());
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
 
-        for(Map.Entry<String, SimpleTrigger> entry : quest.getCriteria().entrySet()) {
+        for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
             CriterionProgress criterionprogress = questProgress.getCriterion(entry.getKey());
             if (criterionprogress != null && (criterionprogress.isDone() || questProgress.isDone())) {
-                SimpleTrigger trigger = entry.getValue();
+                SimpleTrigger<?> trigger = entry.getValue();
                 if (trigger != null) {
                     trigger.removeListener(player, new SimpleTrigger.Listener(quest, entry.getKey()));
                 }
@@ -263,12 +263,12 @@ public class QuestManager {
         this.saveData();
     }
 
-
-    public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, SinglePlayer player, T t, Object... data) {
+    @SuppressWarnings("unchecked")
+    public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, SinglePlayer player, T toTest, Object... data) {
         LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
         KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
-        activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().forEach((s, trigger) -> {
-            if (trigger.getClass().equals(triggerClass) && trigger.trigger(player, t, data)){
+        activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().values().stream().filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass)).forEach(trigger -> {
+            if (((SimpleTrigger<T>) trigger).trigger(player, toTest, data)){
                 this.updateStatus(knownPlayer, true);
             }
         }));

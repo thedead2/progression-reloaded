@@ -12,14 +12,12 @@ import net.minecraft.world.entity.Entity;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class KillTrigger extends SimpleTrigger {
+public class KillTrigger extends SimpleTrigger<Entity> {
     public static final ResourceLocation ID = createId("kill");
-    private final EntityPredicate killedEntity;
     private final DamageSourcePredicate damage;
 
     public KillTrigger(PlayerPredicate player, EntityPredicate killedEntity, DamageSourcePredicate damage) {
-        super(ID, player);
-        this.killedEntity = killedEntity;
+        super(ID, player, killedEntity, "killed_entity");
         this.damage = damage;
     }
     public KillTrigger(PlayerPredicate player, EntityPredicate killedEntity) {
@@ -27,13 +25,12 @@ public class KillTrigger extends SimpleTrigger {
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, trigger -> this.killedEntity.matches(((Entity) data[0]), player) && (this.damage == null || this.damage.matches((DamageSource) data[1])));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+        return this.trigger(player, trigger -> this.predicate.matches(entity, player) && (this.damage == null || this.damage.matches((DamageSource) data[0])));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("killed_entity", this.killedEntity.toJson());
         if(this.damage != null) data.add("damage_source", this.damage.toJson());
     }
 

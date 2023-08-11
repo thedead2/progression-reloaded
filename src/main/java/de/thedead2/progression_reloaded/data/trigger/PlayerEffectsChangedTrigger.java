@@ -12,30 +12,27 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
 @ExcludeFromEventBus
-public class PlayerEffectsChangedTrigger extends SimpleTrigger{
+public class PlayerEffectsChangedTrigger extends SimpleTrigger<Entity>{
     public static final ResourceLocation ID = createId("effects_changed");
     private final EffectsPredicate effects;
-    private final EntityPredicate sourceEntity;
     public PlayerEffectsChangedTrigger(PlayerPredicate player, EffectsPredicate effects, EntityPredicate sourceEntity) {
-        super(ID, player);
+        super(ID, player, sourceEntity, "source_entity");
         this.effects = effects;
-        this.sourceEntity = sourceEntity;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.effects.matches(player.getServerPlayer().getActiveEffectsMap()) && this.sourceEntity.matches((Entity) data[0], player));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+        return this.trigger(player, listener -> this.effects.matches(player.getServerPlayer().getActiveEffectsMap()) && this.predicate.matches(entity, player));
     }
 
     @Override
     public void toJson(JsonObject data) {
         data.add("effects", this.effects.toJson());
-        data.add("sourceEntity", this.sourceEntity.toJson());
     }
 
     public static PlayerEffectsChangedTrigger fromJson(JsonElement jsonElement){
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return new PlayerEffectsChangedTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), EffectsPredicate.fromJson(jsonObject.get("effects")), EntityPredicate.fromJson(jsonObject.get("sourceEntity")));
+        return new PlayerEffectsChangedTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), EffectsPredicate.fromJson(jsonObject.get("effects")), EntityPredicate.fromJson(jsonObject.get("source_entity")));
     }
 
     public static void onEffectsChanged(ServerPlayer player, Entity source){

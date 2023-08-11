@@ -12,25 +12,22 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class EntityInteractTrigger extends SimpleTrigger{
+public class EntityInteractTrigger extends SimpleTrigger<Entity>{
     public static final ResourceLocation ID = createId("entity_interact");
-    private final EntityPredicate spawnedEntity;
     private final ItemPredicate itemInHand;
 
     public EntityInteractTrigger(PlayerPredicate player, EntityPredicate spawnedEntity, ItemPredicate itemInHand) {
-        super(ID, player);
-        this.spawnedEntity = spawnedEntity;
+        super(ID, player, spawnedEntity, "entity");
         this.itemInHand = itemInHand;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.spawnedEntity.matches((Entity) data[0], player) && this.itemInHand.matches((ItemStack) data[1]));
+    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(entity, player) && this.itemInHand.matches((ItemStack) data[0]));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("entity", this.spawnedEntity.toJson());
         data.add("item_in_hand", this.itemInHand.toJson());
     }
 

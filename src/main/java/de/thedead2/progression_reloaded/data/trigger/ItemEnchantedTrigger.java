@@ -12,24 +12,21 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 @ExcludeFromEventBus
-public class ItemEnchantedTrigger extends SimpleTrigger{
+public class ItemEnchantedTrigger extends SimpleTrigger<ItemStack>{
     public static final ResourceLocation ID = createId("item_enchanted");
-    private final ItemPredicate item;
     private final MinMax.Ints levels;
     public ItemEnchantedTrigger(PlayerPredicate player, ItemPredicate item, MinMax.Ints levels) {
-        super(ID, player);
-        this.item = item;
+        super(ID, player, item, "enchanted_item");
         this.levels = levels;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.item.matches((ItemStack) data[0]) && this.levels.matches((int) data[1]));
+    public boolean trigger(SinglePlayer player, ItemStack itemStack, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(itemStack) && this.levels.matches((int) data[0]));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("enchanted_item", this.item.toJson());
         data.add("levels", this.levels.serializeToJson());
     }
 

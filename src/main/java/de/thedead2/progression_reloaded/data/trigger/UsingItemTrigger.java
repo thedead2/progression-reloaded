@@ -10,23 +10,20 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class UsingItemTrigger extends SimpleTrigger {
+public class UsingItemTrigger extends SimpleTrigger<ItemStack> {
     public static final ResourceLocation ID = createId("using_item");
-    private final ItemPredicate item;
 
     public UsingItemTrigger(PlayerPredicate player, ItemPredicate item){
-        super(ID, player);
-        this.item = item;
+        super(ID, player, item, "used_item");
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.item.matches((ItemStack) data[0]));
+    public boolean trigger(SinglePlayer player, ItemStack itemStack,  Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(itemStack));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("used_item", this.item.toJson());
     }
 
     public static UsingItemTrigger fromJson(JsonElement jsonElement){

@@ -14,26 +14,26 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 import javax.annotation.Nullable;
 
-public class PlayerChangedDimensionTrigger extends SimpleTrigger{
+public class PlayerChangedDimensionTrigger extends SimpleTrigger<ResourceKey<Level>>{
     public static final ResourceLocation ID = createId("changed_dimension");
     @Nullable
     private final ResourceKey<Level> from;
     @Nullable
     private final ResourceKey<Level> to;
     public PlayerChangedDimensionTrigger(PlayerPredicate player, @Nullable ResourceKey<Level> from, @Nullable ResourceKey<Level> to) {
-        super(ID, player);
+        super(ID, player, null, "");
         this.from = from;
         this.to = to;
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
+    public boolean trigger(SinglePlayer player, ResourceKey<Level> from, Object... data) {
         return this.trigger(player, listener -> {
-            if (this.from != null && this.from != data[0]) {
+            if (this.from != null && this.from != from) {
                 return false;
             }
             else {
-                return this.to == null || this.to == data[1];
+                return this.to == null || this.to == data[0];
             }
         });
     }

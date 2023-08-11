@@ -51,7 +51,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         Set<IReward> questRewards = new HashSet<>();
         jsonObject.get("rewards").getAsJsonArray().forEach(jsonElement1 -> questRewards.add(IReward.createFromJson(jsonElement1)));
 
-        Map<String, SimpleTrigger> questCriteria = new HashMap<>();
+        Map<String, SimpleTrigger<?>> questCriteria = new HashMap<>();
         jsonObject.get("criteria").getAsJsonArray().forEach(jsonElement1 -> {
             JsonObject jsonObject1 = jsonElement1.getAsJsonObject();
             questCriteria.put(jsonObject1.get("name").getAsString(), SimpleTrigger.fromJson(jsonObject1.get("trigger")));
@@ -63,7 +63,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         this.questRewards.add(reward);
     }
 
-    public void addTrigger(String name, SimpleTrigger trigger) {
+    public void addTrigger(String name, SimpleTrigger<?> trigger) {
         this.questCriteria.put(name, trigger);
     }
 
@@ -72,14 +72,14 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
     private final Component questDescription;
     private final ItemStack displayIcon;
     private final Set<IReward> questRewards;
-    private final Map<String, SimpleTrigger> questCriteria;
+    private final Map<String, SimpleTrigger<?>> questCriteria;
     private final CriteriaStrategy criteriaStrategy;
     private final RewardStrategy rewardStrategy;
     private final boolean mainQuest;
     private final ResourceLocation parentQuest;
     //private final Map<KnownPlayer, Boolean> active = new HashMap<>();
 
-    public ProgressionQuest(ResourceLocation id, Component questTitle, Component questDescription, ItemStack displayIcon, Set<IReward> questRewards, Map<String, SimpleTrigger> questCriteria, CriteriaStrategy criteriaStrategy, RewardStrategy rewardStrategy, boolean mainQuest, ResourceLocation parentQuest) {
+    public ProgressionQuest(ResourceLocation id, Component questTitle, Component questDescription, ItemStack displayIcon, Set<IReward> questRewards, Map<String, SimpleTrigger<?>> questCriteria, CriteriaStrategy criteriaStrategy, RewardStrategy rewardStrategy, boolean mainQuest, ResourceLocation parentQuest) {
         this.id = id;
         this.questTitle = questTitle;
         this.questDescription = questDescription;
@@ -150,7 +150,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
         return Objects.hashCode(id, questTitle, questDescription, displayIcon, questRewards, questCriteria, criteriaStrategy, rewardStrategy, mainQuest, parentQuest /*active*/);
     }
 
-    public Map<String, SimpleTrigger> getCriteria() {
+    public Map<String, SimpleTrigger<?>> getCriteria() {
         return this.questCriteria;
     }
 

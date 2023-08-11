@@ -11,22 +11,19 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 @ExcludeFromEventBus
-public class PlayerConsumedItemTrigger extends SimpleTrigger{
+public class PlayerConsumedItemTrigger extends SimpleTrigger<ItemStack>{
     public static final ResourceLocation ID = createId("consumed_item");
-    private final ItemPredicate consumedItem;
     public PlayerConsumedItemTrigger(PlayerPredicate player, ItemPredicate consumedItem) {
-        super(ID, player);
-        this.consumedItem = consumedItem;
+        super(ID, player, consumedItem, "consumed_item");
     }
 
     @Override
-    public boolean trigger(SinglePlayer player, Object... data) {
-        return this.trigger(player, listener -> this.consumedItem.matches((ItemStack) data[0]));
+    public boolean trigger(SinglePlayer player, ItemStack itemStack, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(itemStack));
     }
 
     @Override
     public void toJson(JsonObject data) {
-        data.add("consumed_item", this.consumedItem.toJson());
     }
 
     public static PlayerConsumedItemTrigger fromJson(JsonElement jsonElement){
