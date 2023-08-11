@@ -238,9 +238,9 @@ public class QuestManager {
     public boolean revoke(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        if ((criterionName == null || questProgress.revokeProgress(criterionName)) && quest.isParentDone(this, player)) {
+        if (criterionName == null || questProgress.revokeProgress(criterionName)) {
             if(criterionName == null) questProgress.reset();
-            this.registerListeners(quest, player);
+            if(quest.isParentDone(this, player)) this.registerListeners(quest, player);
             LevelManager.getInstance().updateStatus();
             flag = true;
         }

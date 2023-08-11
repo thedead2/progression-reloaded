@@ -111,6 +111,7 @@ public class TestQuests {
             true,
             null
     );
+    @SuppressWarnings("unchecked")
     public static final ProgressionQuest TEST4 = new ProgressionQuest(
             new ResourceLocation(ModHelper.MOD_ID, "quest_test4"),
             Component.literal("Test Quest4"),

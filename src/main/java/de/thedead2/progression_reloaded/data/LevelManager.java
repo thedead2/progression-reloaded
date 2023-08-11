@@ -156,7 +156,7 @@ public class LevelManager {
         KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         this.levelProgress.get(level1).setRewarded(player1, false);
-        level1.getQuests().forEach(id -> this.questManager.revoke(id, player1)); //Not all quests are revoked --> why?
+        level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
         this.updateLevel(player, level);
     }
 
