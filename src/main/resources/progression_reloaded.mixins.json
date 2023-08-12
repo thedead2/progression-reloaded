@@ -8,6 +8,7 @@
     "MixinCrashReport",
     "MixinEffectsTrigger",
     "MixinEnchantedTrigger",
+    "MixinInventoryChangeTrigger",
     "MixinJsonReloadListener"
   ],
   "client": [

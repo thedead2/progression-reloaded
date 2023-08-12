@@ -15,7 +15,9 @@ import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.Level;
@@ -31,13 +33,20 @@ public abstract class SimpleTrigger<T> {
     protected final PlayerPredicate player;
     protected final ITriggerPredicate<T> predicate;
     protected final String predicateName;
-    private final Multimap<KnownPlayer, Listener> playerListeners = HashMultimap.create();
-    public void addListener(KnownPlayer player, Listener listener){
-        this.playerListeners.put(player, listener);
+    private final Map<KnownPlayer, Set<Listener>> playerListeners = Maps.newIdentityHashMap();
+
+    public final void addListener(KnownPlayer player, Listener listener) {
+        this.playerListeners.computeIfAbsent(player, (p_66252_) -> Sets.newHashSet()).add(listener);
     }
 
-    public void removeListener(KnownPlayer player, Listener listener){
-        this.playerListeners.get(player).remove(listener);
+    public final void removeListener(KnownPlayer player, Listener listener) {
+        Set<Listener> set = this.playerListeners.get(player);
+        if (set != null) {
+            set.remove(listener);
+            if (set.isEmpty()) {
+                this.playerListeners.remove(player);
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

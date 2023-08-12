@@ -19,7 +19,7 @@ public class EffectReward implements IReward{
 
     @Override
     public void rewardPlayer(ServerPlayer player) {
-        player.addEffect(effect);
+        player.addEffect(effect); //TODO: Given Effects duration is endless --> why?
     }
 
 

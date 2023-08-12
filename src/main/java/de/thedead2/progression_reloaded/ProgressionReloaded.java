@@ -93,6 +93,7 @@ public class ProgressionReloaded {
         ModRegistries.register(TestQuests.TEST2);
         ModRegistries.register(TestQuests.TEST3);
         ModRegistries.register(TestQuests.TEST4);
+        ModRegistries.register(TestQuests.TEST5);
         ModRegistries.register(TestLevels.CREATIVE);
         ModRegistries.register(TestLevels.TEST1);
         ModRegistries.register(TestLevels.TEST2);

@@ -5,17 +5,22 @@ import de.thedead2.progression_reloaded.data.predicates.*;
 import de.thedead2.progression_reloaded.data.rewards.*;
 import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
+import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -64,7 +69,7 @@ public class TestQuests {
                             )
                     )
             ),
-            CriteriaStrategy.AND,
+            CriteriaStrategy.OR,
             RewardStrategy.ALL,
             true,
             null
@@ -130,5 +135,21 @@ public class TestQuests {
             RewardStrategy.ALL,
             true,
             new ResourceLocation(ModHelper.MOD_ID, "quest_test3")
+    );
+
+    public static final ProgressionQuest TEST5 = new ProgressionQuest(
+            new ResourceLocation(ModHelper.MOD_ID, "quest_test5"),
+            Component.literal("Test Quest5"),
+            Component.literal("This is a test quest5!"),
+            ItemStack.EMPTY,
+            Set.of(new EffectReward(new MobEffectInstance(MobEffects.LEVITATION, 50))),
+            Map.of("test34", new PlayerInventoryChangedTrigger(
+                    PlayerPredicate.ANY,
+                    new ItemPredicate(Items.ANVIL, MinMax.Ints.ANY, MinMax.Ints.ANY, Collections.emptySet(), Collections.emptySet(), NbtPredicate.ANY, null)
+            )),
+            CriteriaStrategy.AND,
+            RewardStrategy.ALL,
+            true,
+            new ResourceLocation(ModHelper.MOD_ID, "quest_test4")
     );
 }

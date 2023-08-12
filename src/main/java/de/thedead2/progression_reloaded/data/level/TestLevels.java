@@ -37,7 +37,7 @@ public class TestLevels {
             "test2",
             ResourceLocation.tryBuild(MOD_ID, "test-level2"),
             RewardStrategy.ALL,
-            Set.of(new ResourceLocation(ModHelper.MOD_ID, "quest_test3"), new ResourceLocation(ModHelper.MOD_ID, "quest_test4")),
+            Set.of(new ResourceLocation(ModHelper.MOD_ID, "quest_test3"), new ResourceLocation(ModHelper.MOD_ID, "quest_test4"), new ResourceLocation(ModHelper.MOD_ID, "quest_test5")),
             Set.of(new ItemReward(Items.HORSE_SPAWN_EGG.getDefaultInstance(), 1)),
             ResourceLocation.tryBuild(MOD_ID, "test-level"),
             null
