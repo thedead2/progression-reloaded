@@ -31,7 +31,7 @@ import static de.thedead2.progression_reloaded.util.ModHelper.MOD_NAME;
 @Mod.EventBusSubscriber(modid = ModHelper.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ScreenHandler {
     @SubscribeEvent
-    public static void afterScreenInit(ScreenEvent.Init.Post event) {
+    public static void afterScreenInit(final ScreenEvent.Init.Post event) {
         Screen screen = event.getScreen();
         if(screen instanceof PauseScreen pauseScreen){
             if(!pauseScreen.showPauseMenu) return;
@@ -55,7 +55,7 @@ public class ScreenHandler {
     }
 
     @SubscribeEvent
-    public static void beforeScreenInit(ScreenEvent.Init.Pre event){
+    public static void beforeScreenInit(final ScreenEvent.Init.Pre event){
         if (event.getScreen() instanceof AdvancementsScreen) {
             if(ConfigManager.DISABLE_ADVANCEMENTS.get()){
                 Minecraft.getInstance().setScreen(null);
@@ -64,7 +64,7 @@ public class ScreenHandler {
     }
 
     @SubscribeEvent
-    public static void onF3(CustomizeGuiOverlayEvent.DebugText event) {
+    public static void onF3(final CustomizeGuiOverlayEvent.DebugText event) {
         final Minecraft minecraft = Minecraft.getInstance();
 
         if (minecraft.options.renderDebug) {
