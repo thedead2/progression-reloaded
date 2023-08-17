@@ -265,7 +265,7 @@ public class QuestManager {
 
     @SuppressWarnings("unchecked")
     public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, SinglePlayer player, T toTest, Object... data) {
-        LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
+//        LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
         KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
         activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().values().stream().filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass)).forEach(trigger -> {
             if (((SimpleTrigger<T>) trigger).trigger(player, toTest, data)){

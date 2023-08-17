@@ -2,37 +2,20 @@ package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.common.base.Objects;
 import com.google.gson.*;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.util.JsonHelper;
+import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
-import de.thedead2.progression_reloaded.data.predicates.EntityPredicate;
-import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.rewards.*;
 import de.thedead2.progression_reloaded.data.trigger.*;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
-import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.registries.ModRegistries;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.TagParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.GsonHelper;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.*;
-
-import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
 public class ProgressionQuest implements ModRegistriesDynamicSerializer {
 

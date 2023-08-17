@@ -4,8 +4,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
-import de.thedead2.progression_reloaded.util.JsonHelper;
+import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
 import net.minecraft.resources.ResourceLocation;
@@ -31,7 +32,7 @@ public abstract class ModRegistries {
     private static final MarkerManager.Log4jMarker MARKER = new MarkerManager.Log4jMarker("ModRegistryManager");
     private static final DeferredRegister<ProgressionLevel> LEVEL_REGISTER = DeferredRegister.create(RegistryKeys.LEVELS, MOD_ID);
     private static final DeferredRegister<ProgressionQuest> QUEST_REGISTER = DeferredRegister.create(RegistryKeys.QUESTS, MOD_ID);
-    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(RegistryBuilder::new);
+    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().setDefaultKey(TestLevels.CREATIVE.getId()));
     public static final Supplier<IForgeRegistry<ProgressionQuest>> QUESTS = QUEST_REGISTER.makeRegistry(RegistryBuilder::new);
 
     public static void register(IEventBus bus) {

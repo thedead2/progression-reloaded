@@ -3,12 +3,17 @@ package de.thedead2.progression_reloaded.player.types;
 import com.google.common.base.Objects;
 import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.level.TestLevels;
+import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import de.thedead2.progression_reloaded.util.helper.ResourceLocationHelper;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.GameType;
 import org.apache.logging.log4j.Level;
 
 import java.io.*;
@@ -26,7 +31,7 @@ public class SinglePlayer {
     private boolean isOffline;
 
     public SinglePlayer(ServerPlayer player, ResourceLocation id) {
-        this(null, player, id, new ResourceLocation(ModHelper.MOD_ID, "creative_level"));
+        this(null, player, id, player.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? TestLevels.CREATIVE.getId() : ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId()));
     }
 
     public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId) {
@@ -94,6 +99,9 @@ public class SinglePlayer {
 
     public boolean hasProgressionLevel(ProgressionLevel other){
         return this.progressionLevel.equals(other) || this.progressionLevel.contains(other);
+    }
+    public boolean hasProgressionLevel(ResourceLocation other){
+        return this.hasProgressionLevel(ModRegistries.LEVELS.get().getValue(other));
     }
 
     public void toFile(File playerFile) {

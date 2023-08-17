@@ -1,6 +1,8 @@
 package de.thedead2.progression_reloaded.util;
 
+import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 public abstract class ConfigManager {
@@ -13,6 +15,7 @@ public abstract class ConfigManager {
     public static final ForgeConfigSpec.BooleanValue OUT_DATED_MESSAGE;
     public static final ForgeConfigSpec.BooleanValue DISABLE_ADVANCEMENTS;
     public static final ForgeConfigSpec.BooleanValue CHANGE_LEVEL_ON_CREATIVE;
+    public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_STARTING_LEVEL;
 
 
     static {
@@ -23,6 +26,8 @@ public abstract class ConfigManager {
         DISABLE_ADVANCEMENTS = newBoolean("Whether the mod should disable minecrafts in-game advancements", "disableAdvancements", true);
 
         CHANGE_LEVEL_ON_CREATIVE = newBoolean("Whether the level of a player should be changed to creative level when changing gamemode to creative", "changeLevelOnCreative", true);
+
+        DEFAULT_STARTING_LEVEL = CONFIG_BUILDER.comment("The default level a player gets assigned when starting a new world or logging into a server for the first time.\ndefault = " + TestLevels.CREATIVE.getId().toString()).define("defaultLevel", TestLevels.CREATIVE.getId().toString());
 
         CONFIG_BUILDER.pop();
         CONFIG_SPEC = CONFIG_BUILDER.build();

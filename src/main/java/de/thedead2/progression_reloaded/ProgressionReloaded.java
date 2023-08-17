@@ -112,6 +112,7 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(this::onServerStopped);
         forgeEventBus.addListener(this::onPlayerFileLoad);
         forgeEventBus.addListener(this::onPlayerFileSave);
+        forgeEventBus.addListener(this::onPlayerLoggedIn);
         forgeEventBus.addListener(this::onPlayerLoggedOut);
         forgeEventBus.addListener(this::onGameShuttingDown);
         forgeEventBus.addListener(this::onGameTick);
@@ -167,6 +168,10 @@ public class ProgressionReloaded {
 
     private void onPlayerFileSave(final PlayerEvent.SaveToFile event){
         PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
+    }
+
+    private void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event){
+        LevelManager.getInstance().checkForCreativeMode(PlayerDataHandler.getActivePlayer(event.getEntity()));
     }
 
     private void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event){

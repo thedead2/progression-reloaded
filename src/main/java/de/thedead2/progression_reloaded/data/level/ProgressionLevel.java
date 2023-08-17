@@ -79,14 +79,14 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
     }
 
     public boolean contains(ProgressionLevel other) {
-        ProgressionLevel previousLevel = ModRegistries.LEVELS.get().getValue(this.previousLevel);
+        ProgressionLevel previousLevel = this.previousLevel != null ? ModRegistries.LEVELS.get().getValue(this.previousLevel) : null;
         if(this.equals(other) || (previousLevel != null && previousLevel.equals(other))) return true;
         else if(previousLevel == null) return false;
         else return previousLevel.contains(other);
     }
 
     public boolean contains(ProgressionQuest quest) {
-        ProgressionLevel previousLevel = ModRegistries.LEVELS.get().getValue(this.previousLevel);
+        ProgressionLevel previousLevel = this.previousLevel != null ? ModRegistries.LEVELS.get().getValue(this.previousLevel) : null;
         return this.quests.contains(quest.getId()) || (previousLevel != null && previousLevel.contains(quest));
     }
 

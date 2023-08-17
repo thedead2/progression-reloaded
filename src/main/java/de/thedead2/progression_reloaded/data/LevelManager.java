@@ -1,7 +1,5 @@
 package de.thedead2.progression_reloaded.data;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
@@ -13,14 +11,15 @@ import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
+import de.thedead2.progression_reloaded.util.helper.ResourceLocationHelper;
 import de.thedead2.progression_reloaded.util.language.ChatMessageHandler;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
@@ -89,12 +88,20 @@ public class LevelManager {
         });
     }
 
-    public void updateLevel(SinglePlayer player, ResourceLocation nextLevel){
-        if(nextLevel == null) return;
-        PlayerTeamSynchronizer.updateProgressionLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
-        this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-        this.syncLevels(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-        this.saveData();
+    public void updateLevel (SinglePlayer player, ResourceLocation nextLevel){
+        if(nextLevel != null){
+            this.updateLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
+        }
+        else this.updateStatus();
+    }
+
+    public void updateLevel(SinglePlayer player, ProgressionLevel nextLevel){
+        if(nextLevel != null){
+            PlayerTeamSynchronizer.updateProgressionLevel(player, nextLevel);
+            this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+            this.syncLevels(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+            this.saveData();
+        }
         this.updateStatus();
     }
 
@@ -157,32 +164,49 @@ public class LevelManager {
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         this.levelProgress.get(level1).setRewarded(player1, false);
         level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
-        this.updateLevel(player, level);
+        this.updateLevel(player, level1);
     }
 
     public void award(SinglePlayer player, ResourceLocation level) {
         KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         level1.getQuests().forEach(id -> this.questManager.award(id, player1));
-        this.updateLevel(player, level);
+        this.updateLevel(player, level1);
     }
 
     public static void onGameModeChange(final PlayerEvent.PlayerChangeGameModeEvent event){
         if(!ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get()) return;
-        if(event.getNewGameMode() == GameType.CREATIVE) LevelManager.getInstance().onCreativeChange(event.getEntity());
-        else if(event.getNewGameMode() != GameType.CREATIVE && event.getCurrentGameMode() == GameType.CREATIVE) LevelManager.getInstance().onSurvivalChange(event.getEntity());
+        GameType newGameMode = event.getNewGameMode();
+        GameType currentGameMode = event.getCurrentGameMode();
+        if(isGameModeCreativeOrSpectator(newGameMode) && isGameModeNotCreativeAndSpectator(currentGameMode)) LevelManager.getInstance().onCreativeChange(event.getEntity());
+        else if(isGameModeNotCreativeAndSpectator(newGameMode) && isGameModeCreativeOrSpectator(currentGameMode)) LevelManager.getInstance().onSurvivalChange(event.getEntity());
+    }
+
+    private static boolean isGameModeCreativeOrSpectator(GameType gameMode){
+        return gameMode == GameType.CREATIVE || gameMode == GameType.SPECTATOR;
+    }
+
+    private static boolean isGameModeNotCreativeAndSpectator(GameType gameMode){
+        return gameMode != GameType.CREATIVE && gameMode != GameType.SPECTATOR;
     }
 
     private void onSurvivalChange(Player entity) {
         KnownPlayer player = KnownPlayer.fromPlayer(entity);
         ProgressionLevel level = levelCache.remove(player);
-        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), level != null ? level.getId() : null);
+        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), level != null ? level.getId() : ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId()));
     }
 
     private void onCreativeChange(Player entity) {
         KnownPlayer player = KnownPlayer.fromPlayer(entity);
         ProgressionLevel currentLevel = playerLevels.get(player);
         levelCache.put(player, currentLevel);
-        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), TestLevels.CREATIVE.getId());
+        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), TestLevels.CREATIVE);
+    }
+
+    public void checkForCreativeMode(SinglePlayer singlePlayer) {
+        ServerPlayer player = singlePlayer.getServerPlayer();
+        if((player.gameMode.isCreative() || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() && !singlePlayer.hasProgressionLevel(TestLevels.CREATIVE.getId())) {
+            this.onCreativeChange(player);
+        }
     }
 }
