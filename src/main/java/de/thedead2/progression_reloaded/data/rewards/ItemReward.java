@@ -2,12 +2,9 @@ package de.thedead2.progression_reloaded.data.rewards;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.util.JsonHelper;
-import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 public class ItemReward implements IReward{
