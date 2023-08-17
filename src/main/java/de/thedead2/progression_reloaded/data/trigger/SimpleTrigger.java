@@ -1,7 +1,9 @@
 package de.thedead2.progression_reloaded.data.trigger;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.*;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimap;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
@@ -13,17 +15,16 @@ import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
-import net.minecraft.advancements.CriterionTrigger;
+import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.Level;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,20 +34,14 @@ public abstract class SimpleTrigger<T> {
     protected final PlayerPredicate player;
     protected final ITriggerPredicate<T> predicate;
     protected final String predicateName;
-    private final Map<KnownPlayer, Set<Listener>> playerListeners = Maps.newIdentityHashMap();
+    private final Multimap<KnownPlayer, Listener> playerListeners = HashMultimap.create();
 
     public final void addListener(KnownPlayer player, Listener listener) {
-        this.playerListeners.computeIfAbsent(player, (p_66252_) -> Sets.newHashSet()).add(listener);
+        this.playerListeners.put(player, listener);
     }
 
     public final void removeListener(KnownPlayer player, Listener listener) {
-        Set<Listener> set = this.playerListeners.get(player);
-        if (set != null) {
-            set.remove(listener);
-            if (set.isEmpty()) {
-                this.playerListeners.remove(player);
-            }
-        }
+        this.playerListeners.remove(player, listener);
     }
 
     @SuppressWarnings("unchecked")
@@ -143,10 +138,6 @@ public abstract class SimpleTrigger<T> {
 
         public ProgressionQuest getQuest() {
             return quest;
-        }
-
-        public String getCriterion() {
-            return criterion;
         }
 
         @Override

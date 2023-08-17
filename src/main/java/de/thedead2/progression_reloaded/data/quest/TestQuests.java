@@ -69,7 +69,7 @@ public class TestQuests {
                             )
                     )
             ),
-            CriteriaStrategy.OR,
+            CriteriaStrategy.AND,
             RewardStrategy.ALL,
             true,
             null

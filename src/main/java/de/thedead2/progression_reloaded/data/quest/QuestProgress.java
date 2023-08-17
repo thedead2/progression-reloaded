@@ -56,20 +56,7 @@ public class QuestProgress implements Comparable<QuestProgress>{
     }
 
     public boolean isDone() {
-        boolean flag = false;
-        for(String s : criteria.keySet()){
-            CriterionProgress criterionprogress = this.getCriterion(s);
-            if (criterionprogress != null && criterionprogress.isDone()) {
-                flag = true;
-                if(this.criteriaStrategy.equals(CriteriaStrategy.OR)) break;
-            }
-            else {
-                flag = false;
-                break;
-            }
-        }
-
-        return flag;
+        return this.criteriaStrategy.isDone(this);
     }
 
     public boolean hasProgress() {
@@ -106,9 +93,7 @@ public class QuestProgress implements Comparable<QuestProgress>{
 
 
     public void serializeToNetwork(FriendlyByteBuf buf) {
-        buf.writeMap(this.criteria, FriendlyByteBuf::writeUtf, (buf1, criterionProgress) -> {
-            criterionProgress.serializeToNetwork(buf1);
-        });
+        buf.writeMap(this.criteria, FriendlyByteBuf::writeUtf, (buf1, criterionProgress) -> criterionProgress.serializeToNetwork(buf1));
     }
 
     @Nullable
@@ -202,10 +187,12 @@ public class QuestProgress implements Comparable<QuestProgress>{
 
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();
-        this.criteria.forEach((s, criterionProgress) -> {
-            tag.put(s, criterionProgress.saveToCompoundTag());
-        });
+        this.criteria.forEach((s, criterionProgress) -> tag.put(s, criterionProgress.saveToCompoundTag()));
         tag.putString("quest", this.quest.getId().toString());
         return tag;
+    }
+
+    public Map<String, CriterionProgress> getCriteria() {
+        return criteria;
     }
 }

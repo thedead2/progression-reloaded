@@ -8,7 +8,6 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.Level;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Modifier;
@@ -16,8 +15,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
@@ -88,13 +85,14 @@ public abstract class ReflectionHelper {
     }
 
     public static void registerClassesToEventBus(Class<?> baseClass, IEventBus eventBus){
+        LOGGER.info("Attempting to register classes of package {} to event bus", baseClass.getPackageName());
         findMatchingClasses(baseClass).stream()
                 .map(aClass -> changeClassLoader(aClass, baseClass.getClassLoader()))
                 .forEach(aClass -> {
                     if(!aClass.isAnnotationPresent(ExcludeFromEventBus.class)){
                         var list = Arrays.stream(aClass.getMethods()).filter(method-> Modifier.isStatic(method.getModifiers()) && method.isAnnotationPresent(SubscribeEvent.class)).toList();
                         if(list.isEmpty()) throw new IllegalStateException("Class " + aClass.getName() + " doesn't provide a static @SubscribeEvent method! Annotate the class with @ExcludeFromEventBus if it uses some other form of event listening!");
-                        LOGGER.info("Registering class {} to event bus", aClass.getName());
+                        LOGGER.debug("Registering class {} to event bus", aClass.getName());
                         eventBus.register(aClass);
                     }
                 });
