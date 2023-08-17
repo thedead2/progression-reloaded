@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.util;
+package de.thedead2.progression_reloaded.util.helper;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
