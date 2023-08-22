@@ -1,19 +1,19 @@
 package de.thedead2.progression_reloaded.client.gui.themes;
 
-import de.thedead2.progression_reloaded.client.gui.ImageRenderInfo;
+import de.thedead2.progression_reloaded.client.gui.ImageRenderObject;
 import net.minecraft.resources.ResourceLocation;
 
 public abstract class ProgressionTheme {
-    protected final ImageRenderInfo background;
+    /*protected final ImageRenderObject background;
     protected final ResourceLocation frames;
     protected final ResourceLocation widgets;
-    protected ProgressionTheme(ImageRenderInfo background, ResourceLocation frames, ResourceLocation widgets) {
+    protected ProgressionTheme(ImageRenderObject background, ResourceLocation frames, ResourceLocation widgets) {
         this.background = background;
         this.frames = frames;
         this.widgets = widgets;
     }
 
-    public ImageRenderInfo getBackground() {
+    public ImageRenderObject getBackground() {
         return background;
     }
 
@@ -27,5 +27,5 @@ public abstract class ProgressionTheme {
 
     public void init(int screenWidth, int screenHeight) {
 
-    }
+    }*/
 }

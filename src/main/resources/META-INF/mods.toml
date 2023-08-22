@@ -1,4 +1,4 @@
-# The name of the mod loader type to load - for regular FML @Mod mods it should be javafml
+# The name of the mod loader corner to load - for regular FML @Mod mods it should be javafml
 modLoader="javafml" #mandatory
 # A version range to match for said mod loader - for regular FML @Mod it will be the forge version
 loaderVersion="[44,)" #mandatory This is typically bumped every Minecraft version by Forge. See our download page for lists of versions.

@@ -1,5 +1,4 @@
 package de.thedead2.progression_reloaded.client.gui.themes;
 
-public class OldMapTheme extends ProgressionTheme{
-
+public class DefaultTheme extends ProgressionTheme{
 }

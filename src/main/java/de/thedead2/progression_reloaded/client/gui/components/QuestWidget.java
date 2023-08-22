@@ -19,7 +19,7 @@ public class QuestWidget extends GuiComponent {
 
 
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        RenderSystem.setShaderTexture(0, theme.getWidgets());
+        //RenderSystem.setShaderTexture(0, theme.getWidgets());
         //blit(poseStack, screen.getScreenCenterX(), screen.getScreenCenterY(), 0, 0, 100, 100, 100, 100);
     }
 }

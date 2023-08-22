@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.util;
 
+import de.thedead2.progression_reloaded.client.gui.themes.ThemeType;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.resources.ResourceLocation;
@@ -16,6 +17,7 @@ public abstract class ConfigManager {
     public static final ForgeConfigSpec.BooleanValue DISABLE_ADVANCEMENTS;
     public static final ForgeConfigSpec.BooleanValue CHANGE_LEVEL_ON_CREATIVE;
     public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_STARTING_LEVEL;
+    public static final ForgeConfigSpec.ConfigValue<ThemeType> THEME;
 
 
     static {
@@ -28,6 +30,8 @@ public abstract class ConfigManager {
         CHANGE_LEVEL_ON_CREATIVE = newBoolean("Whether the level of a player should be changed to creative level when changing gamemode to creative", "changeLevelOnCreative", true);
 
         DEFAULT_STARTING_LEVEL = CONFIG_BUILDER.comment("The default level a player gets assigned when starting a new world or logging into a server for the first time.\ndefault = " + TestLevels.CREATIVE.getId().toString()).define("defaultLevel", TestLevels.CREATIVE.getId().toString());
+
+        THEME = CONFIG_BUILDER.comment("The Theme the Progression Book uses. \ndefault = " + ThemeType.DEFAULT).defineEnum("progressionBookTheme", ThemeType.DEFAULT);
 
         CONFIG_BUILDER.pop();
         CONFIG_SPEC = CONFIG_BUILDER.build();

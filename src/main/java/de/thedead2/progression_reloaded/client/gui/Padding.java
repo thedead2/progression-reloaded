@@ -10,8 +10,8 @@ public class Padding {
     public Padding(int padding){
         this(padding, padding);
     }
-    public Padding(int paddingSides, int paddingTopBottom){
-        this(paddingSides, paddingSides, paddingTopBottom, paddingTopBottom);
+    public Padding(int paddingLeftRight, int paddingTopBottom){
+        this(paddingLeftRight, paddingLeftRight, paddingTopBottom, paddingTopBottom);
     }
     public Padding(int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
         this.paddingLeft = paddingLeft;
@@ -29,10 +29,10 @@ public class Padding {
     }
 
     public int getRight() {
-        return paddingLeft + paddingRight;
+        return paddingRight;
     }
 
     public int getBottom() {
-        return paddingTop + paddingBottom;
+        return paddingBottom;
     }
 }

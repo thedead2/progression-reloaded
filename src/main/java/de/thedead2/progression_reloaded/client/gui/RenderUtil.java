@@ -11,6 +11,10 @@ import net.minecraft.world.entity.LivingEntity;
 import org.joml.Quaternionf;
 import org.joml.Vector2i;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+
 import static net.minecraft.client.gui.GuiComponent.blit;
 
 public class RenderUtil {
@@ -91,6 +95,17 @@ public class RenderUtil {
 
     public static Vector2i getScreenCenter(int width, int height){
         return new Vector2i(width/2, height/2);
+    }
+
+    public static void renderPerLayer(Collection<RenderObject> renderObjects, PoseStack poseStack, int mouseX, int mouseY, float partialTicks){
+        renderObjects.stream().sorted(Comparator.comparingInt(RenderObject::getRenderLayer)).forEachOrdered(object -> object.render(poseStack, mouseX, mouseY, partialTicks));
+    }
+
+    public static int getScreenWidth() {
+        return Minecraft.getInstance().getWindow().getGuiScaledWidth();
+    }
+    public static int getScreenHeight() {
+        return Minecraft.getInstance().getWindow().getGuiScaledHeight();
     }
 
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {

@@ -5,6 +5,8 @@ public class Alignment {
     public static Alignment CENTERED = new Alignment(X.CENTER, Y.CENTER);
     public static Alignment LEFT_CENTERED = new Alignment(X.LEFT, Y.CENTER);
     public static Alignment RIGHT_CENTERED = new Alignment(X.RIGHT, Y.CENTER);
+    public static Alignment TOP_CENTERED = new Alignment(X.CENTER, Y.TOP);
+    public static Alignment BOTTOM_CENTERED = new Alignment(X.CENTER, Y.BOTTOM);
     private final X x;
     private final Y y;
 
