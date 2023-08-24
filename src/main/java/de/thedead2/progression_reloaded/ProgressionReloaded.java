@@ -3,23 +3,15 @@ package de.thedead2.progression_reloaded;
 import de.thedead2.progression_reloaded.commands.ModCommand;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.abilities.IAbility;
-import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
-import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
-import de.thedead2.progression_reloaded.data.predicates.*;
-import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.TestQuests;
-import de.thedead2.progression_reloaded.data.rewards.*;
-import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
+import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import de.thedead2.progression_reloaded.util.VersionManager;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
@@ -29,17 +21,6 @@ import de.thedead2.progression_reloaded.util.logger.UnknownAdvancementFilter;
 import de.thedead2.progression_reloaded.util.logger.UnknownRecipeCategoryFilter;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.biome.Biomes;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -55,14 +36,8 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
@@ -121,6 +96,7 @@ public class ProgressionReloaded {
         forgeEventBus.register(this);
         registerLoggerFilter();
         VersionManager.register(modEventBus, forgeEventBus);
+        //CrashHandler.getInstance().registerCrashListener(ModRegistries::saveRegistries);
     }
 
     private void registerAbilities(IEventBus forgeEventBus) {

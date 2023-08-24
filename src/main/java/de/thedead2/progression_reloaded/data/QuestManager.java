@@ -4,12 +4,13 @@ import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.*;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.events.ModEvents;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
-import de.thedead2.progression_reloaded.util.HashBiSetMultiMap;
+import de.thedead2.progression_reloaded.util.misc.HashBiSetMultiMap;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.Marker;
@@ -117,6 +118,7 @@ public class QuestManager {
         this.activePlayerQuests.replace(player, searchQuestsForActive(player));
         searchQuestsForComplete(player).forEach(quest -> this.unregisterListeners(quest, player));
         this.activePlayerQuests.get(player).forEach(quest -> this.registerListeners(quest, player));
+        ModEvents.onQuestStatusUpdate(player, this.activePlayerQuests.get(player));
         if (shouldSync) this.syncQuestProgress(player);
     }
 
@@ -166,8 +168,6 @@ public class QuestManager {
     }
 
     public boolean isQuestActive(ProgressionQuest quest, KnownPlayer player){
-        /*LOGGER.debug("Quest: " + quest.getId());
-        LOGGER.debug("is quest done: " + quest.isDone(this, player));*/
         return quest.isParentDone(this, player) && !quest.isDone(this, player);
     }
 
@@ -212,18 +212,20 @@ public class QuestManager {
     public boolean award(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        boolean flag1 = questProgress.isDone();
-        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-        if (criterionName == null || questProgress.grantProgress(criterionName)) {
-            if(criterionName == null) questProgress.complete();
-            this.unregisterListeners(quest, player);
-            flag = true;
-            if (!flag1 && questProgress.isDone()) {
-                quest.rewardPlayer(singlePlayer); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
+        if(!ModEvents.onQuestAward(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))){
+            boolean flag1 = questProgress.isDone();
+            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+            if (criterionName == null || questProgress.grantProgress(criterionName)) {
+                if(criterionName == null) questProgress.complete();
+                this.unregisterListeners(quest, player);
+                flag = true;
+                if (!flag1 && questProgress.isDone()) {
+                    quest.rewardPlayer(singlePlayer); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
+                }
             }
-        }
 
-        if(flag) LevelManager.getInstance().updateStatus();
+            if(flag) LevelManager.getInstance().updateStatus();
+        }
 
         return flag;
     }
@@ -238,11 +240,13 @@ public class QuestManager {
     public boolean revoke(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        if (criterionName == null || questProgress.revokeProgress(criterionName)) {
-            if(criterionName == null) questProgress.reset();
-            if(quest.isParentDone(this, player)) this.registerListeners(quest, player);
-            LevelManager.getInstance().updateStatus();
-            flag = true;
+        if(!ModEvents.onQuestRevoke(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))){
+            if (criterionName == null || questProgress.revokeProgress(criterionName)) {
+                if(criterionName == null) questProgress.reset();
+                if(quest.isParentDone(this, player)) this.registerListeners(quest, player);
+                LevelManager.getInstance().updateStatus();
+                flag = true;
+            }
         }
 
         return flag;
@@ -268,7 +272,7 @@ public class QuestManager {
 //        LOGGER.debug(MARKER,"Firing trigger: {}", triggerClass.getName());
         KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
         activePlayerQuests.get(knownPlayer).forEach(quest -> quest.getCriteria().values().stream().filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass)).forEach(trigger -> {
-            if (((SimpleTrigger<T>) trigger).trigger(player, toTest, data)){
+            if (!ModEvents.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)){
                 this.updateStatus(knownPlayer, true);
             }
         }));

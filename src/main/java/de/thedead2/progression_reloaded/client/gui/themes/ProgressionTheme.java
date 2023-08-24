@@ -1,8 +1,5 @@
 package de.thedead2.progression_reloaded.client.gui.themes;
 
-import de.thedead2.progression_reloaded.client.gui.ImageRenderObject;
-import net.minecraft.resources.ResourceLocation;
-
 public abstract class ProgressionTheme {
     /*protected final ImageRenderObject background;
     protected final ResourceLocation frames;

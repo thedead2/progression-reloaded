@@ -37,4 +37,25 @@ public class ProgressionBookItem extends Item {
             pTooltipComponents.add(Component.literal("Open for your progression").withStyle(ChatFormatting.GOLD));
         }
     }
+
+    /*@Override
+    public void initializeClient(Consumer<IClientItemExtensions> consumer) {
+        consumer.accept(new IClientItemExtensions() {
+            @Override
+            public BlockEntityWithoutLevelRenderer getCustomRenderer() {
+                class ProgressionBookItemRenderer extends BlockEntityWithoutLevelRenderer{
+
+                    public ProgressionBookItemRenderer(BlockEntityRenderDispatcher pBlockEntityRenderDispatcher, EntityModelSet pEntityModelSet) {
+                        super(pBlockEntityRenderDispatcher, pEntityModelSet);
+                    }
+
+                    @Override
+                    public void renderByItem(ItemStack pStack, ItemTransforms.TransformType pTransformType, PoseStack pPoseStack, MultiBufferSource pBuffer, int pPackedLight, int pPackedOverlay) {
+                        super.renderByItem(pStack, pTransformType, pPoseStack, pBuffer, pPackedLight, pPackedOverlay);
+                    }
+                }
+                return new ProgressionBookItemRenderer(, new EntityModelSet());
+            }
+        });
+    }*/
 }

@@ -4,6 +4,7 @@ import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.events.ModEvents;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.PlayerTeamSynchronizer;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
@@ -75,6 +76,7 @@ public class LevelManager {
             LOGGER.debug(MARKER,"Updating level status for player: {}", player.name());
             SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
             LevelProgress progress = this.levelProgress.get(level);
+            ModEvents.onLevelStatusUpdate(level, singlePlayer, progress);
             if(progress.isDone(player)){
                 if(!progress.hasBeenRewarded(player)){
                     ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
@@ -88,7 +90,7 @@ public class LevelManager {
         });
     }
 
-    public void updateLevel (SinglePlayer player, ResourceLocation nextLevel){
+    public void updateLevel(SinglePlayer player, ResourceLocation nextLevel){
         if(nextLevel != null){
             this.updateLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
         }
@@ -96,7 +98,7 @@ public class LevelManager {
     }
 
     public void updateLevel(SinglePlayer player, ProgressionLevel nextLevel){
-        if(nextLevel != null){
+        if(nextLevel != null && !ModEvents.onLevelUpdate(nextLevel, player, this.playerLevels.get(KnownPlayer.fromSinglePlayer(player)))){
             PlayerTeamSynchronizer.updateProgressionLevel(player, nextLevel);
             this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
             this.syncLevels(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
@@ -160,18 +162,22 @@ public class LevelManager {
     }
 
     public void revoke(SinglePlayer player, ResourceLocation level) {
-        KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
-        this.levelProgress.get(level1).setRewarded(player1, false);
-        level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
-        this.updateLevel(player, level1);
+        if(!ModEvents.onLevelRevoke(player, level1)){
+            KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
+            this.levelProgress.get(level1).setRewarded(player1, false);
+            level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
+            this.updateLevel(player, level1);
+        }
     }
 
     public void award(SinglePlayer player, ResourceLocation level) {
-        KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
-        level1.getQuests().forEach(id -> this.questManager.award(id, player1));
-        this.updateLevel(player, level1);
+        if(!ModEvents.onLevelAward(player, level1)){
+            KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
+            level1.getQuests().forEach(id -> this.questManager.award(id, player1));
+            this.updateLevel(player, level1);
+        }
     }
 
     public static void onGameModeChange(final PlayerEvent.PlayerChangeGameModeEvent event){

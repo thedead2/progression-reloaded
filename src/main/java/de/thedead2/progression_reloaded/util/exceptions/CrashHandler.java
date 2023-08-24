@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -32,6 +34,7 @@ public class CrashHandler implements ISystemReportExtender {
     private static CrashHandler instance;
     private static int crashCounter = 0;
     private File activeFile;
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
     private final Set<CrashReportException> crashReportExceptions = new HashSet<>();
     private final List<CrashReportSection> sections = new ArrayList<>();
     private final Set<Runnable> listeners = new HashSet<>();
@@ -67,7 +70,12 @@ public class CrashHandler implements ISystemReportExtender {
     }
 
     private void onCrash(){
-        this.listeners.forEach(Runnable::run);
+        try {
+            this.listeners.forEach(Runnable::run);
+        }
+        catch (Exception e){
+            LogManager.getLogger().fatal("Crash listener execution failed!", e);
+        }
     }
 
     public void registerCrashListener(Runnable runnable){
@@ -162,13 +170,13 @@ public class CrashHandler implements ISystemReportExtender {
 
     public void addScreenCrash(CrashReportCategory.Entry crashReportCategory$Entry, Throwable exception){
         this.addCrashDetails("Error while rendering screen: " + crashReportCategory$Entry.getValue() +
-                        "\n\t\t\t\t" + ConsoleColors.italic + " Please note that this error was not caused by " + MOD_NAME + "! So don't report it to the mod author!" + ConsoleColors.reset,
+                        "\n\t\t\t\t\t" + ConsoleColors.italic + " Please note that this error may not be caused by " + MOD_NAME + "!" + ConsoleColors.reset,
                 Level.FATAL, exception, true
         );
     }
 
     private void addCrashDetails(String errorDescription, Level level, Throwable throwable, boolean responsibleForCrash){
-        CrashReportException crashReportException = new CrashReportException(errorDescription, level, throwable, responsibleForCrash);
+        CrashReportException crashReportException = new CrashReportException(errorDescription, level, throwable, ZonedDateTime.now(), responsibleForCrash);
         for(CrashReportException crashReportException1 : this.crashReportExceptions){
             if (crashReportException.equals(crashReportException1)){
                 return;
@@ -251,7 +259,7 @@ public class CrashHandler implements ISystemReportExtender {
 
     public void handleException(String description, String callingClass, Throwable e, Level level) {
         String callingClassName = ReflectionHelper.getCallerCallerClassName();
-        String exceptionClass = callingClass != null ? callingClass : callingClassName.substring(callingClassName.lastIndexOf(".") + 1);;
+        String exceptionClass = callingClass != null ? callingClass : callingClassName.substring(callingClassName.lastIndexOf(".") + 1);
         Marker marker = new MarkerManager.Log4jMarker(exceptionClass);
         if (level.equals(Level.DEBUG))LOGGER.debug(marker, description);
         else if(level.equals(Level.WARN)) LOGGER.warn(marker, description);
@@ -287,13 +295,15 @@ public class CrashHandler implements ISystemReportExtender {
         private final String description;
         private final Level level;
         private final Throwable throwable;
+        private final ZonedDateTime exceptionTime;
         private final boolean responsibleForCrash;
 
-        CrashReportException(String description, Level level, Throwable throwable, boolean responsibleForCrash) {
+        CrashReportException(String description, Level level, Throwable throwable, ZonedDateTime exceptionTime, boolean responsibleForCrash) {
             super(throwable.getClass().getName().substring(throwable.getClass().getName().lastIndexOf(".") + 1));
             this.description = description;
             this.level = level;
             this.throwable = throwable;
+            this.exceptionTime = exceptionTime;
             this.responsibleForCrash = responsibleForCrash;
             this.subSection = true;
             this.getErrorDetails();
@@ -304,6 +314,7 @@ public class CrashHandler implements ISystemReportExtender {
             private void getErrorDetails() {
             this.addDetail(new CrashReportDetail("Reported Error", getExceptionName(throwable)));
             this.addDetail(new CrashReportDetail("Description", description));
+            this.addDetail(new CrashReportDetail("Time", exceptionTime));
             if (throwable.getCause() != null) {
                 this.addDetail(new CrashReportDetail("Caused by", getExceptionName(throwable.getCause())));
             }
@@ -460,7 +471,9 @@ public class CrashHandler implements ISystemReportExtender {
                         stringBuilder1.append(o);
                     });
                 }
-                else stringBuilder1.append(in);
+                else if(in instanceof ZonedDateTime date){
+                    stringBuilder1.append(DATE_TIME_FORMATTER.format(date));
+                }else stringBuilder1.append(in);
             }
             return stringBuilder1.toString();
         }
