@@ -18,13 +18,8 @@ import java.util.Map;
 
 public class PlayerCommands {
 
-    private static final SuggestionProvider<CommandSourceStack> SUGGEST_QUEST = (context, suggestionsBuilder) -> {
-        SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-        return SharedSuggestionProvider.suggest(ModRegistries.QUESTS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
-    };
-    private static final SuggestionProvider<CommandSourceStack> SUGGEST_LEVEL = (context, suggestionsBuilder) -> {
-        return SharedSuggestionProvider.suggest(ModRegistries.LEVELS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
-    };
+    private static final SuggestionProvider<CommandSourceStack> SUGGEST_QUEST = (context, suggestionsBuilder) -> SharedSuggestionProvider.suggest(ModRegistries.QUESTS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
+    private static final SuggestionProvider<CommandSourceStack> SUGGEST_LEVEL = (context, suggestionsBuilder) -> SharedSuggestionProvider.suggest(ModRegistries.LEVELS.get().getKeys().stream().map(ResourceLocation::toString), suggestionsBuilder);
 
     public static void register(){
         ModCommand.Builder.newModCommand("players/team", context -> {
@@ -64,6 +59,12 @@ public class PlayerCommands {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
             LevelManager.getInstance().revoke(player, ResourceLocationArgument.getId(context, "level"));
             context.getSource().sendSuccess(Component.literal("Revoked level!"), false);
+            return ModCommand.COMMAND_SUCCESS;
+        });
+        ModCommand.Builder.newModCommand("players/change/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL), context -> {
+            SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+            LevelManager.getInstance().updateLevel(player, ResourceLocationArgument.getId(context, "level"));
+            context.getSource().sendSuccess(Component.literal("Changed level!"), false);
             return ModCommand.COMMAND_SUCCESS;
         });
     }

@@ -18,7 +18,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Collection;
 
@@ -36,8 +35,8 @@ public abstract class ModHelper {
 
     public static final String MOD_VERSION = MOD_PROPERTIES.getProperty("mod_version");
     public static final String MOD_NAME = MOD_PROPERTIES.getProperty("mod_name");
-    public static final String MOD_UPDATE_LINK = "";
-    public static final String MOD_ISSUES_LINK = "";
+    public static final String MOD_UPDATE_LINK = "https://www.curseforge.com/minecraft/mc-mods/progression-reloaded";
+    public static final String MOD_ISSUES_LINK = "https://github.com/thedead2/progression-reloaded/issues";
     public static final Path GAME_DIR = FMLPaths.GAMEDIR.get();
     public static final char PATH_SEPARATOR = File.separatorChar;
     public static final Path DIR_PATH = GAME_DIR.resolve(MOD_ID);

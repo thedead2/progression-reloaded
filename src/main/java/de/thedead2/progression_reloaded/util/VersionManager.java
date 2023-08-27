@@ -2,16 +2,11 @@ package de.thedead2.progression_reloaded.util;
 
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.VersionChecker;
 import net.minecraftforge.fml.event.lifecycle.FMLLoadCompleteEvent;
-
-import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
-import static de.thedead2.progression_reloaded.util.ModHelper.isDevEnv;
 
 public abstract class VersionManager {
 
@@ -26,7 +21,7 @@ public abstract class VersionManager {
     }
 
     public static void onPlayerLogin(final PlayerEvent.PlayerLoggedInEvent event) {
-        if(ConfigManager.OUT_DATED_MESSAGE.get() && !isDevEnv()){
+        if(ConfigManager.OUT_DATED_MESSAGE.get() /*&& !isDevEnv()*/){
             VersionManager.sendChatMessage(event.getEntity());
         }
     }
@@ -50,11 +45,11 @@ public abstract class VersionManager {
         } else if (RESULT.status().equals(VersionChecker.Status.FAILED)) {
             ModHelper.LOGGER.error("Failed to check for updates! Please check your internet connection!");
         } else if (RESULT.status().equals(VersionChecker.Status.BETA)) {
-            ModHelper.LOGGER.warn("You're currently using a Beta of " + ModHelper.MOD_NAME + "! Please note that using this beta is at your own risk!");
-            ModHelper.LOGGER.info("Beta Status: " + RESULT.status());
+            ModHelper.LOGGER.warn("You're currently using a Beta of " + ModHelper.MOD_NAME + "! Please note that using this alpha/beta is at your own risk!");
+            ModHelper.LOGGER.info("Alpha/Beta Status: " + RESULT.status());
         } else if (RESULT.status().equals(VersionChecker.Status.BETA_OUTDATED)) {
-            ModHelper.LOGGER.warn("You're currently using a Beta of " + ModHelper.MOD_NAME + "! Please note that using this beta is at your own risk!");
-            ModHelper.LOGGER.warn("This Beta is outdated! Please update " + ModHelper.MOD_NAME + " using this link: " + ModHelper.MOD_UPDATE_LINK);
+            ModHelper.LOGGER.warn("You're currently using a alpha/beta of " + ModHelper.MOD_NAME + "! Please note that using this alpha/beta is at your own risk!");
+            ModHelper.LOGGER.warn("This Alpha/Beta is outdated! Please update " + ModHelper.MOD_NAME + " using this link: " + ModHelper.MOD_UPDATE_LINK);
             ModHelper.LOGGER.warn("Beta Status: " + RESULT.status());
         }
     }

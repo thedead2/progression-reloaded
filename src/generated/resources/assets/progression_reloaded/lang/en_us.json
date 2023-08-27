@@ -12,6 +12,9 @@
   "chat.progression_reloaded.team_members": "%s All team members of %s:",
   "chat.progression_reloaded.team_name_invalid": "%s The specified team name '%s' is invalid!",
   "chat.progression_reloaded.unknown_team": "%s There's no team with name %s!",
+  "chat.progression_reloaded.mod_outdated_message": "%s Mod is outdated! Please update using the link below:",
+  "chat.progression_reloaded.beta_outdated_message": "%s This alpha/beta Version is outdated! Please update using the link below:",
+  "chat.progression_reloaded.beta_warn_message": "%s You're currently using a Alpha/Beta Version of the mod! Please note that using this alpha/beta is at your own risk!",
   "creative_mode_tab.progression_reloaded.progression_reloaded_tab": "Progression Reloaded",
   "item.progression_reloaded.progression_book": "Progression Book"
 }
