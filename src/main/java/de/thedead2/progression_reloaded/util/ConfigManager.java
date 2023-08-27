@@ -2,8 +2,6 @@ package de.thedead2.progression_reloaded.util;
 
 import de.thedead2.progression_reloaded.client.gui.themes.ThemeType;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
-import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 public abstract class ConfigManager {

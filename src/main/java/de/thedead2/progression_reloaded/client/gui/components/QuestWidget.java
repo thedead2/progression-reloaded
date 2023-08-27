@@ -1,6 +1,5 @@
 package de.thedead2.progression_reloaded.client.gui.components;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;

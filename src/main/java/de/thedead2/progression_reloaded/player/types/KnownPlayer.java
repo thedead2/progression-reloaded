@@ -2,7 +2,6 @@ package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.base.Objects;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 

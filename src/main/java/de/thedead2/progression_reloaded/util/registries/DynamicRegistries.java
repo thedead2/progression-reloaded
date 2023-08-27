@@ -4,7 +4,6 @@ import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import net.minecraft.resources.ResourceLocation;
 
