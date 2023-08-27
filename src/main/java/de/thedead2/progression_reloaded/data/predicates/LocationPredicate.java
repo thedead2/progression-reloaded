@@ -16,7 +16,6 @@ import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
-
 import java.util.concurrent.atomic.AtomicReference;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;

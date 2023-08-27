@@ -1,16 +1,19 @@
 package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.common.base.Objects;
-import com.google.gson.*;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
-import de.thedead2.progression_reloaded.util.helper.JsonHelper;
-import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
-import de.thedead2.progression_reloaded.data.rewards.*;
-import de.thedead2.progression_reloaded.data.trigger.*;
+import de.thedead2.progression_reloaded.data.rewards.IReward;
+import de.thedead2.progression_reloaded.data.rewards.RewardStrategy;
+import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.util.helper.JsonHelper;
+import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;

@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation;
 public abstract class RegistryKeys {
     public static final ResourceKey<Registry<ProgressionLevel>> LEVELS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "levels"));
     public static final ResourceKey<Registry<ProgressionQuest>> QUESTS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "quests"));
-    public static final ResourceKey<Registry<Class<SimpleTrigger>>> TRIGGER = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "trigger"));
+    public static final ResourceKey<Registry<Class<SimpleTrigger<?>>>> TRIGGER = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "trigger"));
     public static final ResourceKey<Registry<Class<IReward>>> REWARDS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "rewards"));
     public static final ResourceKey<Registry<Class<ITriggerPredicate<?>>>> PREDICATES = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "predicates"));
     public static final ResourceKey<Registry<Class<IAbility<?>>>> ABILITIES = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "abilities"));

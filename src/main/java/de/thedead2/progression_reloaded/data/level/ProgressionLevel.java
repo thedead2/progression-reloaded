@@ -1,18 +1,20 @@
 package de.thedead2.progression_reloaded.data.level;
 
-import com.google.gson.*;
-import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.rewards.RewardStrategy;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
-import java.util.*;
-
-import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ProgressionLevel implements ModRegistriesDynamicSerializer {
     private final int index;

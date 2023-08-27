@@ -4,8 +4,6 @@ import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.resources.ResourceLocation;
 
-import java.util.Map;
-
 public interface ITriggerPredicate<T> {
 
     boolean matches(T t, Object... addArgs);

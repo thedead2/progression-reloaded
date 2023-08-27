@@ -32,7 +32,7 @@ public class ProgressionBookItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack pStack, @Nullable Level pLevel, List<Component> pTooltipComponents, TooltipFlag pIsAdvanced) {
+    public void appendHoverText(@NotNull ItemStack pStack, @Nullable Level pLevel, @NotNull List<Component> pTooltipComponents, @NotNull TooltipFlag pIsAdvanced) {
         if(Screen.hasShiftDown()){
             pTooltipComponents.add(Component.literal("Open for your progression").withStyle(ChatFormatting.GOLD));
         }

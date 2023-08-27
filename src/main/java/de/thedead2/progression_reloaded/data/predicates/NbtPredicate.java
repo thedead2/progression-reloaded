@@ -18,7 +18,6 @@ import net.minecraft.world.item.ItemStack;
 import org.apache.logging.log4j.Level;
 
 import javax.annotation.Nullable;
-import java.util.Map;
 
 public class NbtPredicate implements ITriggerPredicate<Tag> {
     public static final ResourceLocation ID = ITriggerPredicate.createId("nbt");

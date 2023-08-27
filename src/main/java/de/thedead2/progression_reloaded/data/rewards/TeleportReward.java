@@ -2,11 +2,9 @@ package de.thedead2.progression_reloaded.data.rewards;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 

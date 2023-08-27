@@ -3,9 +3,7 @@ package de.thedead2.progression_reloaded.data.abilities;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
-import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
 
 import java.lang.reflect.InvocationTargetException;

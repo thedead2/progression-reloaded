@@ -8,12 +8,13 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.GsonHelper;
+
+import javax.annotation.Nullable;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import javax.annotation.Nullable;
-import net.minecraft.network.chat.Component;
-import net.minecraft.util.GsonHelper;
 
 public abstract class MinMax<T extends Number> {
     public static final SimpleCommandExceptionType ERROR_EMPTY = new SimpleCommandExceptionType(Component.translatable("argument.range.empty"));
@@ -119,7 +120,7 @@ public abstract class MinMax<T extends Number> {
 
         String s = pReader.getString().substring(i, pReader.getCursor());
         if (s.isEmpty()) {
-            return (T)null;
+            return null;
         } else {
             try {
                 return pStringToValueFunction.apply(s);
@@ -144,7 +145,7 @@ public abstract class MinMax<T extends Number> {
 
     @Nullable
     private static <T> T optionallyFormat(@Nullable T pValue, Function<T, T> pFormatter) {
-        return (T)(pValue == null ? null : pFormatter.apply(pValue));
+        return pValue == null ? null : pFormatter.apply(pValue);
     }
 
     @FunctionalInterface
@@ -220,9 +221,7 @@ public abstract class MinMax<T extends Number> {
         }
 
         public static MinMax.Doubles fromReader(StringReader pReader) throws CommandSyntaxException {
-            return fromReader(pReader, (p_154807_) -> {
-                return p_154807_;
-            });
+            return fromReader(pReader, (p_154807_) -> p_154807_);
         }
 
         public static MinMax.Doubles fromReader(StringReader pReader, Function<Double, Double> pFormatter) throws CommandSyntaxException {

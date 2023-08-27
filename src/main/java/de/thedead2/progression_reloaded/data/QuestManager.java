@@ -2,7 +2,8 @@ package de.thedead2.progression_reloaded.data;
 
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.data.quest.*;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.events.ModEvents;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;

@@ -3,15 +3,11 @@ package de.thedead2.progression_reloaded.data.rewards;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
-import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
 
 public interface IReward {
     void rewardPlayer(ServerPlayer player);

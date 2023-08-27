@@ -32,14 +32,11 @@ public abstract class MixinCrashReport {
                 String key = crashReportCategory$Entry.getKey();
                 if(key.contains("Exception")){
                     errorMessage.set(crashReportCategory$Entry.getValue());
-                    if(crashHandler.resolveCrash(crashReportCategory.getStacktrace(), errorMessage.get())){
-                        return;
-                    }
+                    crashHandler.resolveCrash(crashReportCategory.getStacktrace(), errorMessage.get());
                 }
                 else if(key.contains("Screen")){
                     if(crashReportCategory$Entry.getValue().contains(ProgressionReloaded.MAIN_PACKAGE)){
                         crashHandler.addScreenCrash(crashReportCategory$Entry, exception);
-                        return;
                     }
                 }
             });

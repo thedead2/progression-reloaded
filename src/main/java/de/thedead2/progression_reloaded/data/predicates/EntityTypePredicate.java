@@ -1,7 +1,8 @@
 package de.thedead2.progression_reloaded.data.predicates;
 
-import com.google.gson.*;
-import net.minecraft.core.registries.BuiltInRegistries;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonPrimitive;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;

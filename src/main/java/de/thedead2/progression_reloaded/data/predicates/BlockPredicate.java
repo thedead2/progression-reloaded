@@ -13,7 +13,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import javax.annotation.Nullable;
-import java.util.Set;
 
 public class BlockPredicate implements ITriggerPredicate<BlockState> {
     public static final ResourceLocation ID = ITriggerPredicate.createId("block");

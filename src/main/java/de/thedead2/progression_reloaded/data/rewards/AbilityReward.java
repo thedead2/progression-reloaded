@@ -2,10 +2,8 @@ package de.thedead2.progression_reloaded.data.rewards;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 

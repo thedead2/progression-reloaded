@@ -9,7 +9,6 @@ import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.StateHolder;
 import net.minecraft.world.level.block.state.properties.Property;
@@ -19,7 +18,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 public class StatePropertiesPredicate<S extends StateHolder<?, S>> implements ITriggerPredicate<S> {
     public static final ResourceLocation ID = ITriggerPredicate.createId("state_properties");
@@ -143,7 +141,7 @@ public class StatePropertiesPredicate<S extends StateHolder<?, S>> implements IT
             String name1 = propertyTarget.getName();
             T t = properties.getValue(propertyTarget);
             Optional<T> optional = propertyTarget.getValue(name1);
-            ModHelper.LOGGER.debug("State properties are the same: " + t.equals(optional.get()));
+            ModHelper.LOGGER.debug("State properties are the same: " + t.equals(optional.orElseThrow()));
             return new ExactPropertyMatcher<>(name, name1);
         }
     }
