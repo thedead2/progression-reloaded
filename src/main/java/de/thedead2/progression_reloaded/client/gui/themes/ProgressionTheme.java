@@ -1,28 +1,11 @@
 package de.thedead2.progression_reloaded.client.gui.themes;
 
-public abstract class ProgressionTheme {
-    /*protected final ImageRenderObject background;
-    protected final ResourceLocation frames;
-    protected final ResourceLocation widgets;
-    protected ProgressionTheme(ImageRenderObject background, ResourceLocation frames, ResourceLocation widgets) {
-        this.background = background;
-        this.frames = frames;
-        this.widgets = widgets;
-    }
+import de.thedead2.progression_reloaded.client.gui.util.objects.ImageRenderObject;
+import net.minecraft.resources.ResourceLocation;
 
-    public ImageRenderObject getBackground() {
-        return background;
-    }
+import javax.annotation.Nullable;
 
-    public ResourceLocation getFrames() {
-        return frames;
-    }
+public record ProgressionTheme(/*@Nullable ResourceLocation background, ResourceLocation mainFrame, ResourceLocation logo, ResourceLocation questFrame, Color mainColor*/) {
 
-    public ResourceLocation getWidgets() {
-        return widgets;
-    }
-
-    public void init(int screenWidth, int screenHeight) {
-
-    }*/
+    record Color(float red, float blue, float green, float alpha){}
 }

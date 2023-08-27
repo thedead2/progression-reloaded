@@ -20,7 +20,7 @@ displayName="Progression Reloaded" #mandatory
 # A URL to query for updates for this mod. See the JSON update specification https://mcforge.readthedocs.io/en/latest/gettingstarted/autoupdate/
 updateJSONURL="" #optional
 # A URL for the "homepage" for this mod, displayed in the mod UI
-displayURL="" #optional
+displayURL="https://www.curseforge.com/minecraft/mc-mods/progression-reloaded" #optional
 # A file name (in the root of the mod JAR) containing a logo for display
 logoFile="logo.png" #optional
 # A text field displayed in the mod UI
@@ -37,7 +37,7 @@ displayTest="MATCH_VERSION" # MATCH_VERSION is the default if nothing is specifi
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Progression System for minecraft 1.19.3
+Quests and progression levels for minecraft!
 '''
 # A dependency - use the . to indicate dependency for a specific modid. Dependencies are optional.
 [[dependencies.progression_reloaded]] #optional

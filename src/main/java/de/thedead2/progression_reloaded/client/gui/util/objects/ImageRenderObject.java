@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.client.gui.util.objects;
 
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import de.thedead2.progression_reloaded.client.gui.util.*;
@@ -43,10 +44,15 @@ public class ImageRenderObject extends RenderObject {
         //poseStack.pushTransformation(this.poseStackTransformer.createTransformation(this.objectArea));
         RenderSystem.enableBlend();
         RenderSystem.setShaderTexture(0, texture);
+        /*RenderSystem.bindTexture(0);
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_COLOR, GlStateManager.DestFactor.SRC_COLOR);
+        RenderSystem.setShaderColor(231, 255, 0, 0.2f);
+*/
         blit(poseStack, this.renderArea.getXMin(), this.renderArea.getYMin(), uOffset, vOffset, this.renderArea.getWidth(), this.renderArea.getHeight(), relativeWidth, relativeHeight);
-        /*RenderSystem.setShaderColor(231, 255, 0, 0.2f);
+        /*
         blit(poseStack, this.renderArea.getXMin(), this.renderArea.getYMin(), uOffset, vOffset, this.renderArea.getWidth(), this.renderArea.getHeight(), relativeWidth, relativeHeight);
-        */RenderSystem.disableBlend();
+        */
+        RenderSystem.disableBlend();
         //poseStack.popPose();
     }
 

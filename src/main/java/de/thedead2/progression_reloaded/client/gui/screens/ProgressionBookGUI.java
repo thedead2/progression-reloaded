@@ -50,11 +50,11 @@ public class ProgressionBookGUI extends Screen {
             RenderUtil.getScreenWidth(),
             RenderUtil.getScreenHeight(),
             new Area.Position(RenderUtil.getScreenCenter(), Area.Point.CENTER),
-            new Padding(5, 0), //TODO: With Padding strangely projected like AnchorPoint is A
+            new Padding(0, 0), //TODO: With Padding strangely projected like AnchorPoint is A
             PoseStackTransformer.NONE,
-            new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/frame.png"),
+            new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/futuristic_logo_bright_text.png"),
             true,
-            (float) 3072/1381,
+            (float) 13731/9250,
             ImageRenderObject.FixedParameter.WIDTH,
             Alignment.CENTERED
     );
@@ -67,8 +67,8 @@ public class ProgressionBookGUI extends Screen {
 
     @Override
     protected void init() {
-        this.addRenderableOnly(background);
-        this.addRenderableOnly(frame);
+        //this.addRenderableOnly(background);
+        //this.addRenderableOnly(frame);
         this.renderables.stream().filter(renderable -> renderable instanceof RenderObject).forEach(renderable -> ((RenderObject) renderable).onResize(this.width, this.height));
     }
 
