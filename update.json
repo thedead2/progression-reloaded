@@ -1,0 +1,9 @@
+{
+  "homepage": "https://www.curseforge.com/minecraft/mc-mods/progression-reloaded/",
+  "1.19.3": {
+    "1.19.3-0.2.20-alpha": "Alpha release of the mod."
+  },
+  "promos": {
+    "1.19.3-latest": "1.19.3-0.2.20-alpha"
+  }
+}
