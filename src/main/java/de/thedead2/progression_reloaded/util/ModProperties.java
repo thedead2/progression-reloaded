@@ -14,46 +14,56 @@ import java.util.Properties;
 public class ModProperties extends Properties {
 
     private final Path propertiesFilePath;
-    private ModProperties(Path propertiesFilePath){
-        this.propertiesFilePath = propertiesFilePath;
-    }
 
-    private ModProperties(){
+
+    private ModProperties() {
         this(null);
     }
 
-    public static ModProperties empty(){
+
+    private ModProperties(Path propertiesFilePath) {
+        this.propertiesFilePath = propertiesFilePath;
+    }
+
+
+    public static ModProperties empty() {
         return new ModProperties();
     }
+
 
     public static ModProperties fromPath(Path path) {
         ModProperties properties = new ModProperties(path);
         try {
             properties.load(Files.newInputStream(path));
-        } catch (IOException e) {
+        }
+        catch(IOException e) {
             CrashHandler.getInstance().handleException("IOException while loading ModProperties", e, Level.ERROR);
         }
         return properties;
     }
+
 
     public static ModProperties fromInputStream(InputStream inputStream) {
         ModProperties properties = new ModProperties();
         try {
             properties.load(inputStream);
-        } catch (IOException e) {
+        }
+        catch(IOException e) {
             CrashHandler.getInstance().handleException("IOException while loading ModProperties", e, Level.ERROR);
         }
         return properties;
     }
 
+
     @Override
-    public ModProperties setProperty(String name, String value){
+    public ModProperties setProperty(String name, String value) {
         super.setProperty(name, value);
-        if(propertiesFilePath != null){
+        if(propertiesFilePath != null) {
             try {
                 this.store(Files.newOutputStream(propertiesFilePath, StandardOpenOption.WRITE), null);
                 this.load(Files.newInputStream(propertiesFilePath));
-            } catch (IOException e) {
+            }
+            catch(IOException e) {
                 CrashHandler.getInstance().handleException("IOException while writing ModProperties", e, Level.ERROR);
             }
         }

@@ -7,34 +7,36 @@ import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
 
+
 public class PoseStackTransformer {
+
     public static final PoseStackTransformer NONE = new PoseStackTransformer();
+
     private final double rotationDegrees;
+
     private final RotationType rotationType;
+
 
     public PoseStackTransformer() {
         this(0, RotationType.NONE);
     }
+
 
     public PoseStackTransformer(double rotationDegrees, RotationType rotationType) {
         this.rotationDegrees = rotationDegrees;
         this.rotationType = rotationType;
     }
 
-    public Quaternionf getRotation() {
-        return new Quaternionf(new AxisAngle4d(Math.toRadians(rotationDegrees), new Vector3f(0, 0, 1)));
+
+    public Transformation createTransformation(Area objectArea) {
+        return new Transformation(
+                this.getTranslation(objectArea),
+                isLeftRotation() ? getRotation() : null,
+                getScaleVector(),
+                isRightRotation() ? getRotation() : null
+        );
     }
 
-    public boolean isLeftRotation(){
-        return this.rotationType == RotationType.LEFT;
-    }
-    public boolean isRightRotation(){
-        return this.rotationType == RotationType.RIGHT;
-    }
-
-    public Vector3f getScaleVector() {
-        return new Vector3f(1);
-    }
 
     @Nullable
     public Vector3f getTranslation(Area objectArea) {
@@ -43,15 +45,33 @@ public class PoseStackTransformer {
         return null;*/
     }
 
-    public Transformation createTransformation(Area objectArea) {
-        return new Transformation(this.getTranslation(objectArea), isLeftRotation() ? getRotation() : null, getScaleVector(), isRightRotation() ? getRotation() : null);
+
+    public boolean isLeftRotation() {
+        return this.rotationType == RotationType.LEFT;
     }
+
+
+    public Quaternionf getRotation() {
+        return new Quaternionf(new AxisAngle4d(Math.toRadians(rotationDegrees), new Vector3f(0, 0, 1)));
+    }
+
+
+    public Vector3f getScaleVector() {
+        return new Vector3f(1);
+    }
+
+
+    public boolean isRightRotation() {
+        return this.rotationType == RotationType.RIGHT;
+    }
+
 
     public boolean isTransformed() {
         return this != NONE;
     }
 
-    enum RotationType{
+
+    enum RotationType {
         LEFT,
         RIGHT,
         NONE

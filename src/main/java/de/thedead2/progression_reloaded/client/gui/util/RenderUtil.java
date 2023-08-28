@@ -17,28 +17,32 @@ import java.util.Comparator;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
 
+
 public class RenderUtil {
 
-    public static void rotate(int degrees){
+    public static void rotate(int degrees) {
 
     }
+
 
     public static void renderEntityInInventory(int pPosX, int pPosY, int pScale, float pMouseX, float pMouseY, LivingEntity pLivingEntity) {
-        float f = (float)Math.atan(pMouseX / 40.0F);
-        float f1 = (float)Math.atan(pMouseY / 40.0F);
+        float f = (float) Math.atan(pMouseX / 40.0F);
+        float f1 = (float) Math.atan(pMouseY / 40.0F);
         renderEntityInInventoryRaw(pPosX, pPosY, pScale, f, f1, pLivingEntity);
     }
+
+
     public static void renderEntityInInventoryRaw(int pPosX, int pPosY, int pScale, float angleXComponent, float angleYComponent, LivingEntity pLivingEntity) {
         PoseStack posestack = RenderSystem.getModelViewStack();
         posestack.pushPose();
-        posestack.translate((float)pPosX, (float)pPosY, 1050.0F);
+        posestack.translate((float) pPosX, (float) pPosY, 1050.0F);
         posestack.scale(1.0F, 1.0F, -1.0F);
         RenderSystem.applyModelViewMatrix();
         PoseStack posestack1 = new PoseStack();
         posestack1.translate(0.0F, 0.0F, 1000.0F);
-        posestack1.scale((float)pScale, (float)pScale, (float)pScale);
-        Quaternionf quaternionf = (new Quaternionf()).rotateZ((float)Math.PI);
-        Quaternionf quaternionf1 = (new Quaternionf()).rotateX(angleYComponent * 20.0F * ((float)Math.PI / 180F));
+        posestack1.scale((float) pScale, (float) pScale, (float) pScale);
+        Quaternionf quaternionf = (new Quaternionf()).rotateZ((float) Math.PI);
+        Quaternionf quaternionf1 = (new Quaternionf()).rotateX(angleYComponent * 20.0F * ((float) Math.PI / 180F));
         quaternionf.mul(quaternionf1);
         posestack1.mulPose(quaternionf);
         float f2 = pLivingEntity.yBodyRot;
@@ -70,45 +74,61 @@ public class RenderUtil {
         Lighting.setupFor3DItems();
     }
 
+
     public static void blitCenteredWithClipping(PoseStack poseStack, int screenWidth, int screenHeight, float textureWidth, float textureHeight, ResourceLocation texture) {
-        blitCenteredWithClipping(poseStack, screenWidth, screenHeight, textureWidth /textureHeight, texture);
+        blitCenteredWithClipping(poseStack, screenWidth, screenHeight, textureWidth / textureHeight, texture);
     }
+
 
     /**
      * Draws the given texture without transformation using a relative width to the given screenHeight and centering the texture
-     * **/
-    public static void blitCenteredWithClipping(PoseStack poseStack, int screenWidth, int screenHeight, float ratio, ResourceLocation texture){
+     **/
+    public static void blitCenteredWithClipping(PoseStack poseStack, int screenWidth, int screenHeight, float ratio, ResourceLocation texture) {
         RenderSystem.setShaderTexture(0, texture);
-        var relativeWidth = Math.round(screenHeight*ratio);
-        int xStart = (screenWidth-relativeWidth)/2;
+        var relativeWidth = Math.round(screenHeight * ratio);
+        int xStart = (screenWidth - relativeWidth) / 2;
         blit(poseStack, xStart, 0, 0, 0, screenWidth + Math.negateExact(xStart), screenHeight, relativeWidth, screenHeight);
     }
 
-    public static Vector2i getScreenCenter(){
-        return new Vector2i(getScreenWidth()/2, getScreenHeight()/2);
+
+    public static Vector2i getScreenCenter() {
+        return new Vector2i(getScreenWidth() / 2, getScreenHeight() / 2);
     }
 
-    public static void renderPerLayer(Collection<RenderObject> renderObjects, PoseStack poseStack, int mouseX, int mouseY, float partialTicks){
-        renderObjects.stream().sorted(Comparator.comparingInt(RenderObject::getRenderLayer)).forEachOrdered(object -> object.render(poseStack, mouseX, mouseY, partialTicks));
-    }
 
     public static int getScreenWidth() {
         return Minecraft.getInstance().getWindow().getGuiScaledWidth();
     }
+
+
     public static int getScreenHeight() {
         return Minecraft.getInstance().getWindow().getGuiScaledHeight();
     }
 
-    public static Vector2i getScreenA(){
+
+    public static void renderPerLayer(Collection<RenderObject> renderObjects, PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
+        renderObjects.stream()
+                     .sorted(Comparator.comparingInt(RenderObject::getRenderLayer))
+                     .forEachOrdered(object -> object.render(poseStack, mouseX, mouseY, partialTicks));
+    }
+
+
+    public static Vector2i getScreenA() {
         return new Vector2i(0, 0);
     }
-    public static Vector2i getScreenB(){
+
+
+    public static Vector2i getScreenB() {
         return new Vector2i(getScreenWidth(), 0);
     }
-    public static Vector2i getScreenC(){
+
+
+    public static Vector2i getScreenC() {
         return new Vector2i(0, getScreenHeight());
     }
-    public static Vector2i getScreenD(){
+
+
+    public static Vector2i getScreenD() {
         return new Vector2i(getScreenWidth(), getScreenHeight());
     }
 

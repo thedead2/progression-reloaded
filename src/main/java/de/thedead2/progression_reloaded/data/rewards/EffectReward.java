@@ -6,13 +6,23 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 
-public class EffectReward implements IReward{
+
+public class EffectReward implements IReward {
+
     public static final ResourceLocation ID = IReward.createId("effect");
+
     private final MobEffectInstance effect;
+
 
     public EffectReward(MobEffectInstance effect) {
         this.effect = effect;
     }
+
+
+    public static EffectReward fromJson(JsonElement jsonElement) {
+        return new EffectReward(JsonHelper.effectInstanceFromJson(jsonElement.getAsJsonObject()));
+    }
+
 
     @Override
     public void rewardPlayer(ServerPlayer player) {
@@ -20,17 +30,15 @@ public class EffectReward implements IReward{
     }
 
 
-    public static EffectReward fromJson(JsonElement jsonElement){
-        return new EffectReward(JsonHelper.effectInstanceFromJson(jsonElement.getAsJsonObject()));
-    }
-    @Override
-    public JsonElement toJson() {
-        return JsonHelper.effectInstanceToJson(this.effect);
-    }
-
     @Override
     public ResourceLocation getId() {
         return ID;
+    }
+
+
+    @Override
+    public JsonElement toJson() {
+        return JsonHelper.effectInstanceToJson(this.effect);
     }
 
 }

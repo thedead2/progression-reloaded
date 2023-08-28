@@ -10,31 +10,38 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingEntityUseItemEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
+
 public class UsingItemTrigger extends SimpleTrigger<ItemStack> {
+
     public static final ResourceLocation ID = createId("using_item");
 
-    public UsingItemTrigger(PlayerPredicate player, ItemPredicate item){
+
+    public UsingItemTrigger(PlayerPredicate player, ItemPredicate item) {
         super(ID, player, item, "used_item");
     }
 
-    @Override
-    public boolean trigger(SinglePlayer player, ItemStack itemStack,  Object... data) {
-        return this.trigger(player, listener -> this.predicate.matches(itemStack));
-    }
 
-    @Override
-    public void toJson(JsonObject data) {
-    }
-
-    public static UsingItemTrigger fromJson(JsonElement jsonElement){
+    public static UsingItemTrigger fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
         ItemPredicate item = ItemPredicate.fromJson(jsonObject.get("used_item"));
         return new UsingItemTrigger(player, item);
     }
 
+
     @SubscribeEvent
-    public static void onItemUse(final LivingEntityUseItemEvent.Start event){
+    public static void onItemUse(final LivingEntityUseItemEvent.Start event) {
         fireTrigger(UsingItemTrigger.class, event.getEntity(), event.getItem());
+    }
+
+
+    @Override
+    public boolean trigger(SinglePlayer player, ItemStack itemStack, Object... data) {
+        return this.trigger(player, listener -> this.predicate.matches(itemStack));
+    }
+
+
+    @Override
+    public void toJson(JsonObject data) {
     }
 }

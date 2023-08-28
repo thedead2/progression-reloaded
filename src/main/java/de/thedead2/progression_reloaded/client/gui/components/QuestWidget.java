@@ -5,11 +5,15 @@ import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import net.minecraft.client.gui.GuiComponent;
 
+
 public class QuestWidget extends GuiComponent {
+
     private final ProgressionTheme theme;
+
     private final ProgressionQuest quest;
     //frame 2 breite/ höhe 830 px
     //start:
+
 
     public QuestWidget(ProgressionTheme theme, ProgressionQuest quest) {
         this.theme = theme;

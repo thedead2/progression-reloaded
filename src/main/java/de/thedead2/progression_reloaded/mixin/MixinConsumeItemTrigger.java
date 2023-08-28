@@ -9,11 +9,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+
 @Mixin(ConsumeItemTrigger.class)
 public class MixinConsumeItemTrigger {
 
     @Inject(at = @At("HEAD"), method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;)V")
-    public void onItemConsumed(ServerPlayer pPlayer, ItemStack pItem, CallbackInfo ci){
+    public void onItemConsumed(ServerPlayer pPlayer, ItemStack pItem, CallbackInfo ci) {
         PlayerConsumedItemTrigger.onItemConsumed(pPlayer, pItem);
     }
 }

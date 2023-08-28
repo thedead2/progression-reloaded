@@ -28,17 +28,21 @@ import java.util.Optional;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_NAME;
 
+
 @Mod.EventBusSubscriber(modid = ModHelper.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ScreenHandler {
+
     @SubscribeEvent
     public static void afterScreenInit(final ScreenEvent.Init.Post event) {
         Screen screen = event.getScreen();
-        if(screen instanceof PauseScreen pauseScreen){
-            if(!pauseScreen.showPauseMenu) return;
-            if (ConfigManager.DISABLE_ADVANCEMENTS.get()) {
+        if(screen instanceof PauseScreen pauseScreen) {
+            if(!pauseScreen.showPauseMenu) {
+                return;
+            }
+            if(ConfigManager.DISABLE_ADVANCEMENTS.get()) {
                 findButton(event.getListenersList(), "gui.advancements").ifPresentOrElse(event::removeListener, () -> {
-                    for (GuiEventListener eventListener : event.getListenersList()) {
-                        if (eventListener instanceof GridWidget gridWidget) {
+                    for(GuiEventListener eventListener : event.getListenersList()) {
+                        if(eventListener instanceof GridWidget gridWidget) {
                             findButtonInGrid(gridWidget, "gui.advancements").ifPresent(button -> {
                                 List<? extends GuiEventListener> children = gridWidget.children();
                                 children.remove(button);
@@ -54,41 +58,68 @@ public class ScreenHandler {
         }
     }
 
+
+    private static Optional<Button> findButton(List<? extends GuiEventListener> listeners, String name) {
+        for(GuiEventListener listener : listeners) {
+            if(listener instanceof Button button && button.getMessage() instanceof MutableComponent mutableComponent && mutableComponent.getContents() instanceof TranslatableContents translatableContents) {
+                if(translatableContents.getKey().equals(name)) {
+                    return Optional.of(button);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+
+    private static Optional<Button> findButtonInGrid(GridWidget gridWidget, String name) {
+        return findButton(gridWidget.children(), name);
+    }
+
+
     @SubscribeEvent
-    public static void beforeScreenInit(final ScreenEvent.Init.Pre event){
-        if (event.getScreen() instanceof AdvancementsScreen) {
-            if(ConfigManager.DISABLE_ADVANCEMENTS.get()){
+    public static void beforeScreenInit(final ScreenEvent.Init.Pre event) {
+        if(event.getScreen() instanceof AdvancementsScreen) {
+            if(ConfigManager.DISABLE_ADVANCEMENTS.get()) {
                 Minecraft.getInstance().setScreen(null);
             }
         }
     }
 
+
     @SubscribeEvent
     public static void onF3(final CustomizeGuiOverlayEvent.DebugText event) {
         final Minecraft minecraft = Minecraft.getInstance();
 
-        if (minecraft.options.renderDebug) {
+        if(minecraft.options.renderDebug) {
 
-            if (minecraft.player.isShiftKeyDown()) {
+            if(minecraft.player.isShiftKeyDown()) {
 
                 final SinglePlayer data = PlayerDataHandler.getActivePlayer(minecraft.player);
                 final int maxQuests = 5;
 
-                if (data != null) {
+                if(data != null) {
                     event.getRight().add("");
                     event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME);
                     event.getRight().add("Level: " + data.getProgressionLevel().getName());
                     data.getTeam().ifPresent(team -> event.getRight().add("Team: " + team.getName()));
                     event.getRight().add("Active Quests:");
-                    var list = LevelManager.getInstance().getQuestManager().getActiveQuests(KnownPlayer. fromSinglePlayer(data))
-                            .stream()
-                            .map(ProgressionQuest::getName)
-                            .toList();
+                    var list = LevelManager.getInstance()
+                                           .getQuestManager()
+                                           .getActiveQuests(KnownPlayer.fromSinglePlayer(data))
+                                           .stream()
+                                           .map(ProgressionQuest::getName)
+                                           .toList();
                     list.forEach(s -> {
-                        if(list.indexOf(s) < maxQuests) event.getRight().add(s);
+                        if(list.indexOf(s) < maxQuests) {
+                            event.getRight().add(s);
+                        }
                     });
-                    if(list.size() > maxQuests) event.getRight().add("...");
-                    else if(list.isEmpty()) event.getRight().add("None");
+                    if(list.size() > maxQuests) {
+                        event.getRight().add("...");
+                    }
+                    else if(list.isEmpty()) {
+                        event.getRight().add("None");
+                    }
                 }
             }
 
@@ -97,20 +128,6 @@ public class ScreenHandler {
                 event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME + " [Shift]");
             }
         }
-    }
-
-    private static Optional<Button> findButton(List<? extends GuiEventListener> listeners, String name) {
-        for (GuiEventListener listener : listeners) {
-            if (listener instanceof Button button && button.getMessage() instanceof MutableComponent mutableComponent && mutableComponent.getContents() instanceof TranslatableContents translatableContents) {
-                if (translatableContents.getKey().equals(name))
-                    return Optional.of(button);
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static Optional<Button> findButtonInGrid(GridWidget gridWidget, String name){
-        return findButton(gridWidget.children(), name);
     }
 }
 

@@ -2,57 +2,62 @@ package de.thedead2.progression_reloaded.util.helper;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import joptsimple.internal.Strings;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.registries.ForgeRegistries;
 
+
 public class JsonHelper {
 
-    public static ItemStack itemFromJson(JsonObject pJson) {
-        if (!pJson.has("item")) {
-            throw new JsonSyntaxException("Unsupported icon type, currently only items are supported (add 'item' key)");
-        } else {
-            Item item = GsonHelper.getAsItem(pJson, "item");
-            if (pJson.has("data")) {
-                throw new JsonParseException("Disallowed data tag found");
-            } else {
-                ItemStack itemstack = new ItemStack(item);
-                if (pJson.has("nbt")) {
-                    try {
-                        CompoundTag compoundtag = TagParser.parseTag(GsonHelper.convertToString(pJson.get("nbt"), "nbt"));
-                        itemstack.setTag(compoundtag);
-                    } catch (CommandSyntaxException commandsyntaxexception) {
-                        throw new JsonSyntaxException("Invalid nbt tag: " + commandsyntaxexception.getMessage());
-                    }
+    public static ItemStack itemFromJson(JsonElement jsonElement) {
+        ItemStack itemStack;
+        if(jsonElement.isJsonPrimitive()) {
+            itemStack = new ItemStack(GsonHelper.convertToItem(jsonElement, "item"));
+        }
+        else {
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            itemStack = new ItemStack(GsonHelper.getAsItem(jsonObject, "item"));
+            if(jsonObject.has("nbt")) {
+                try {
+                    CompoundTag compoundtag = TagParser.parseTag(GsonHelper.convertToString(jsonObject.get("nbt"), "nbt"));
+                    itemStack.setTag(compoundtag);
                 }
-
-                return itemstack;
+                catch(CommandSyntaxException commandsyntaxexception) {
+                    throw new JsonSyntaxException("Invalid nbt tag: " + commandsyntaxexception.getMessage());
+                }
             }
         }
+
+        return itemStack;
     }
 
-    public static JsonObject itemToJson(ItemStack item) {
-        JsonObject jsonobject = new JsonObject();
-        jsonobject.addProperty("item", ForgeRegistries.ITEMS.getKey(item.getItem()).toString());
-        if (item.hasTag()) {
+
+    public static JsonElement itemToJson(ItemStack item) {
+        String itemKey = ForgeRegistries.ITEMS.getKey(item.getItem()).toString();
+        if(item.hasTag()) {
+            JsonObject jsonobject = new JsonObject();
+            jsonobject.addProperty("item", itemKey);
             jsonobject.addProperty("nbt", item.getTag().toString());
+            return jsonobject;
         }
-
-        return jsonobject;
+        else {
+            return new JsonPrimitive(itemKey);
+        }
     }
 
-    public static JsonObject effectInstanceToJson(MobEffectInstance effect){
+
+    public static JsonObject effectInstanceToJson(MobEffectInstance effect) {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("effect", MobEffect.getId(effect.getEffect())); //TODO: Better by id!!
+        jsonObject.addProperty("effect", ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect()).toString()); //TODO: Better by id!!
         jsonObject.addProperty("duration", effect.getDuration());
         jsonObject.addProperty("amplifier", effect.getAmplifier());
         jsonObject.addProperty("ambient", effect.isAmbient());
@@ -62,12 +67,13 @@ public class JsonHelper {
         return jsonObject;
     }
 
-    public static MobEffectInstance effectInstanceFromJson(JsonObject jsonObject){
+
+    public static MobEffectInstance effectInstanceFromJson(JsonObject jsonObject) {
         MobEffect effect1;
         int duration, amplifier;
         boolean ambient, visible, showIcon;
 
-        effect1 = MobEffect.byId(jsonObject.get("effect").getAsInt());
+        effect1 = ForgeRegistries.MOB_EFFECTS.getValue(ResourceLocation.tryParse(jsonObject.get("effect").getAsString()));
         duration = jsonObject.get("duration").getAsInt();
         amplifier = jsonObject.get("amplifier").getAsInt();
         ambient = jsonObject.get("ambient").getAsBoolean();
@@ -78,39 +84,45 @@ public class JsonHelper {
         return new MobEffectInstance(effect1, duration, amplifier, ambient, visible, showIcon);
     }
 
+
     public static String formatJsonObject(JsonElement jsonElement) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] chars = jsonElement.toString().toCharArray();
         int i = 0;
-        for (int j = 0; j < chars.length; j++) {
+        for(int j = 0; j < chars.length; j++) {
             char c = chars[j];
             char previousChar = j - 1 < 0 ? c : chars[j - 1];
             char nextChar = j + 1 >= chars.length ? c : chars[j + 1];
 
-            if (c == '{') {
+            if(c == '{') {
                 stringBuilder.append(c);
-                if (nextChar != '}') {
+                if(nextChar != '}') {
                     i++;
                     stringBuilder.append('\n').append(Strings.repeat('\t', i));
                 }
-            } else if (c == '}') {
-                if (previousChar != '{') {
+            }
+            else if(c == '}') {
+                if(previousChar != '{') {
                     i--;
                     stringBuilder.append("\n").append(Strings.repeat('\t', i));
                 }
                 stringBuilder.append(c);
-                if (nextChar != ',' && nextChar != '\"' && nextChar != '\'' && nextChar != '}' && nextChar != ']') {
+                if(nextChar != ',' && nextChar != '\"' && nextChar != '\'' && nextChar != '}' && nextChar != ']') {
                     stringBuilder.append('\n').append(Strings.repeat('\t', i));
                 }
-            } else if (c == ',') {
+            }
+            else if(c == ',') {
                 stringBuilder.append(c).append('\n').append(Strings.repeat('\t', i));
-            } else if (c == '[' && (nextChar == '\"' || nextChar == '[')) {
+            }
+            else if(c == '[' && (nextChar == '\"' || nextChar == '[')) {
                 i++;
                 stringBuilder.append(c).append('\n').append(Strings.repeat('\t', i));
-            } else if (c == ']' && (previousChar == '\"' || previousChar == ']')) {
+            }
+            else if(c == ']' && (previousChar == '\"' || previousChar == ']')) {
                 i--;
                 stringBuilder.append('\n').append(Strings.repeat('\t', i)).append(c);
-            } else {
+            }
+            else {
                 stringBuilder.append(c);
             }
         }

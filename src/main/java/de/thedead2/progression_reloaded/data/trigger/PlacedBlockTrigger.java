@@ -10,29 +10,38 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class PlacedBlockTrigger extends SimpleTrigger<BlockState>{
+
+public class PlacedBlockTrigger extends SimpleTrigger<BlockState> {
+
     public static final ResourceLocation ID = createId("placed_block");
+
+
     public PlacedBlockTrigger(PlayerPredicate player, BlockPredicate block) {
         super(ID, player, block, "block");
     }
+
+
+    public static PlacedBlockTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
+        BlockPredicate block = BlockPredicate.fromJson(jsonObject.get("block"));
+        return new PlacedBlockTrigger(player, block);
+    }
+
+
+    @SubscribeEvent
+    public static void onBlockPlaced(final BlockEvent.EntityPlaceEvent event) {
+        fireTrigger(PlacedBlockTrigger.class, event.getEntity(), event.getPlacedBlock(), event.getEntity().getLevel().getBlockEntity(event.getPos()));
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, BlockState block, Object... data) {
         return this.trigger(player, trigger -> this.predicate.matches(block, data[0]));
     }
 
+
     @Override
     public void toJson(JsonObject data) {
-    }
-
-    public static PlacedBlockTrigger fromJson(JsonElement jsonElement){
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
-        BlockPredicate block = BlockPredicate.fromJson(jsonObject.get("block"));
-        return new PlacedBlockTrigger(player, block);
-    }
-    @SubscribeEvent
-    public static void onBlockPlaced(final BlockEvent.EntityPlaceEvent event){
-        fireTrigger(PlacedBlockTrigger.class, event.getEntity(), event.getPlacedBlock(), event.getEntity().getLevel().getBlockEntity(event.getPos()));
     }
 }

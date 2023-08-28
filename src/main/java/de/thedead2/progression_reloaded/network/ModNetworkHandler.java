@@ -23,8 +23,11 @@ import java.util.function.Supplier;
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
+
 public abstract class ModNetworkHandler {
+
     private static final String PROTOCOL_VERSION = "1";
+
     private static final SimpleChannel INSTANCE = NetworkRegistry.newSimpleChannel(
             new ResourceLocation(MOD_ID, "main"),
             () -> PROTOCOL_VERSION,
@@ -35,11 +38,7 @@ public abstract class ModNetworkHandler {
     private static int messageId = 0;
 
 
-    private static int nextMessageId(){
-        return messageId++;
-    }
-
-    public static void registerPackets(){
+    public static void registerPackets() {
         LOGGER.debug("Registering network packages...");
 
         registerPacket(ClientOpenProgressionBookPacket.class);
@@ -47,63 +46,91 @@ public abstract class ModNetworkHandler {
         LOGGER.debug("Network registration complete.");
     }
 
-    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet){
+
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet) {
         try {
             packet.getConstructor(FriendlyByteBuf.class);
-            if(packet.getName().contains("Login")){
+            if(packet.getName().contains("Login")) {
                 boolean flag = false;
-                for (Class<?> anInterface : packet.getInterfaces()) {
-                    if (anInterface.getName().equals("java.util.function.Supplier")) {
+                for(Class<?> anInterface : packet.getInterfaces()) {
+                    if(anInterface.getName().equals("java.util.function.Supplier")) {
                         flag = true;
                         break;
                     }
                 }
-                if(!flag) throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
+                if(!flag) {
+                    throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
+                }
             }
-            INSTANCE.messageBuilder(packet, nextMessageId(), getDirection(packet)).decoder(buf -> ModNetworkPacket.fromBytes(buf, packet)).encoder(ModNetworkPacket::toBytes).consumerMainThread(ModNetworkHandler::handlePacket).add();
+            INSTANCE.messageBuilder(packet, nextMessageId(), getDirection(packet))
+                    .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
+                    .encoder(ModNetworkPacket::toBytes)
+                    .consumerMainThread(ModNetworkHandler::handlePacket)
+                    .add();
         }
-        catch (Throwable e) {
+        catch(Throwable e) {
             CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
         }
     }
 
-    private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet){
+
+    private static int nextMessageId() {
+        return messageId++;
+    }
+
+
+    private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet) {
         Set<String> methodNames = new HashSet<>();
         String clazzName = packet.getName();
-        for (Method declaredMethod : packet.getDeclaredMethods()) {
-            if(declaredMethod.getName().equals("onClient") || declaredMethod.getName().equals("onServer")){
+        for(Method declaredMethod : packet.getDeclaredMethods()) {
+            if(declaredMethod.getName().equals("onClient") || declaredMethod.getName().equals("onServer")) {
                 methodNames.add(declaredMethod.getName());
             }
         }
-        if(methodNames.containsAll(Set.of("onClient", "onServer"))) return null;
-        else if (methodNames.contains("onClient")){
-            if (clazzName.contains("Login")) return NetworkDirection.LOGIN_TO_CLIENT;
-            else return NetworkDirection.PLAY_TO_CLIENT;
+        if(methodNames.containsAll(Set.of("onClient", "onServer"))) {
+            return null;
         }
-        else if (methodNames.contains("onServer")) {
-            if (clazzName.contains("Login")) return NetworkDirection.LOGIN_TO_SERVER;
-            else return NetworkDirection.PLAY_TO_SERVER;
+        else if(methodNames.contains("onClient")) {
+            if(clazzName.contains("Login")) {
+                return NetworkDirection.LOGIN_TO_CLIENT;
+            }
+            else {
+                return NetworkDirection.PLAY_TO_CLIENT;
+            }
         }
-        else return null;
+        else if(methodNames.contains("onServer")) {
+            if(clazzName.contains("Login")) {
+                return NetworkDirection.LOGIN_TO_SERVER;
+            }
+            else {
+                return NetworkDirection.PLAY_TO_SERVER;
+            }
+        }
+        else {
+            return null;
+        }
     }
 
-    private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx){
+
+    private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx) {
         try {
             DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
             DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
             ctx.get().setPacketHandled(true);
         }
-        catch (Throwable throwable){
+        catch(Throwable throwable) {
             CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), "NetworkHandler", throwable, Level.FATAL);
             ctx.get().setPacketHandled(false);
         }
     }
 
-    public static <MSG extends ModNetworkPacket> void sendToServer(MSG msg){
+
+    public static <MSG extends ModNetworkPacket> void sendToServer(MSG msg) {
         INSTANCE.sendToServer(msg);
     }
 
-    public static <MSG extends ModNetworkPacket> void sendToPlayer(MSG msg, ServerPlayer player){
+
+    public static <MSG extends ModNetworkPacket> void sendToPlayer(MSG msg, ServerPlayer player) {
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 }

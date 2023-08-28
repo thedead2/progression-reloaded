@@ -10,28 +10,39 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class ItemPickupTrigger extends SimpleTrigger<ItemStack>{
+
+public class ItemPickupTrigger extends SimpleTrigger<ItemStack> {
+
     public static final ResourceLocation ID = createId("item_pickup");
+
+
     public ItemPickupTrigger(PlayerPredicate player, ItemPredicate item) {
         super(ID, player, item, "item");
     }
+
+
+    public static ItemPickupTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        return new ItemPickupTrigger(
+                PlayerPredicate.fromJson(jsonObject.get("player")),
+                ItemPredicate.fromJson(jsonObject.get("item"))
+        );
+    }
+
+
+    @SubscribeEvent
+    public static void onItemPickup(final PlayerEvent.ItemPickupEvent event) {
+        fireTrigger(ItemPickupTrigger.class, event.getEntity(), event.getStack());
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, ItemStack item, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(item));
     }
 
+
     @Override
     public void toJson(JsonObject data) {
-    }
-
-    public static ItemPickupTrigger fromJson(JsonElement jsonElement) {
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return new ItemPickupTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), ItemPredicate.fromJson(jsonObject.get("item")));
-    }
-
-    @SubscribeEvent
-    public static void onItemPickup(final PlayerEvent.ItemPickupEvent event){
-        fireTrigger(ItemPickupTrigger.class, event.getEntity(), event.getStack());
     }
 }

@@ -13,39 +13,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+
 public class CriterionProgress {
+
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss Z", Locale.ROOT);
+
     @Nullable
     private Date obtained;
 
-    public boolean isDone() {
-        return this.obtained != null;
-    }
-
-    public void grant() {
-        this.obtained = new Date();
-    }
-
-    public void revoke() {
-        this.obtained = null;
-    }
-
-    @Nullable
-    public Date getObtained() {
-        return this.obtained;
-    }
-
-    public String toString() {
-        return "CriterionProgress{obtained=" + (this.obtained == null ? "false" : this.obtained) + "}";
-    }
-
-    public void serializeToNetwork(FriendlyByteBuf pBuffer) {
-        pBuffer.writeNullable(this.obtained, FriendlyByteBuf::writeDate);
-    }
-
-    public JsonElement serializeToJson() {
-        return this.obtained != null ? new JsonPrimitive(DATE_FORMAT.format(this.obtained)) : JsonNull.INSTANCE;
-    }
 
     public static CriterionProgress fromNetwork(FriendlyByteBuf pBuffer) {
         CriterionProgress criterionprogress = new CriterionProgress();
@@ -53,26 +28,70 @@ public class CriterionProgress {
         return criterionprogress;
     }
 
+
     public static CriterionProgress fromJson(String pDateTime) {
         CriterionProgress criterionprogress = new CriterionProgress();
 
         try {
             criterionprogress.obtained = DATE_FORMAT.parse(pDateTime);
             return criterionprogress;
-        } catch (ParseException parseexception) {
+        }
+        catch(ParseException parseexception) {
             throw new JsonSyntaxException("Invalid datetime: " + pDateTime, parseexception);
         }
     }
+
+
     public static CriterionProgress loadFromCompoundTag(CompoundTag tag) {
         CriterionProgress criterionprogress = new CriterionProgress();
         String date = tag.getString("obtained");
         try {
-            if(!date.equals("null")) criterionprogress.obtained = DATE_FORMAT.parse(date);
+            if(!date.equals("null")) {
+                criterionprogress.obtained = DATE_FORMAT.parse(date);
+            }
             return criterionprogress;
-        } catch (ParseException parseexception) {
+        }
+        catch(ParseException parseexception) {
             throw new JsonSyntaxException("Invalid datetime: " + date, parseexception);
         }
     }
+
+
+    public boolean isDone() {
+        return this.obtained != null;
+    }
+
+
+    public void grant() {
+        this.obtained = new Date();
+    }
+
+
+    public void revoke() {
+        this.obtained = null;
+    }
+
+
+    @Nullable
+    public Date getObtained() {
+        return this.obtained;
+    }
+
+
+    public String toString() {
+        return "CriterionProgress{obtained=" + (this.obtained == null ? "false" : this.obtained) + "}";
+    }
+
+
+    public void serializeToNetwork(FriendlyByteBuf pBuffer) {
+        pBuffer.writeNullable(this.obtained, FriendlyByteBuf::writeDate);
+    }
+
+
+    public JsonElement serializeToJson() {
+        return this.obtained != null ? new JsonPrimitive(DATE_FORMAT.format(this.obtained)) : JsonNull.INSTANCE;
+    }
+
 
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();

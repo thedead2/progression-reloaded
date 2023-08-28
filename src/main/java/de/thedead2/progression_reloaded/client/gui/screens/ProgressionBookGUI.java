@@ -14,6 +14,7 @@ import org.jetbrains.annotations.NotNull;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
+
 public class ProgressionBookGUI extends Screen {
     /* This combination
             0,
@@ -31,7 +32,9 @@ public class ProgressionBookGUI extends Screen {
      */
 
     private final Player player;
+
     private final ProgressionTheme theme;
+
     private final ImageRenderObject background = new ImageRenderObject(
             0,
             RenderUtil.getScreenWidth(),
@@ -41,10 +44,11 @@ public class ProgressionBookGUI extends Screen {
             PoseStackTransformer.NONE,
             new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/background.png"),
             true,
-            (float) 4476/1953,
+            (float) 4476 / 1953,
             ImageRenderObject.FixedParameter.HEIGHT, //TODO: Picture still gets stretched --> why?
             Alignment.CENTERED
     );
+
     private final ImageRenderObject frame = new ImageRenderObject(
             1,
             RenderUtil.getScreenWidth(),
@@ -54,10 +58,11 @@ public class ProgressionBookGUI extends Screen {
             PoseStackTransformer.NONE,
             new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/futuristic_logo_bright_text.png"),
             true,
-            (float) 13731/9250,
+            (float) 13731 / 9250,
             ImageRenderObject.FixedParameter.WIDTH,
             Alignment.CENTERED
     );
+
 
     public ProgressionBookGUI(Player player) {
         super(Component.literal("ProgressionBookGUI"));
@@ -65,18 +70,22 @@ public class ProgressionBookGUI extends Screen {
         this.theme = ConfigManager.THEME.get().getTheme();
     }
 
-    @Override
-    protected void init() {
-        //this.addRenderableOnly(background);
-        //this.addRenderableOnly(frame);
-        this.renderables.stream().filter(renderable -> renderable instanceof RenderObject).forEach(renderable -> ((RenderObject) renderable).onResize(this.width, this.height));
-    }
 
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(poseStack);
         //ModHelper.LOGGER.debug(background.isInRenderArea(mouseX, mouseY) + " --> " + background.isInArea(mouseX, mouseY));
         super.render(poseStack, mouseX, mouseY, partialTick);
+    }
+
+
+    @Override
+    protected void init() {
+        //this.addRenderableOnly(background);
+        //this.addRenderableOnly(frame);
+        this.renderables.stream()
+                        .filter(renderable -> renderable instanceof RenderObject)
+                        .forEach(renderable -> ((RenderObject) renderable).onResize(this.width, this.height));
     }
 
 }

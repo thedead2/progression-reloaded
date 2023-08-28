@@ -9,11 +9,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+
 @Mixin(EffectsChangedTrigger.class)
 public class MixinEffectsTrigger {
 
     @Inject(at = @At("HEAD"), method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/entity/Entity;)V")
-    public void onEffectsChanged(ServerPlayer pPlayer, Entity pSource, CallbackInfo ci){
+    public void onEffectsChanged(ServerPlayer pPlayer, Entity pSource, CallbackInfo ci) {
         PlayerEffectsChangedTrigger.onEffectsChanged(pPlayer, pSource);
     }
 }

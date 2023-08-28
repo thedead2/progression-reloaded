@@ -10,20 +10,27 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.HashMap;
 import java.util.Map;
 
+
 /**
  * Progress of a level is dependent on the player or the team. Different players or teams can have different progress of a level.
  **/
 public class LevelProgress {
+
     private final ProgressionLevel level;
+
     private final Map<KnownPlayer, Boolean> rewarded;
 
-    public LevelProgress(ProgressionLevel level){
+
+    public LevelProgress(ProgressionLevel level) {
         this(level, new HashMap<>());
     }
+
+
     public LevelProgress(ProgressionLevel level, Map<KnownPlayer, Boolean> rewarded) {
         this.level = level;
         this.rewarded = rewarded;
     }
+
 
     public static LevelProgress loadFromCompoundTag(CompoundTag tag) {
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(new ResourceLocation(tag.getString("level")));
@@ -37,15 +44,20 @@ public class LevelProgress {
         return new LevelProgress(level1, map);
     }
 
+
     /**
      * Returns true if all main quests of the level have been completed by the given player
      **/
     public boolean isDone(KnownPlayer player) {
         boolean flag = false;
-        for (QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, player)) {
-            if (questProgress != null && questProgress.isDone()) {
+        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(
+                this.level,
+                player
+        )) {
+            if(questProgress != null && questProgress.isDone()) {
                 flag = true;
-            } else {
+            }
+            else {
                 flag = false;
                 break;
             }
@@ -77,13 +89,16 @@ public class LevelProgress {
         return i;
     }*/
 
+
     public boolean hasBeenRewarded(KnownPlayer player) {
         return this.rewarded.get(player) != null ? this.rewarded.get(player) : false;
     }
 
+
     public void setRewarded(KnownPlayer player, boolean value) {
         this.rewarded.put(player, value);
     }
+
 
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();

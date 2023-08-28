@@ -10,11 +10,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+
 @Mixin(InventoryChangeTrigger.class)
 public class MixinInventoryChangeTrigger {
 
     @Inject(at = @At("HEAD"), method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/item/ItemStack;)V")
-    public void onInventoryChanged(ServerPlayer pPlayer, Inventory pInventory, ItemStack pStack, CallbackInfo ci){
+    public void onInventoryChanged(ServerPlayer pPlayer, Inventory pInventory, ItemStack pStack, CallbackInfo ci) {
         PlayerInventoryChangedTrigger.onInventoryChanged(pPlayer, pStack);
     }
 }

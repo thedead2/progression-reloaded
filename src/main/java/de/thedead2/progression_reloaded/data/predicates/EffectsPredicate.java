@@ -15,38 +15,34 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+
 public class EffectsPredicate implements ITriggerPredicate<Map<MobEffect, MobEffectInstance>> {
+
     public static final ResourceLocation ID = ITriggerPredicate.createId("effects");
+
     public static final EffectsPredicate ANY = new EffectsPredicate(Collections.emptyMap());
+
     private final Map<MobEffect, MobEffectInstancePredicate> effects;
+
 
     public EffectsPredicate(Map<MobEffect, MobEffectInstancePredicate> effects) {
         this.effects = effects;
     }
 
+
     public static EffectsPredicate from(Map<MobEffect, MobEffectInstance> activeEffectsMap) {
-        if(activeEffectsMap == null || activeEffectsMap.isEmpty()) return ANY;
+        if(activeEffectsMap == null || activeEffectsMap.isEmpty()) {
+            return ANY;
+        }
         final Map<MobEffect, MobEffectInstancePredicate> map = new HashMap<>();
         activeEffectsMap.forEach((mobEffect, mobEffectInstance) -> map.put(mobEffect, MobEffectInstancePredicate.from(mobEffectInstance)));
+
         return new EffectsPredicate(map);
     }
 
-    @Override
-    public boolean matches(Map<MobEffect, MobEffectInstance> effects, Object... addArgs) {
-        if (this != ANY) {
-            for (Map.Entry<MobEffect, MobEffectInstancePredicate> entry : this.effects.entrySet()) {
-                MobEffectInstance mobeffectinstance = effects.get(entry.getKey());
-                if (!entry.getValue().matches(mobeffectinstance)) {
-                    return false;
-                }
-            }
 
-        }
-        return true;
-    }
-
-    public static EffectsPredicate fromJson(JsonElement jsonElement){
-        if (jsonElement != null && !jsonElement.isJsonNull()) {
+    public static EffectsPredicate fromJson(JsonElement jsonElement) {
+        if(jsonElement != null && !jsonElement.isJsonNull()) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonElement, "effects");
             Map<MobEffect, MobEffectInstancePredicate> map = Maps.newLinkedHashMap();
 
@@ -58,16 +54,34 @@ public class EffectsPredicate implements ITriggerPredicate<Map<MobEffect, MobEff
             }
 
             return new EffectsPredicate(map);
-        } else {
+        }
+        else {
             return ANY;
         }
     }
 
+
+    @Override
+    public boolean matches(Map<MobEffect, MobEffectInstance> effects, Object... addArgs) {
+        if(this != ANY) {
+            for(Map.Entry<MobEffect, MobEffectInstancePredicate> entry : this.effects.entrySet()) {
+                MobEffectInstance mobeffectinstance = effects.get(entry.getKey());
+                if(!entry.getValue().matches(mobeffectinstance)) {
+                    return false;
+                }
+            }
+
+        }
+        return true;
+    }
+
+
     @Override
     public JsonElement toJson() {
-        if (this == ANY) {
+        if(this == ANY) {
             return JsonNull.INSTANCE;
-        } else {
+        }
+        else {
             JsonObject jsonobject = new JsonObject();
 
             for(Map.Entry<MobEffect, MobEffectInstancePredicate> entry : this.effects.entrySet()) {
@@ -78,15 +92,23 @@ public class EffectsPredicate implements ITriggerPredicate<Map<MobEffect, MobEff
         }
     }
 
-    public static class MobEffectInstancePredicate implements ITriggerPredicate<MobEffectInstance>{
+
+    public static class MobEffectInstancePredicate implements ITriggerPredicate<MobEffectInstance> {
+
         public static final ResourceLocation ID = ITriggerPredicate.createId("effect_instance");
+
         public static final MobEffectInstancePredicate ANY = new MobEffectInstancePredicate(MinMax.Ints.ANY, MinMax.Ints.ANY, null, null);
+
         private final MinMax.Ints amplifier;
+
         private final MinMax.Ints duration;
+
         @Nullable
         private final Boolean ambient;
+
         @Nullable
         private final Boolean visible;
+
 
         public MobEffectInstancePredicate(MinMax.Ints pAmplifier, MinMax.Ints pDuration, @Nullable Boolean pAmbient, @Nullable Boolean pVisible) {
             this.amplifier = pAmplifier;
@@ -95,24 +117,48 @@ public class EffectsPredicate implements ITriggerPredicate<Map<MobEffect, MobEff
             this.visible = pVisible;
         }
 
+
         public static MobEffectInstancePredicate from(MobEffectInstance mobEffectInstance) {
-            if(mobEffectInstance == null) return ANY;
-            return new MobEffectInstancePredicate(MinMax.Ints.exactly(mobEffectInstance.getAmplifier()), MinMax.Ints.exactly(mobEffectInstance.getDuration()), mobEffectInstance.isAmbient(), mobEffectInstance.isVisible());
+            if(mobEffectInstance == null) {
+                return ANY;
+            }
+            return new MobEffectInstancePredicate(
+                    MinMax.Ints.exactly(mobEffectInstance.getAmplifier()),
+                    MinMax.Ints.exactly(mobEffectInstance.getDuration()),
+                    mobEffectInstance.isAmbient(),
+                    mobEffectInstance.isVisible()
+            );
         }
 
+
+        public static MobEffectInstancePredicate fromJson(JsonObject pJson) {
+            MinMax.Ints amplifier = MinMax.Ints.fromJson(pJson.get("amplifier"));
+            MinMax.Ints duration = MinMax.Ints.fromJson(pJson.get("duration"));
+            Boolean ambient = pJson.has("ambient") ? GsonHelper.getAsBoolean(pJson, "ambient") : null;
+            Boolean visible = pJson.has("visible") ? GsonHelper.getAsBoolean(pJson, "visible") : null;
+
+            return new MobEffectInstancePredicate(amplifier, duration, ambient, visible);
+        }
+
+
         public boolean matches(@Nullable MobEffectInstance effect, Object... addArgs) {
-            if (effect == null) {
+            if(effect == null) {
                 return false;
-            } else if (!this.amplifier.matches(effect.getAmplifier())) {
+            }
+            else if(!this.amplifier.matches(effect.getAmplifier())) {
                 return false;
-            } else if (!this.duration.matches(effect.getDuration())) {
+            }
+            else if(!this.duration.matches(effect.getDuration())) {
                 return false;
-            } else if (this.ambient != null && this.ambient != effect.isAmbient()) {
+            }
+            else if(this.ambient != null && this.ambient != effect.isAmbient()) {
                 return false;
-            } else {
+            }
+            else {
                 return this.visible == null || this.visible == effect.isVisible();
             }
         }
+
 
         public JsonElement toJson() {
             JsonObject jsonobject = new JsonObject();
@@ -121,14 +167,6 @@ public class EffectsPredicate implements ITriggerPredicate<Map<MobEffect, MobEff
             jsonobject.addProperty("ambient", this.ambient);
             jsonobject.addProperty("visible", this.visible);
             return jsonobject;
-        }
-
-        public static MobEffectInstancePredicate fromJson(JsonObject pJson) {
-            MinMax.Ints amplifier = MinMax.Ints.fromJson(pJson.get("amplifier"));
-            MinMax.Ints duration = MinMax.Ints.fromJson(pJson.get("duration"));
-            Boolean ambient = pJson.has("ambient") ? GsonHelper.getAsBoolean(pJson, "ambient") : null;
-            Boolean visible = pJson.has("visible") ? GsonHelper.getAsBoolean(pJson, "visible") : null;
-            return new MobEffectInstancePredicate(amplifier, duration, ambient, visible);
         }
     }
 }

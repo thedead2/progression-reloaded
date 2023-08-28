@@ -14,28 +14,35 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+
 @Mixin(CrashReport.class)
 public abstract class MixinCrashReport {
 
-    @Shadow @Final private Throwable exception;
-    @Shadow @Final private List<CrashReportCategory> details;
+    @Shadow
+    @Final
+    private Throwable exception;
+
+    @Shadow
+    @Final
+    private List<CrashReportCategory> details;
+
 
     @Inject(at = @At("HEAD"), method = "getFriendlyReport")
-    public void onFriendlyReport(CallbackInfoReturnable<String> cir){
+    public void onFriendlyReport(CallbackInfoReturnable<String> cir) {
         CrashHandler crashHandler = CrashHandler.getInstance();
-        if(crashHandler.resolveCrash(exception)){
+        if(crashHandler.resolveCrash(exception)) {
             return;
         }
         details.forEach(crashReportCategory -> {
             AtomicReference<String> errorMessage = new AtomicReference<>();
             crashReportCategory.entries.forEach(crashReportCategory$Entry -> {
                 String key = crashReportCategory$Entry.getKey();
-                if(key.contains("Exception")){
+                if(key.contains("Exception")) {
                     errorMessage.set(crashReportCategory$Entry.getValue());
                     crashHandler.resolveCrash(crashReportCategory.getStacktrace(), errorMessage.get());
                 }
-                else if(key.contains("Screen")){
-                    if(crashReportCategory$Entry.getValue().contains(ProgressionReloaded.MAIN_PACKAGE)){
+                else if(key.contains("Screen")) {
+                    if(crashReportCategory$Entry.getValue().contains(ProgressionReloaded.MAIN_PACKAGE)) {
                         crashHandler.addScreenCrash(crashReportCategory$Entry, exception);
                     }
                 }

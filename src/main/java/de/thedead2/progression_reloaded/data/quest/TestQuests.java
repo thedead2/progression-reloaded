@@ -24,7 +24,9 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
+
 public class TestQuests {
+
     public static final ProgressionQuest TEST1 = new ProgressionQuest(
             new ResourceLocation(ModHelper.MOD_ID, "quest_test"),
             Component.literal("Test Quest"),
@@ -32,7 +34,8 @@ public class TestQuests {
             Items.ACACIA_BOAT.getDefaultInstance(),
             Set.of(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50)),
             Map.of(
-                    "testKill", new KillTrigger(PlayerPredicate.ANY,
+                    "testKill", new KillTrigger(
+                            PlayerPredicate.ANY,
                             new EntityPredicate(
                                     EntityTypePredicate.from(EntityType.COW),
                                     DistancePredicate.ANY,
@@ -44,7 +47,8 @@ public class TestQuests {
                                     EntityEquipmentPredicate.ANY
                             )
                     ),
-                    "testKill2", new KillTrigger(PlayerPredicate.ANY,
+                    "testKill2", new KillTrigger(
+                            PlayerPredicate.ANY,
                             new EntityPredicate(
                                     EntityTypePredicate.from(EntityType.SPIDER),
                                     DistancePredicate.ANY,
@@ -56,7 +60,8 @@ public class TestQuests {
                                     EntityEquipmentPredicate.ANY
                             )
                     ),
-                    "testSleep", new SleepTrigger(PlayerPredicate.ANY,
+                    "testSleep", new SleepTrigger(
+                            PlayerPredicate.ANY,
                             new LocationPredicate(
                                     MinMax.Doubles.ANY,
                                     MinMax.Doubles.ANY,
@@ -74,12 +79,16 @@ public class TestQuests {
             true,
             null
     );
+
     public static final ProgressionQuest TEST2 = new ProgressionQuest(
             new ResourceLocation(ModHelper.MOD_ID, "quest_test2"),
             Component.literal("Test Quest2"),
             Component.literal("This is a test quest2!"),
             Items.ACACIA_BOAT.getDefaultInstance(),
-            Set.of(new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART), new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34)),
+            Set.of(
+                    new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART),
+                    new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34)
+            ),
             Map.of("testKill2", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
                     EntityTypePredicate.from(EntityType.HORSE),
                     DistancePredicate.ANY,
@@ -95,6 +104,7 @@ public class TestQuests {
             false,
             null
     );
+
     public static final ProgressionQuest TEST3 = new ProgressionQuest(
             new ResourceLocation(ModHelper.MOD_ID, "quest_test3"),
             Component.literal("Test Quest3"),
@@ -116,6 +126,7 @@ public class TestQuests {
             true,
             null
     );
+
     @SuppressWarnings("unchecked")
     public static final ProgressionQuest TEST4 = new ProgressionQuest(
             new ResourceLocation(ModHelper.MOD_ID, "quest_test4"),
@@ -123,7 +134,8 @@ public class TestQuests {
             Component.literal("This is a test quest4!"),
             Items.ACACIA_BOAT.getDefaultInstance(),
             Set.of(new TeleportReward(new TeleportReward.TeleportDestination(5, 120, 120, 0, 0, ServerLevel.END))),
-            Map.of("test2", new PlacedBlockTrigger(PlayerPredicate.ANY,
+            Map.of("test2", new PlacedBlockTrigger(
+                    PlayerPredicate.ANY,
                     new BlockPredicate(
                             null,
                             Blocks.EMERALD_BLOCK,
@@ -145,7 +157,15 @@ public class TestQuests {
             Set.of(new EffectReward(new MobEffectInstance(MobEffects.LEVITATION, 50))),
             Map.of("test34", new PlayerInventoryChangedTrigger(
                     PlayerPredicate.ANY,
-                    new ItemPredicate(Items.ANVIL, MinMax.Ints.ANY, MinMax.Ints.ANY, Collections.emptySet(), Collections.emptySet(), NbtPredicate.ANY, null)
+                    new ItemPredicate(
+                            Items.ANVIL,
+                            MinMax.Ints.ANY,
+                            MinMax.Ints.ANY,
+                            Collections.emptySet(),
+                            Collections.emptySet(),
+                            NbtPredicate.ANY,
+                            null
+                    )
             )),
             CriteriaStrategy.AND,
             RewardStrategy.ALL,

@@ -14,21 +14,35 @@ import net.minecraft.world.phys.Vec3;
 
 import javax.annotation.Nullable;
 
+
 public class EntityPredicate implements ITriggerPredicate<Entity> {
+
     public static final ResourceLocation ID = ITriggerPredicate.createId("entity");
+
     public static final EntityPredicate ANY = new EntityPredicate(EntityTypePredicate.ANY, DistancePredicate.ANY, LocationPredicate.ANY, LocationPredicate.ANY, EffectsPredicate.ANY, NbtPredicate.ANY, EntityFlagsPredicate.ANY, EntityEquipmentPredicate.ANY);
 
     private final EntityTypePredicate entityType;
+
     private final DistancePredicate distanceToPlayer;
+
     private final LocationPredicate location;
+
     private final LocationPredicate steppingOnLocation;
+
     private final EffectsPredicate effects;
+
     private final NbtPredicate nbt;
+
     private final EntityFlagsPredicate flags;
+
     private final EntityEquipmentPredicate equipment;
+
     private final EntityPredicate vehicle;
+
     private final EntityPredicate passenger;
+
     private final EntityPredicate targetedEntity;
+
 
     public EntityPredicate(EntityTypePredicate entityType, DistancePredicate distanceToPlayer, LocationPredicate location, LocationPredicate steppingOnLocation, EffectsPredicate effects, NbtPredicate nbt, EntityFlagsPredicate flags, EntityEquipmentPredicate equipment, EntityPredicate vehicle, EntityPredicate passenger, EntityPredicate targetedEntity) {
         this.entityType = entityType;
@@ -44,6 +58,7 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
         this.targetedEntity = targetedEntity;
     }
 
+
     public EntityPredicate(EntityTypePredicate entityType, DistancePredicate distanceToPlayer, LocationPredicate location, LocationPredicate steppingOnLocation, EffectsPredicate effects, NbtPredicate nbt, EntityFlagsPredicate flags, EntityEquipmentPredicate equipment) {
         this.entityType = entityType;
         this.distanceToPlayer = distanceToPlayer;
@@ -58,8 +73,11 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
         this.targetedEntity = this;
     }
 
+
     public static EntityPredicate from(Entity entity) {
-        if(entity == null) return ANY;
+        if(entity == null) {
+            return ANY;
+        }
         EntityTypePredicate entityType = EntityTypePredicate.from(entity.getType());
         LocationPredicate location = LocationPredicate.from(new BlockPos(entity.getX(), entity.getY(), entity.getZ()), entity.getLevel());
         LocationPredicate steppingOnLocation = LocationPredicate.from(new BlockPos(Vec3.atCenterOf(entity.getOnPos())), entity.getLevel());
@@ -72,64 +90,35 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             EntityPredicate passenger = EntityPredicate.from(entity.getPassengers().stream().findFirst().orElse(null));
             EntityPredicate targetedEntity = entity instanceof Mob mob ? EntityPredicate.from(mob.getTarget()) : null;
 
-            return new EntityPredicate(entityType, DistancePredicate.ANY, location, steppingOnLocation, effects, nbt, flags, equipment, vehicle, passenger, targetedEntity);
+            return new EntityPredicate(
+                    entityType,
+                    DistancePredicate.ANY,
+                    location,
+                    steppingOnLocation,
+                    effects,
+                    nbt,
+                    flags,
+                    equipment,
+                    vehicle,
+                    passenger,
+                    targetedEntity
+            );
         }
-        return new EntityPredicate(entityType, DistancePredicate.ANY, location, steppingOnLocation ,EffectsPredicate.ANY, NbtPredicate.ANY, EntityFlagsPredicate.ANY, EntityEquipmentPredicate.ANY);
+        return new EntityPredicate(
+                entityType,
+                DistancePredicate.ANY,
+                location,
+                steppingOnLocation,
+                EffectsPredicate.ANY,
+                NbtPredicate.ANY,
+                EntityFlagsPredicate.ANY,
+                EntityEquipmentPredicate.ANY
+        );
     }
 
-    @Override
-    public boolean matches(Entity entity, Object... addArgs) {
-        if (this == ANY) {
-            return true;
-        } else if (entity == null) {
-            return false;
-        } else if (!this.entityType.matches(entity.getType())) {
-            return false;
-        } else {
-            SinglePlayer player = addArgs[0] != null ? (SinglePlayer) addArgs[0] : null;
-            if (player == null) {
-                if (this.distanceToPlayer != DistancePredicate.ANY) {
-                    return false;
-                }
-            } else {
-                Vec3 playerPosition = player.getServerPlayer().position();
-                if (!this.distanceToPlayer.matches(new DistancePredicate.DistanceInfo(playerPosition.x, playerPosition.y, playerPosition.z, entity.getX(), entity.getY(), entity.getZ()))) {
-                    return false;
-                }
-            }
-
-            if (!this.location.matches(new BlockPos(entity.getX(), entity.getY(), entity.getZ()), entity.getLevel())) {
-                return false;
-            } else {
-                if (this.steppingOnLocation != LocationPredicate.ANY) {
-                    Vec3 vec3 = Vec3.atCenterOf(entity.getOnPos());
-                    if (!this.steppingOnLocation.matches(new BlockPos(vec3), entity.getLevel())) {
-                        return false;
-                    }
-                }
-
-                if (entity instanceof LivingEntity livingEntity && !this.effects.matches(livingEntity.getActiveEffectsMap())) {
-                    return false;
-                } else if (!this.nbt.matches(NbtPredicate.getEntityTagToCompare(entity))) {
-                    return false;
-                } else if (!this.flags.matches(entity)) {
-                    return false;
-                } else if (!this.equipment.matches(entity)) {
-                    return false;
-                } else if (this.vehicle != this && this.vehicle != ANY && !this.vehicle.matches(entity.getVehicle(), addArgs)) {
-                    return false;
-                } else if (this.passenger != ANY && this.passenger != this && entity.getPassengers().stream().noneMatch((entity1) -> this.passenger.matches(entity1, addArgs))) {
-                    return false;
-                } else if(this.targetedEntity != this && this.targetedEntity != ANY && !this.targetedEntity.matches(entity instanceof Mob mob ? mob.getTarget() : null)){
-                    return false;
-                }
-                else return true;
-            }
-        }
-    }
 
     public static EntityPredicate fromJson(@Nullable JsonElement pJson) {
-        if (pJson != null && !pJson.isJsonNull()) {
+        if(pJson != null && !pJson.isJsonNull()) {
             JsonObject jsonobject = GsonHelper.convertToJsonObject(pJson, "entity");
             EntityTypePredicate type = EntityTypePredicate.fromJson(jsonobject.get("type"));
             DistancePredicate distanceToPlayer = DistancePredicate.fromJson(jsonobject.get("distance"));
@@ -142,18 +131,97 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             EntityPredicate vehicle1 = fromJson(jsonobject.get("vehicle"));
             EntityPredicate passenger1 = fromJson(jsonobject.get("passenger"));
             EntityPredicate targetedEntity1 = fromJson(jsonobject.get("targeted_entity"));
-            return new EntityPredicate(type, distanceToPlayer, location, steppingOn, effects1, nbt, flags1, equipment1, vehicle1, passenger1, targetedEntity1);
-        } else {
+            return new EntityPredicate(
+                    type,
+                    distanceToPlayer,
+                    location,
+                    steppingOn,
+                    effects1,
+                    nbt,
+                    flags1,
+                    equipment1,
+                    vehicle1,
+                    passenger1,
+                    targetedEntity1
+            );
+        }
+        else {
             return ANY;
         }
     }
 
 
     @Override
+    public boolean matches(Entity entity, Object... addArgs) {
+        if(this == ANY) {
+            return true;
+        }
+        else if(entity == null) {
+            return false;
+        }
+        else if(!this.entityType.matches(entity.getType())) {
+            return false;
+        }
+        else {
+            SinglePlayer player = addArgs[0] != null ? (SinglePlayer) addArgs[0] : null;
+            if(player == null) {
+                if(this.distanceToPlayer != DistancePredicate.ANY) {
+                    return false;
+                }
+            }
+            else {
+                Vec3 playerPosition = player.getServerPlayer().position();
+                if(!this.distanceToPlayer.matches(new DistancePredicate.DistanceInfo(playerPosition.x, playerPosition.y, playerPosition.z, entity.getX(), entity.getY(), entity.getZ()))) {
+                    return false;
+                }
+            }
+
+            if(!this.location.matches(new BlockPos(entity.getX(), entity.getY(), entity.getZ()), entity.getLevel())) {
+                return false;
+            }
+            else {
+                if(this.steppingOnLocation != LocationPredicate.ANY) {
+                    Vec3 vec3 = Vec3.atCenterOf(entity.getOnPos());
+                    if(!this.steppingOnLocation.matches(new BlockPos(vec3), entity.getLevel())) {
+                        return false;
+                    }
+                }
+
+                if(entity instanceof LivingEntity livingEntity && !this.effects.matches(livingEntity.getActiveEffectsMap())) {
+                    return false;
+                }
+                else if(!this.nbt.matches(NbtPredicate.getEntityTagToCompare(entity))) {
+                    return false;
+                }
+                else if(!this.flags.matches(entity)) {
+                    return false;
+                }
+                else if(!this.equipment.matches(entity)) {
+                    return false;
+                }
+                else if(this.vehicle != this && this.vehicle != ANY && !this.vehicle.matches(
+                        entity.getVehicle(),
+                        addArgs
+                )) {
+                    return false;
+                }
+                else if(this.passenger != ANY && this.passenger != this && entity.getPassengers().stream().noneMatch((entity1) -> this.passenger.matches(entity1, addArgs))) {
+                    return false;
+                }
+                else {
+                    return this.targetedEntity == this || this.targetedEntity == ANY || this.targetedEntity.matches(entity instanceof Mob mob ? mob.getTarget() : null);
+                }
+            }
+        }
+    }
+
+
+    @Override
     public JsonElement toJson() {
-        if (this == ANY) {
+        if(this == ANY) {
             return JsonNull.INSTANCE;
-        } else {
+        }
+        else {
             JsonObject jsonobject = new JsonObject();
             jsonobject.add("type", this.entityType.toJson());
             jsonobject.add("distance", this.distanceToPlayer.toJson());
@@ -165,7 +233,10 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             jsonobject.add("equipment", this.equipment.toJson());
             jsonobject.add("vehicle", this.vehicle != this ? this.vehicle.toJson() : JsonNull.INSTANCE);
             jsonobject.add("passenger", this.passenger != this ? this.passenger.toJson() : JsonNull.INSTANCE);
-            jsonobject.add("targeted_entity", this.targetedEntity != this ? this.targetedEntity.toJson() : JsonNull.INSTANCE);
+            jsonobject.add(
+                    "targeted_entity",
+                    this.targetedEntity != this ? this.targetedEntity.toJson() : JsonNull.INSTANCE
+            );
             return jsonobject;
         }
     }

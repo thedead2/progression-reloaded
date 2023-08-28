@@ -10,28 +10,39 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class BreakBlockTrigger extends SimpleTrigger<BlockState>{
+
+public class BreakBlockTrigger extends SimpleTrigger<BlockState> {
+
     public static final ResourceLocation ID = createId("break_block");
+
+
     protected BreakBlockTrigger(PlayerPredicate player, BlockPredicate block) {
         super(ID, player, block, "block");
     }
+
+
+    public static BreakBlockTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        return new BreakBlockTrigger(
+                PlayerPredicate.fromJson(jsonObject.get("player")),
+                BlockPredicate.fromJson(jsonObject.get("block"))
+        );
+    }
+
+
+    @SubscribeEvent
+    public static void onBlockBreak(final BlockEvent.BreakEvent event) {
+        fireTrigger(BreakBlockTrigger.class, event.getPlayer(), event.getLevel().getBlockState(event.getPos()), event.getLevel().getBlockEntity(event.getPos()));
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, BlockState block, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(block, data[0]));
     }
 
+
     @Override
     public void toJson(JsonObject data) {
-    }
-
-    public static BreakBlockTrigger fromJson(JsonElement jsonElement){
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return new BreakBlockTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), BlockPredicate.fromJson(jsonObject.get("block")));
-    }
-
-    @SubscribeEvent
-    public static void onBlockBreak(final BlockEvent.BreakEvent event){
-        fireTrigger(BreakBlockTrigger.class, event.getPlayer(), event.getLevel().getBlockState(event.getPos()), event.getLevel().getBlockEntity(event.getPos()));
     }
 }

@@ -10,28 +10,36 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
+
 @ExcludeFromEventBus
-public class PlayerInventoryChangedTrigger extends SimpleTrigger<ItemStack>{
+public class PlayerInventoryChangedTrigger extends SimpleTrigger<ItemStack> {
+
     public static final ResourceLocation ID = createId("inventory_changed");
+
 
     public PlayerInventoryChangedTrigger(PlayerPredicate player, ItemPredicate item) {
         super(ID, player, item, "new_item");
     }
+
+
+    public static PlayerInventoryChangedTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        return new PlayerInventoryChangedTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), ItemPredicate.fromJson(jsonObject.get("new_item")));
+    }
+
+
+    public static void onInventoryChanged(ServerPlayer player, ItemStack changedItem) {
+        fireTrigger(PlayerInventoryChangedTrigger.class, player, changedItem);
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, ItemStack toTest, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(toTest));
     }
 
+
     @Override
-    public void toJson(JsonObject data) {}
-
-    public static PlayerInventoryChangedTrigger fromJson(JsonElement jsonElement){
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return new PlayerInventoryChangedTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), ItemPredicate.fromJson(jsonObject.get("new_item")));
-    }
-
-    public static void onInventoryChanged(ServerPlayer player, ItemStack changedItem){
-        fireTrigger(PlayerInventoryChangedTrigger.class, player, changedItem);
+    public void toJson(JsonObject data) {
     }
 }

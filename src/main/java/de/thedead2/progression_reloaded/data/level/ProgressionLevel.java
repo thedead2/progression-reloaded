@@ -16,18 +16,27 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+
 public class ProgressionLevel implements ModRegistriesDynamicSerializer {
-    private final int index;
+
     private final String name;
+
     private final ResourceLocation id;
+
     private final Set<IReward> rewards;
+
     private final RewardStrategy rewardStrategy;
-    @Nullable private final ResourceLocation previousLevel;
-    @Nullable private final ResourceLocation nextLevel;
+
+    @Nullable
+    private final ResourceLocation previousLevel;
+
+    @Nullable
+    private final ResourceLocation nextLevel;
+
     private final Collection<ResourceLocation> quests;
 
-    public ProgressionLevel(int index, String name, ResourceLocation id, RewardStrategy rewardStrategy, Collection<ResourceLocation> quests, Set<IReward> rewards, @Nullable ResourceLocation previousLevel, @Nullable ResourceLocation nextLevel) {
-        this.index = index;
+
+    public ProgressionLevel(String name, ResourceLocation id, RewardStrategy rewardStrategy, Collection<ResourceLocation> quests, Set<IReward> rewards, @Nullable ResourceLocation previousLevel, @Nullable ResourceLocation nextLevel) {
         this.name = name;
         this.id = id;
         this.rewardStrategy = rewardStrategy;
@@ -37,19 +46,24 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
         this.rewards = rewards;
     }
 
+
     public static ProgressionLevel fromKey(ResourceLocation level) {
         return ModRegistries.LEVELS.get().getValue(level);
     }
 
+
     public static ProgressionLevel fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        int index = jsonObject.get("index").getAsInt();
         String name = jsonObject.get("name").getAsString();
         ResourceLocation id = new ResourceLocation(jsonObject.get("id").getAsString());
-        RewardStrategy strategy = RewardStrategy.valueOf(jsonObject.get("rewards_strategy").getAsString());
+        RewardStrategy strategy = RewardStrategy.valueOf(jsonObject.get("rewardsStrategy").getAsString());
         ResourceLocation previous = null, next = null;
-        if(jsonObject.has("previous")) previous = new ResourceLocation(jsonObject.get("previous").getAsString());
-        if(jsonObject.has("next")) next = new ResourceLocation(jsonObject.get("next").getAsString());
+        if(jsonObject.has("previous")) {
+            previous = new ResourceLocation(jsonObject.get("previous").getAsString());
+        }
+        if(jsonObject.has("next")) {
+            next = new ResourceLocation(jsonObject.get("next").getAsString());
+        }
         JsonArray quests = jsonObject.get("quests").getAsJsonArray();
         Set<ResourceLocation> levelQuests = new HashSet<>();
         quests.forEach(jsonElement1 -> levelQuests.add(new ResourceLocation(jsonElement1.getAsString())));
@@ -57,19 +71,23 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
         Set<IReward> levelRewards = new HashSet<>();
         rewards.forEach(jsonElement1 -> levelRewards.add(IReward.createFromJson(jsonElement1.getAsJsonObject())));
 
-        return new ProgressionLevel(index, name, id, strategy, levelQuests, levelRewards, previous, next);
+        return new ProgressionLevel(name, id, strategy, levelQuests, levelRewards, previous, next);
     }
 
-    public JsonObject toJson(){
+
+    public JsonObject toJson() {
         /*Gson gson = new GsonBuilder().setPrettyPrinting().create();
         LOGGER.debug("Level {}: \n{}", this.name, gson.toJson(this));*/
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("index", this.index);
         jsonObject.addProperty("name", this.name);
         jsonObject.addProperty("id", this.id.toString());
-        jsonObject.addProperty("rewards_strategy", this.rewardStrategy.toString());
-        if(this.previousLevel != null) jsonObject.addProperty("previous", this.previousLevel.toString());
-        if(this.nextLevel != null) jsonObject.addProperty("next", this.nextLevel.toString());
+        jsonObject.addProperty("rewardsStrategy", this.rewardStrategy.toString());
+        if(this.previousLevel != null) {
+            jsonObject.addProperty("previous", this.previousLevel.toString());
+        }
+        if(this.nextLevel != null) {
+            jsonObject.addProperty("next", this.nextLevel.toString());
+        }
         JsonArray quests = new JsonArray();
         this.quests.forEach(resourceLocation -> quests.add(resourceLocation.toString()));
         jsonObject.add("quests", quests);
@@ -80,43 +98,53 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
         return jsonObject;
     }
 
+
+    public ResourceLocation getId() {
+        return this.id;
+    }
+
+
     public boolean contains(ProgressionLevel other) {
         ProgressionLevel previousLevel = this.previousLevel != null ? ModRegistries.LEVELS.get().getValue(this.previousLevel) : null;
-        if(this.equals(other) || (previousLevel != null && previousLevel.equals(other))) return true;
-        else if(previousLevel == null) return false;
-        else return previousLevel.contains(other);
+        if(this.equals(other) || (previousLevel != null && previousLevel.equals(other))) {
+            return true;
+        }
+        else if(previousLevel == null) {
+            return false;
+        }
+        else {
+            return previousLevel.contains(other);
+        }
     }
+
 
     public boolean contains(ProgressionQuest quest) {
         ProgressionLevel previousLevel = this.previousLevel != null ? ModRegistries.LEVELS.get().getValue(this.previousLevel) : null;
         return this.quests.contains(quest.getId()) || (previousLevel != null && previousLevel.contains(quest));
     }
 
+
     public @Nullable ResourceLocation getPreviousLevel() {
         return previousLevel;
     }
 
-    public int getIndex() {
-        return index;
-    }
 
     public String getName() {
         return name;
     }
 
-    public ResourceLocation getId() {
-        return this.id;
-    }
 
     public void rewardPlayer(SinglePlayer player) {
         this.rewardStrategy.reward(this.rewards, player);
     }
 
+
     public Collection<ResourceLocation> getQuests() {
         return this.quests;
     }
 
-    public @Nullable ResourceLocation getNextLevel(){
+
+    public @Nullable ResourceLocation getNextLevel() {
         return this.nextLevel;
     }
 }

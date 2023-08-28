@@ -21,7 +21,7 @@ apply plugin: 'maven-publish'
 // MixinGradle:
 apply plugin: 'org.spongepowered.mixin'
 
-version = "${minecraft_version}-${mod_version}"
+version = project.properties.get("add_tags") == "none" ? "${minecraft_version}-${major}.${minor}.${build_number}" : "${minecraft_version}-${major}.${minor}.${build_number}-${add_tags}"
 group = "${java_path}" // http://maven.apache.org/guides/mini/guide-naming-conventions.html
 archivesBaseName = "${mod_id}"
 
@@ -88,6 +88,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     minecraft 'net.minecraftforge:forge:1.19.3-44.1.0'
     implementation('com.google.guava:guava:31.1-jre')
+    //implementation 'com.netflix.nebula:nebula-release-plugin:17.2.2'
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
@@ -148,13 +149,32 @@ tasks.withType(JavaCompile).configureEach {
 
 processResources.dependsOn('handleModProperties')
 
-tasks.register('handleModProperties'){
-    Properties properties = new Properties()
-    File propertiesFile = new File("src/main/resources/META-INF/mod.properties")
-    properties.load(propertiesFile.newDataInputStream())
-    properties.setProperty('mod_version', version.toString())
-    properties.setProperty('java_path', java_path)
+tasks.register('handleModProperties') {
+    doLast {
+        Properties properties = new Properties()
+        File propertiesFile = new File("src/main/resources/META-INF/mod.properties")
+        properties.load(propertiesFile.newDataInputStream())
+        properties.setProperty('mod_version', version.toString())
+        properties.setProperty('java_path', java_path)
 
-    properties.store(propertiesFile.newWriter(), null)
-    properties.load(propertiesFile.newDataInputStream())
+        properties.store(propertiesFile.newWriter(), null)
+        properties.load(propertiesFile.newDataInputStream())
+    }
 }
+/*handleModProperties.dependsOn('versionIncr')
+
+tasks.register('versionIncr') {
+    doLast{
+        Properties props = new Properties()
+        File propsFile = new File('gradle.properties')
+        props.load(propsFile.newDataInputStream())
+        Boolean flag = props.getProperty('switch') asBoolean()
+        if(flag){
+            Integer buildnumber = (((props.getProperty('build_number')) as Integer) + 1 )
+            props.setProperty('build_number', buildnumber.toString())
+        }
+        props.setProperty('switch', (!flag).toString())
+        props.store(propsFile.newWriter(), null)
+        props.load(propsFile.newDataInputStream())
+    }
+}*/

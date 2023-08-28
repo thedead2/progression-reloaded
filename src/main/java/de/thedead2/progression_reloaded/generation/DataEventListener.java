@@ -13,11 +13,12 @@ import java.util.concurrent.CompletableFuture;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
+
 @Mod.EventBusSubscriber(modid = MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class DataEventListener {
 
     @SubscribeEvent
-    public static void onDataGeneration(final GatherDataEvent event){
+    public static void onDataGeneration(final GatherDataEvent event) {
         DataGenerator generator = event.getGenerator();
         ExistingFileHelper fileHelper = event.getExistingFileHelper();
         PackOutput output = generator.getPackOutput();

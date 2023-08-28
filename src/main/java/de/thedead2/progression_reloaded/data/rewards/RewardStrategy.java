@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
+
 public enum RewardStrategy {
     ALL {
         @Override
@@ -21,7 +22,7 @@ public enum RewardStrategy {
             Random rand = new Random();
             int index = rand.nextInt(teamMembers.size());
             Iterator<SinglePlayer> iterator = teamMembers.iterator();
-            for (int i = 0; i < index; i++) {
+            for(int i = 0; i < index; i++) {
                 iterator.next();
             }
             SinglePlayer player = iterator.next();
@@ -29,14 +30,16 @@ public enum RewardStrategy {
         }
     };
 
-    public abstract void reward(Set<IReward> questRewards, PlayerTeam team);
 
     public void reward(Set<IReward> questRewards, SinglePlayer player) {
-        if(player.isInTeam()){
+        if(player.isInTeam()) {
             this.reward(questRewards, player.getTeam().orElseThrow());
         }
         else {
             questRewards.forEach(reward -> reward.rewardPlayer(player.getServerPlayer()));
         }
     }
+
+
+    public abstract void reward(Set<IReward> questRewards, PlayerTeam team);
 }

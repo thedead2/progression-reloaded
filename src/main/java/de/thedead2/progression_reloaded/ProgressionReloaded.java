@@ -41,6 +41,7 @@ import org.apache.logging.log4j.Logger;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
+
 @Mod(MOD_ID)
 public class ProgressionReloaded {
     //TODO: extra class for event managing
@@ -52,7 +53,13 @@ public class ProgressionReloaded {
 
     public static final String MAIN_PACKAGE = ProgressionReloaded.class.getPackageName();
 
-    public ProgressionReloaded(){
+
+    static {
+        CrashReportCallables.registerCrashCallable(CrashHandler.getInstance());
+    }
+
+
+    public ProgressionReloaded() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         IEventBus forgeEventBus = MinecraftForge.EVENT_BUS;
         ModLoadingContext loadingContext = ModLoadingContext.get();
@@ -64,7 +71,7 @@ public class ProgressionReloaded {
 
         ModItems.register(modEventBus);
 
-        if(isDevEnv()){
+        if(isDevEnv()) {
             ModRegistries.register(TestQuests.TEST1);
             ModRegistries.register(TestQuests.TEST2);
             ModRegistries.register(TestQuests.TEST3);
@@ -103,21 +110,26 @@ public class ProgressionReloaded {
         //CrashHandler.getInstance().registerCrashListener(ModRegistries::saveRegistries);
     }
 
+
+    private void registerTrigger(IEventBus forgeEventBus) {
+        ReflectionHelper.registerClassesToEventBus(SimpleTrigger.class, forgeEventBus);
+        DynamicRegistries.registerClasses(SimpleTrigger.class, DynamicRegistries.PROGRESSION_TRIGGER);
+    }
+
+
     private void registerAbilities(IEventBus forgeEventBus) {
         ReflectionHelper.registerClassesToEventBus(IAbility.class, forgeEventBus);
         DynamicRegistries.registerClasses(IAbility.class, DynamicRegistries.PROGRESSION_ABILITIES);
     }
 
-    private void registerRewards(){
+
+    private void registerRewards() {
         DynamicRegistries.registerClasses(IReward.class, DynamicRegistries.PROGRESSION_REWARDS);
     }
-    private void registerPredicates(){
-        DynamicRegistries.registerClasses(ITriggerPredicate.class, DynamicRegistries.PROGRESSION_PREDICATES);
-    }
 
-    private void registerTrigger(IEventBus forgeEventBus) {
-        ReflectionHelper.registerClassesToEventBus(SimpleTrigger.class, forgeEventBus);
-        DynamicRegistries.registerClasses(SimpleTrigger.class, DynamicRegistries.PROGRESSION_TRIGGER);
+
+    private void registerPredicates() {
+        DynamicRegistries.registerClasses(ITriggerPredicate.class, DynamicRegistries.PROGRESSION_PREDICATES);
     }
 
 
@@ -127,53 +139,64 @@ public class ProgressionReloaded {
         ModNetworkHandler.registerPackets();
     }
 
-    private void onServerStarting(final ServerStartingEvent event){
-        PlayerDataHandler.loadData(event.getServer().overworld());
-        LevelManager.create();
-    }
-
-    private void onServerStopping(final ServerStoppingEvent event){
-        LevelManager.getInstance().saveData();
-        LevelManager.getInstance().getQuestManager().stopListening();
-    }
-
-    private void onServerStopped(final ServerStoppedEvent event){
-        LevelManager.getInstance().reset();
-    }
-
-    private void onPlayerFileLoad(final PlayerEvent.LoadFromFile event){
-        PlayerDataHandler.loadPlayerData(event.getPlayerFile(MOD_ID), event.getEntity());
-        LevelManager.getInstance().updateData();
-    }
-
-    private void onPlayerFileSave(final PlayerEvent.SaveToFile event){
-        PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
-    }
-
-    private void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event){
-        LevelManager.getInstance().checkForCreativeMode(PlayerDataHandler.getActivePlayer(event.getEntity()));
-    }
-
-    private void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event){
-        PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
-    }
 
     private void onCommandsRegistration(final RegisterCommandsEvent event) {
         ModCommand.registerCommands(event.getDispatcher());
     }
 
-    private void onGameShuttingDown(final GameShuttingDownEvent event){
+
+    private void onServerStarting(final ServerStartingEvent event) {
+        PlayerDataHandler.loadData(event.getServer().overworld());
+        LevelManager.create();
+    }
+
+
+    private void onServerStopping(final ServerStoppingEvent event) {
+        LevelManager.getInstance().saveData();
+        LevelManager.getInstance().getQuestManager().stopListening();
+    }
+
+
+    private void onServerStopped(final ServerStoppedEvent event) {
+        LevelManager.getInstance().reset();
+    }
+
+
+    private void onPlayerFileLoad(final PlayerEvent.LoadFromFile event) {
+        PlayerDataHandler.loadPlayerData(event.getPlayerFile(MOD_ID), event.getEntity());
+        LevelManager.getInstance().updateData();
+    }
+
+
+    private void onPlayerFileSave(final PlayerEvent.SaveToFile event) {
+        PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
+    }
+
+
+    private void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
+        LevelManager.getInstance().checkForCreativeMode(PlayerDataHandler.getActivePlayer(event.getEntity()));
+    }
+
+
+    private void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
+        PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
+    }
+
+
+    private void onGameShuttingDown(final GameShuttingDownEvent event) {
         //ModRegistries.saveRegistries();
     }
 
-    private void onGameTick(final TickEvent.ServerTickEvent event){
+
+    private void onGameTick(final TickEvent.ServerTickEvent event) {
 
     }
 
-    private void registerLoggerFilter(){
+
+    private void registerLoggerFilter() {
         Logger rootLogger = LogManager.getRootLogger();
 
-        if (rootLogger instanceof org.apache.logging.log4j.core.Logger logger) {
+        if(rootLogger instanceof org.apache.logging.log4j.core.Logger logger) {
             logger.addFilter(new MissingAdvancementFilter());
             logger.addFilter(new UnknownRecipeCategoryFilter());
             logger.addFilter(new UnknownAdvancementFilter());
@@ -181,9 +204,5 @@ public class ProgressionReloaded {
         else {
             LOGGER.error("Unable to register filter for Logger with unexpected class: {}", rootLogger.getClass().getName());
         }
-    }
-
-    static {
-        CrashReportCallables.registerCrashCallable(CrashHandler.getInstance());
     }
 }

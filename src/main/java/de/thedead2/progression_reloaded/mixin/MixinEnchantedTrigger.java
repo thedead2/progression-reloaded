@@ -9,11 +9,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+
 @Mixin(EnchantedItemTrigger.class)
 public class MixinEnchantedTrigger {
 
     @Inject(at = @At("HEAD"), method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/item/ItemStack;I)V")
-    public void onItemEnchanted(ServerPlayer pPlayer, ItemStack pItem, int pLevelsSpent, CallbackInfo ci){
+    public void onItemEnchanted(ServerPlayer pPlayer, ItemStack pItem, int pLevelsSpent, CallbackInfo ci) {
         ItemEnchantedTrigger.onItemEnchanted(pPlayer, pItem, pLevelsSpent);
     }
 }

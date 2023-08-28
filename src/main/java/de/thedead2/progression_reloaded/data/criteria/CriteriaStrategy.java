@@ -2,13 +2,14 @@ package de.thedead2.progression_reloaded.data.criteria;
 
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 
+
 public enum CriteriaStrategy {
     OR {
         @Override
         public boolean isDone(QuestProgress questProgress) {
             for(String s : questProgress.getCriteria().keySet()) {
                 CriterionProgress criterionprogress = questProgress.getCriterion(s);
-                if (criterionprogress != null && criterionprogress.isDone()) {
+                if(criterionprogress != null && criterionprogress.isDone()) {
                     return true;
                 }
             }
@@ -19,9 +20,9 @@ public enum CriteriaStrategy {
         @Override
         public boolean isDone(QuestProgress questProgress) {
             boolean flag = false;
-            for(String s : questProgress.getCriteria().keySet()){
+            for(String s : questProgress.getCriteria().keySet()) {
                 CriterionProgress criterionprogress = questProgress.getCriterion(s);
-                if (criterionprogress != null && criterionprogress.isDone()) {
+                if(criterionprogress != null && criterionprogress.isDone()) {
                     flag = true;
                 }
                 else {
@@ -33,6 +34,7 @@ public enum CriteriaStrategy {
             return flag;
         }
     };
+
 
     public abstract boolean isDone(QuestProgress questProgress);
 }

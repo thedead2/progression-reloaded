@@ -17,69 +17,102 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 
+
 public abstract class PlayerDataHandler {
 
     /**
      * Don't use teamData, playerData and progressData directly as it's not safe to use.
      * Use the Getters instead!
-     * **/
+     **/
     private static TeamData teamData = null;
+
     private static PlayerData playerData = null;
+
     private static ProgressData progressData = null;
 
-    public static void loadPlayerData(File playerDataFile, Player player){
+
+    public static void loadPlayerData(File playerDataFile, Player player) {
         getPlayerData().orElseThrow().addActivePlayer((ServerPlayer) player, playerDataFile);
     }
 
-    public static void loadData(ServerLevel level){
+
+    public static Optional<PlayerData> getPlayerData() {
+        return Optional.ofNullable(playerData);
+    }
+
+
+    public static void loadData(ServerLevel level) {
         var dataStorage = level.getDataStorage();
         teamData = dataStorage.computeIfAbsent(TeamData::load, () -> new TeamData(new HashMap<>()), "teams");
         playerData = dataStorage.computeIfAbsent(PlayerData::load, () -> new PlayerData(new HashSet<>()), "players");
-        progressData = dataStorage.computeIfAbsent(ProgressData::load, () -> new ProgressData(new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>(), new HashMap<>()), "progress");
+        progressData = dataStorage.computeIfAbsent(
+                ProgressData::load,
+                () -> new ProgressData(
+                        new HashMap<>(),
+                        new HashMap<>(),
+                        new HashMap<>(),
+                        new HashMap<>(),
+                        new HashMap<>()
+                ),
+                "progress"
+        );
     }
+
 
     public static void savePlayerData(Player player, File playerFile) {
         var playerData = getPlayerData().orElseThrow();
         var singlePlayer = playerData.getActivePlayer(player);
         singlePlayer.toFile(playerFile);
-        if (singlePlayer.isOffline()) playerData.removePlayerFromActive(player);
+        if(singlePlayer.isOffline()) {
+            playerData.removePlayerFromActive(player);
+        }
     }
 
-    public static Optional<TeamData> getTeamData(){
-        return Optional.ofNullable(teamData);
-    }
 
-    public static Optional<PlayerData> getPlayerData(){
-        return Optional.ofNullable(playerData);
-    }
-    public static Optional<ProgressData> getProgressData(){
+    public static Optional<ProgressData> getProgressData() {
         return Optional.ofNullable(progressData);
     }
+
 
     public static SinglePlayer getActivePlayer(KnownPlayer knownPlayer) {
         return getPlayerData().orElseThrow().getActivePlayer(knownPlayer);
     }
+
+
     public static SinglePlayer getActivePlayer(Player player) {
         return getPlayerData().orElseThrow().getActivePlayer(player);
     }
 
+
     public static PlayerTeam getTeam(String teamName) {
         return getTeamData().orElseThrow().getTeam(teamName);
     }
+
+
+    public static Optional<TeamData> getTeamData() {
+        return Optional.ofNullable(teamData);
+    }
+
+
     public static PlayerTeam getTeam(KnownPlayer player) {
         return getTeamData().orElseThrow().getTeam(player);
     }
+
+
     public static PlayerTeam getTeam(ResourceLocation id) {
         return getTeamData().orElseThrow().getTeam(id);
     }
+
 
     public static ImmutableCollection<PlayerTeam> allTeams() {
         return getTeamData().orElseThrow().allTeams();
     }
 
+
     public static SinglePlayer getActivePlayer(ResourceLocation player) {
         return getPlayerData().orElseThrow().getActivePlayer(player);
     }
+
 
     public static ImmutableCollection<SinglePlayer> allPlayers() {
         return getPlayerData().orElseThrow().allPlayersData();

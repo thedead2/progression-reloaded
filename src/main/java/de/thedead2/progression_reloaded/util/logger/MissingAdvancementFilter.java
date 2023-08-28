@@ -10,15 +10,17 @@ import org.apache.logging.log4j.message.Message;
 
 import java.util.Objects;
 
+
 @Plugin(name = "MissingAdvancementFilter", category = Node.CATEGORY, elementType = Filter.ELEMENT_TYPE)
 public class MissingAdvancementFilter extends AbstractFilter {
 
     @Override
     public Result filter(LogEvent event) {
         Message message = event.getMessage();
-        if (Objects.equals(message.getFormat(), "Ignored advancement '{}' in progress file {} - it doesn't exist anymore?") && ConfigManager.DISABLE_ADVANCEMENTS.get()) {
+        if(Objects.equals(message.getFormat(), "Ignored advancement '{}' in progress file {} - it doesn't exist anymore?") && ConfigManager.DISABLE_ADVANCEMENTS.get()) {
             return Result.DENY;
-        } else {
+        }
+        else {
             return Result.NEUTRAL;
         }
     }

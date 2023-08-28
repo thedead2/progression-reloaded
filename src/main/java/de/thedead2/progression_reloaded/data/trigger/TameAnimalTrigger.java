@@ -10,28 +10,36 @@ import net.minecraft.world.entity.Entity;
 import net.minecraftforge.event.entity.living.AnimalTameEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class TameAnimalTrigger extends SimpleTrigger<Entity>{
+
+public class TameAnimalTrigger extends SimpleTrigger<Entity> {
+
     public static final ResourceLocation ID = SimpleTrigger.createId("tame_animal");
+
+
     public TameAnimalTrigger(PlayerPredicate player, EntityPredicate tamedAnimal) {
         super(ID, player, tamedAnimal, "tamed_animal");
     }
+
+
+    public static TameAnimalTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        return new TameAnimalTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), EntityPredicate.fromJson(jsonObject.get("tamed_animal")));
+    }
+
+
+    @SubscribeEvent
+    public static void onAnimalTamed(final AnimalTameEvent event) {
+        fireTrigger(TameAnimalTrigger.class, event.getTamer(), event.getAnimal());
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(entity, player));
     }
 
+
     @Override
     public void toJson(JsonObject data) {
-    }
-
-    public static TameAnimalTrigger fromJson(JsonElement jsonElement){
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        return new TameAnimalTrigger(PlayerPredicate.fromJson(jsonObject.get("player")), EntityPredicate.fromJson(jsonObject.get("tamed_animal")));
-    }
-
-    @SubscribeEvent
-    public static void onAnimalTamed(final AnimalTameEvent event){
-        fireTrigger(TameAnimalTrigger.class, event.getTamer(), event.getAnimal());
     }
 }

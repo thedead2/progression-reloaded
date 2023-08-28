@@ -6,5 +6,6 @@ public enum TranslationKeyType {
     ITEM,
     ADVANCEMENT;
 
-    public interface TranslationKeySubType{}
+    public interface TranslationKeySubType {
+    }
 }

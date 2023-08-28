@@ -18,22 +18,26 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+
 public class ProgressionBookItem extends Item {
+
     public ProgressionBookItem() {
         super(new Properties().stacksTo(1).fireResistant());
     }
 
+
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level pLevel, @NotNull Player pPlayer, @NotNull InteractionHand pUsedHand) {
-        if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer){
+        if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer) {
             ModNetworkHandler.sendToPlayer(new ClientOpenProgressionBookPacket(), serverPlayer);
         }
         return super.use(pLevel, pPlayer, pUsedHand);
     }
 
+
     @Override
     public void appendHoverText(@NotNull ItemStack pStack, @Nullable Level pLevel, @NotNull List<Component> pTooltipComponents, @NotNull TooltipFlag pIsAdvanced) {
-        if(Screen.hasShiftDown()){
+        if(Screen.hasShiftDown()) {
             pTooltipComponents.add(Component.literal("Open for your progression").withStyle(ChatFormatting.GOLD));
         }
     }

@@ -10,15 +10,17 @@ import org.apache.logging.log4j.message.Message;
 
 import java.util.Objects;
 
+
 @Plugin(name = "UnknownRecipeCategoryFilter", category = Node.CATEGORY, elementType = Filter.ELEMENT_TYPE)
 public class UnknownRecipeCategoryFilter extends AbstractFilter {
 
     @Override
     public Result filter(LogEvent event) {
         Message message = event.getMessage();
-        if (Objects.equals(message.getFormat(), "Unknown recipe category: {}/{}") && ConfigManager.DISABLE_ADVANCEMENTS.get()) {
+        if(Objects.equals(message.getFormat(), "Unknown recipe category: {}/{}") && ConfigManager.DISABLE_ADVANCEMENTS.get()) {
             return Result.DENY;
-        } else {
+        }
+        else {
             return Result.NEUTRAL;
         }
     }

@@ -5,9 +5,13 @@ import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.network.chat.Component;
 
+
 public class DevCommands {
-    public static void register(){
-        if(!ModHelper.isDevEnv()) return;
+
+    public static void register() {
+        if(!ModHelper.isDevEnv()) {
+            return;
+        }
 
         ModCommand.Builder.newModCommand("dev/level/questManager", context -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());

@@ -19,11 +19,16 @@ import org.apache.logging.log4j.Level;
 
 import javax.annotation.Nullable;
 
+
 public class NbtPredicate implements ITriggerPredicate<Tag> {
+
     public static final ResourceLocation ID = ITriggerPredicate.createId("nbt");
+
     public static final NbtPredicate ANY = new NbtPredicate(null);
+
     @Nullable
     private final CompoundTag tag;
+
 
     public NbtPredicate(@Nullable CompoundTag pTag) {
         this.tag = pTag;
@@ -31,25 +36,28 @@ public class NbtPredicate implements ITriggerPredicate<Tag> {
 
 
     public static NbtPredicate fromJson(@Nullable JsonElement pJson) {
-        if (pJson != null && !pJson.isJsonNull()) {
+        if(pJson != null && !pJson.isJsonNull()) {
             CompoundTag compoundtag;
             try {
                 compoundtag = TagParser.parseTag(GsonHelper.convertToString(pJson, "nbt"));
-            } catch (CommandSyntaxException commandsyntaxexception) {
+            }
+            catch(CommandSyntaxException commandsyntaxexception) {
                 throw new JsonSyntaxException("Invalid nbt tag: " + commandsyntaxexception.getMessage());
             }
 
             return new NbtPredicate(compoundtag);
-        } else {
+        }
+        else {
             return ANY;
         }
     }
 
+
     public static CompoundTag getEntityTagToCompare(Entity pEntity) {
         CompoundTag compoundtag = pEntity.saveWithoutId(new CompoundTag());
-        if (pEntity instanceof Player player) {
+        if(pEntity instanceof Player player) {
             ItemStack itemstack = player.getInventory().getSelected();
-            if (!itemstack.isEmpty()) {
+            if(!itemstack.isEmpty()) {
                 compoundtag.put("SelectedItem", itemstack.save(new CompoundTag()));
             }
         }
@@ -57,26 +65,31 @@ public class NbtPredicate implements ITriggerPredicate<Tag> {
         return compoundtag;
     }
 
-    @Override
-    public boolean matches(Tag tag, Object... addArgs) {
-        if (tag == null) {
-            return this == ANY;
-        } else {
-            return this.tag == null || NbtUtils.compareNbt(this.tag, tag, true);
-        }
-    }
-
-    @Override
-    public JsonElement toJson() {
-        return this != ANY && this.tag != null ? new JsonPrimitive(this.tag.toString()) : JsonNull.INSTANCE;
-    }
 
     public static NbtPredicate from(Tag tag) {
         try {
             return tag != null ? new NbtPredicate(tag instanceof CompoundTag compoundTag ? compoundTag : TagParser.parseTag(tag.getAsString())) : ANY;
-        } catch (CommandSyntaxException e) {
+        }
+        catch(CommandSyntaxException e) {
             CrashHandler.getInstance().handleException("Failed to parse tag: " + tag, e, Level.ERROR);
             return ANY;
         }
+    }
+
+
+    @Override
+    public boolean matches(Tag tag, Object... addArgs) {
+        if(tag == null) {
+            return this == ANY;
+        }
+        else {
+            return this.tag == null || NbtUtils.compareNbt(this.tag, tag, true);
+        }
+    }
+
+
+    @Override
+    public JsonElement toJson() {
+        return this != ANY && this.tag != null ? new JsonPrimitive(this.tag.toString()) : JsonNull.INSTANCE;
     }
 }

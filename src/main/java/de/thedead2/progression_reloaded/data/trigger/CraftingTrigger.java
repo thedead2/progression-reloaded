@@ -11,22 +11,46 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
-public class CraftingTrigger extends SimpleTrigger<ItemStack>{
+
+public class CraftingTrigger extends SimpleTrigger<ItemStack> {
+
     public static final ResourceLocation ID = createId("crafting");
+
     private final int amountCrafted;
+
     private int craftCounter = 0;
+
+
+    public CraftingTrigger(PlayerPredicate player, ItemPredicate craftingResult) {
+        this(player, craftingResult, 1);
+    }
+
 
     public CraftingTrigger(PlayerPredicate player, ItemPredicate craftingResult, int amountCrafted) {
         super(ID, player, craftingResult, "crafted_item");
         this.amountCrafted = amountCrafted;
     }
-    public CraftingTrigger(PlayerPredicate player, ItemPredicate craftingResult) {
-        this(player, craftingResult, 1);
+
+
+    public static CraftingTrigger fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
+        ItemPredicate crafted_item = ItemPredicate.fromJson(jsonObject.get("crafted_item"));
+        int amount = jsonObject.has("amount") ? jsonObject.get("amount").getAsInt() : 1;
+
+        return new CraftingTrigger(player, crafted_item, amount);
     }
+
+
+    @SubscribeEvent
+    public static void onItemCrafted(final PlayerEvent.ItemCraftedEvent event) {
+        fireTrigger(CraftingTrigger.class, event.getEntity(), event.getCrafting());
+    }
+
 
     @Override
     public boolean trigger(SinglePlayer player, ItemStack craftedItem, Object... data) {
-        if(craftCounter < amountCrafted && this.predicate.matches(craftedItem)){
+        if(craftCounter < amountCrafted && this.predicate.matches(craftedItem)) {
             craftCounter++;
             return false;
         }
@@ -36,21 +60,11 @@ public class CraftingTrigger extends SimpleTrigger<ItemStack>{
         });
     }
 
+
     @Override
     public void toJson(JsonObject data) {
-        if(this.amountCrafted != 1) data.add("amount", new JsonPrimitive(this.amountCrafted));
-    }
-
-    public static CraftingTrigger fromJson(JsonElement jsonElement){
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
-        PlayerPredicate player = PlayerPredicate.fromJson(jsonObject.get("player"));
-        ItemPredicate crafted_item = ItemPredicate.fromJson(jsonObject.get("crafted_item"));
-        int amount = jsonObject.has("amount") ? jsonObject.get("amount").getAsInt() : 1;
-        return new CraftingTrigger(player, crafted_item, amount);
-    }
-
-    @SubscribeEvent
-    public static void onItemCrafted(final PlayerEvent.ItemCraftedEvent event){
-        fireTrigger(CraftingTrigger.class, event.getEntity(), event.getCrafting());
+        if(this.amountCrafted != 1) {
+            data.add("amount", new JsonPrimitive(this.amountCrafted));
+        }
     }
 }

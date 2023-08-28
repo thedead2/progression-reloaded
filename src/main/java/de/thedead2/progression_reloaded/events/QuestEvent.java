@@ -10,22 +10,31 @@ import net.minecraftforge.eventbus.api.Cancelable;
 
 import java.util.Set;
 
+
 public abstract class QuestEvent extends ModEvents.ProgressionEvent {
+
     private final ProgressionQuest quest;
+
 
     public QuestEvent(ProgressionQuest quest) {
         this.quest = quest;
     }
 
+
     public ProgressionQuest getQuest() {
         return quest;
     }
 
+
     @Cancelable
-    public static class AwardQuestEvent extends QuestEvent{
+    public static class AwardQuestEvent extends QuestEvent {
+
         private final QuestProgress progress;
+
         private final String criterionName;
+
         private final SinglePlayer player;
+
 
         public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, String criterionName, SinglePlayer player) {
             super(quest);
@@ -34,13 +43,16 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
             this.player = player;
         }
 
+
         public SinglePlayer getPlayer() {
             return player;
         }
 
+
         public QuestProgress getProgress() {
             return progress;
         }
+
 
         public String getCriterionName() {
             return criterionName;
@@ -48,10 +60,14 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
     }
 
     @Cancelable
-    public static class RevokedQuestEvent extends QuestEvent{
+    public static class RevokedQuestEvent extends QuestEvent {
+
         private final QuestProgress progress;
+
         private final String criterionName;
+
         private final SinglePlayer player;
+
 
         public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, String criterionName, SinglePlayer activePlayer) {
             super(quest);
@@ -60,13 +76,16 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
             this.player = activePlayer;
         }
 
+
         public SinglePlayer getPlayer() {
             return player;
         }
 
+
         public QuestProgress getProgress() {
             return progress;
         }
+
 
         public String getCriterionName() {
             return criterionName;
@@ -74,16 +93,22 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
     }
 
     public static class UpdateQuestStatusEvent extends ModEvents.ProgressionEvent {
+
         private final KnownPlayer player;
+
         private final ImmutableSet<ProgressionQuest> activeQuests;
+
+
         public UpdateQuestStatusEvent(KnownPlayer player, Set<ProgressionQuest> activeQuests) {
             this.player = player;
             this.activeQuests = ImmutableSet.copyOf(activeQuests);
         }
 
+
         public KnownPlayer getPlayer() {
             return player;
         }
+
 
         public ImmutableSet<ProgressionQuest> getActiveQuests() {
             return activeQuests;
@@ -92,10 +117,16 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
 
     @Cancelable
     public static class TriggerEvent extends ModEvents.ProgressionEvent {
+
         private final SimpleTrigger<?> trigger;
+
         private final SinglePlayer player;
+
         private final Object toTest;
+
         private final Object[] addData;
+
+
         public <T> TriggerEvent(SimpleTrigger<T> trigger, SinglePlayer player, T toTest, Object[] data) {
             this.trigger = trigger;
             this.player = player;
@@ -103,17 +134,21 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
             this.addData = data;
         }
 
+
         public SinglePlayer getPlayer() {
             return player;
         }
+
 
         public Object[] getAddData() {
             return addData;
         }
 
+
         public SimpleTrigger<?> getTrigger() {
             return trigger;
         }
+
 
         public Object getObjectToTest() {
             return toTest;

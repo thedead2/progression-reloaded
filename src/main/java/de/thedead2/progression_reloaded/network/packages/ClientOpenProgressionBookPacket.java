@@ -8,13 +8,16 @@ import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
 
-public class ClientOpenProgressionBookPacket implements ModNetworkPacket{
 
-    public ClientOpenProgressionBookPacket(){
-    }
+public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
+
+    public ClientOpenProgressionBookPacket() {}
+
+
     @SuppressWarnings("unused")
-    public ClientOpenProgressionBookPacket(FriendlyByteBuf buf){
-    }
+    public ClientOpenProgressionBookPacket(FriendlyByteBuf buf) {}
+
+
     @Override
     @SuppressWarnings("all")
     public DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
@@ -26,7 +29,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket{
         };
     }
 
+
     @Override
-    public void toBytes(FriendlyByteBuf buf) {
-    }
+    public void toBytes(FriendlyByteBuf buf) {}
 }
