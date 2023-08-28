@@ -122,9 +122,8 @@ public class LevelManager {
             ModEvents.onLevelStatusUpdate(level, singlePlayer, progress);
             if(progress.isDone(player)) {
                 if(!progress.hasBeenRewarded(player)) {
-                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(),
-                                                   ChatFormatting.BOLD, ChatFormatting.GOLD
-                    );
+                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId()
+                                                                                                                        .toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
                     LOGGER.debug(MARKER, "Player {} completed level {}", player.name(), level.getId());
                     level.rewardPlayer(singlePlayer);
                     progress.setRewarded(player, true);
@@ -242,10 +241,7 @@ public class LevelManager {
     private void onSurvivalChange(Player entity) {
         KnownPlayer player = KnownPlayer.fromPlayer(entity);
         ProgressionLevel level = levelCache.remove(player);
-        this.updateLevel(
-                PlayerDataHandler.getActivePlayer(entity),
-                level != null ? level.getId() : ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId())
-        );
+        this.updateLevel(PlayerDataHandler.getActivePlayer(entity), level != null ? level.getId() : ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId()));
     }
 
 
