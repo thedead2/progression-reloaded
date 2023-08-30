@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.items;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
 import de.thedead2.progression_reloaded.items.custom.ProgressionBookItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -19,9 +20,9 @@ public class ModItems {
 
     public static final RegistryObject<Item> EXTRA_LIFE = ITEMS.register("extra_life", ExtraLifeItem::new);
 
-    public static final RegistryObject<Item> HALF_EXTRA_LIFE = ITEMS.register("half_extra_life", () -> new Item(new Item.Properties().stacksTo(2)));
+    public static final RegistryObject<Item> HALF_EXTRA_LIFE = ITEMS.register("half_extra_life", () -> new Item(new Item.Properties().stacksTo(2).rarity(Rarity.RARE)));
 
-    public static final RegistryObject<Item> QUARTER_EXTRA_LIFE = ITEMS.register("quarter_extra_life", () -> new Item(new Item.Properties().stacksTo(4)));
+    public static final RegistryObject<Item> QUARTER_EXTRA_LIFE = ITEMS.register("quarter_extra_life", () -> new Item(new Item.Properties().stacksTo(4).rarity(Rarity.UNCOMMON)));
 
 
     public static void register(IEventBus eventBus) {

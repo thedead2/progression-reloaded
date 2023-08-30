@@ -23,7 +23,7 @@ import static de.thedead2.progression_reloaded.util.ModHelper.secondsToTicks;
 public class ExtraLifeItem extends Item {
 
     public ExtraLifeItem() {
-        super(new Properties().stacksTo(1).rarity(Rarity.RARE));
+        super(new Properties().stacksTo(1).rarity(Rarity.EPIC));
     }
 
 
