@@ -38,12 +38,12 @@ public class ModGlobalLootModifiersProvider extends GlobalLootModifierProvider {
 
     @Override
     protected void start() {
-        addItem("extra_live", ModItems.EXTRA_LIFE.get(), extraLifeProbability, chestIds);
-        addItem("extra_live", ModItems.EXTRA_LIFE.get(), extraLifeProbability * 4, entityIds);
-        addItem("half_extra_live", ModItems.HALF_EXTRA_LIFE.get(), halfExtraLifeProbability, chestIds);
-        addItem("half_extra_live", ModItems.HALF_EXTRA_LIFE.get(), halfExtraLifeProbability * 3, entityIds);
-        addItem("quarter_extra_live", ModItems.QUARTER_EXTRA_LIFE.get(), quarterExtraLifeProbability, chestIds);
-        addItem("quarter_extra_live", ModItems.QUARTER_EXTRA_LIFE.get(), quarterExtraLifeProbability * 2, entityIds);
+        addItem("extra_life", ModItems.EXTRA_LIFE.get(), extraLifeProbability, chestIds);
+        addItem("extra_life", ModItems.EXTRA_LIFE.get(), extraLifeProbability * 4, entityIds);
+        addItem("half_extra_life", ModItems.HALF_EXTRA_LIFE.get(), halfExtraLifeProbability, chestIds);
+        addItem("half_extra_life", ModItems.HALF_EXTRA_LIFE.get(), halfExtraLifeProbability * 3, entityIds);
+        addItem("quarter_extra_life", ModItems.QUARTER_EXTRA_LIFE.get(), quarterExtraLifeProbability, chestIds);
+        addItem("quarter_extra_life", ModItems.QUARTER_EXTRA_LIFE.get(), quarterExtraLifeProbability * 2, entityIds);
     }
 
 
