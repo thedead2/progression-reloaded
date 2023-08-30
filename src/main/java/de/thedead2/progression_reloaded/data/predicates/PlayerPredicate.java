@@ -85,7 +85,7 @@ public class PlayerPredicate implements ITriggerPredicate<SinglePlayer> {
             return ANY;
         }
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        MinMax.Ints experienceLevel = MinMax.Ints.fromJson(jsonObject.get("experience_level"));
+        MinMax.Ints experienceLevel = MinMax.Ints.fromJson(jsonObject.get("xp"));
         ProgressionLevel level = ProgressionLevel.fromKey(ResourceLocation.tryParse(GsonHelper.getAsString(jsonObject, "level", null)));
         PlayerTeam team1 = PlayerTeam.fromKey(ResourceLocation.tryParse(GsonHelper.getAsString(jsonObject, "team", null)));
         GameType gametype = GameType.byName(GsonHelper.getAsString(jsonObject, "gamemode", ""), null);
@@ -143,7 +143,7 @@ public class PlayerPredicate implements ITriggerPredicate<SinglePlayer> {
     @Override
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.add("experience_level", this.experienceLevel.serializeToJson());
+        jsonObject.add("xp", this.experienceLevel.serializeToJson());
         if(this.level != null) {
             jsonObject.addProperty("level", this.level.getId().toString());
         }

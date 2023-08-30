@@ -1,0 +1,16 @@
+{
+  "type": "progression_reloaded:add_items",
+  "conditions": [
+    {
+      "condition": "forge:loot_table_id",
+      "loot_table_id": "minecraft:chests/bastion_treasure"
+    },
+    {
+      "chance": 0.075,
+      "condition": "minecraft:random_chance"
+    }
+  ],
+  "items": [
+    "progression_reloaded:extra_life"
+  ]
+}

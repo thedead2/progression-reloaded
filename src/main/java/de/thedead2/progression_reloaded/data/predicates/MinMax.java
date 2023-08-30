@@ -103,9 +103,7 @@ public abstract class MinMax<T extends Number> {
 
 
     @Nullable
-    private static <T extends Number> T readNumber(
-            StringReader pReader, Function<String, T> pStringToValueFunction, Supplier<DynamicCommandExceptionType> pCommandExceptionSupplier
-    ) throws CommandSyntaxException {
+    private static <T extends Number> T readNumber(StringReader pReader, Function<String, T> pStringToValueFunction, Supplier<DynamicCommandExceptionType> pCommandExceptionSupplier) throws CommandSyntaxException {
         int i = pReader.getCursor();
 
         while(pReader.canRead() && isAllowedInputChat(pReader)) {

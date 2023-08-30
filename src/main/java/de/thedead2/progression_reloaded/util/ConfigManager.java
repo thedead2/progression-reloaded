@@ -20,6 +20,8 @@ public abstract class ConfigManager {
 
     public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_STARTING_LEVEL;
 
+    public static final ForgeConfigSpec.ConfigValue<Integer> MAX_EXTRA_LIVES;
+
     public static final ForgeConfigSpec.ConfigValue<ThemeType> THEME;
 
     private static final ForgeConfigSpec.Builder CONFIG_BUILDER = new ForgeConfigSpec.Builder();
@@ -48,6 +50,8 @@ public abstract class ConfigManager {
 
         DEFAULT_STARTING_LEVEL = CONFIG_BUILDER.comment("The default level a player gets assigned when starting a new world or logging into a server for the first time.\ndefault = " + TestLevels.CREATIVE.getId().toString())
                                                .define("defaultLevel", TestLevels.CREATIVE.getId().toString());
+
+        MAX_EXTRA_LIVES = CONFIG_BUILDER.comment("The max amount of extra lives a player can have. \ndefault = " + 3).define("maxExtraLives", 3);
 
         THEME = CONFIG_BUILDER.comment("The Theme the Progression Book uses. \ndefault = " + ThemeType.DEFAULT)
                               .defineEnum("progressionBookTheme", ThemeType.DEFAULT);

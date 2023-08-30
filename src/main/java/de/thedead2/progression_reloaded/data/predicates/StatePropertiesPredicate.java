@@ -24,8 +24,7 @@ public class StatePropertiesPredicate<S extends StateHolder<?, S>> implements IT
 
     public static final ResourceLocation ID = ITriggerPredicate.createId("state_properties");
 
-    public static final StatePropertiesPredicate<? extends StateHolder<?, ?>> ANY = new StatePropertiesPredicate<>(
-            ImmutableList.of());
+    public static final StatePropertiesPredicate<? extends StateHolder<?, ?>> ANY = new StatePropertiesPredicate<>(ImmutableList.of());
 
     private final List<PropertyMatcher<S>> properties;
 

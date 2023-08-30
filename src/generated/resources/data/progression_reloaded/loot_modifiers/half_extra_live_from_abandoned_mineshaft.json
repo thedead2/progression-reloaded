@@ -1,0 +1,16 @@
+{
+  "type": "progression_reloaded:add_items",
+  "conditions": [
+    {
+      "condition": "forge:loot_table_id",
+      "loot_table_id": "minecraft:chests/abandoned_mineshaft"
+    },
+    {
+      "chance": 0.15,
+      "condition": "minecraft:random_chance"
+    }
+  ],
+  "items": [
+    "progression_reloaded:half_extra_life"
+  ]
+}

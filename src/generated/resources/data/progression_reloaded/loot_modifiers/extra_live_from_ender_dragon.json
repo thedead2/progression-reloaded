@@ -1,0 +1,16 @@
+{
+  "type": "progression_reloaded:add_items",
+  "conditions": [
+    {
+      "condition": "forge:loot_table_id",
+      "loot_table_id": "minecraft:entities/ender_dragon"
+    },
+    {
+      "chance": 0.3,
+      "condition": "minecraft:random_chance"
+    }
+  ],
+  "items": [
+    "progression_reloaded:extra_life"
+  ]
+}

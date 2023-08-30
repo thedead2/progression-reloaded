@@ -87,7 +87,8 @@ public class TestQuests {
             Items.ACACIA_BOAT.getDefaultInstance(),
             Set.of(
                     new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART),
-                    new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34)
+                    new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34),
+                    new ExtraLifeReward()
             ),
             Map.of("testKill2", new KillTrigger(PlayerPredicate.ANY, new EntityPredicate(
                     EntityTypePredicate.from(EntityType.HORSE),

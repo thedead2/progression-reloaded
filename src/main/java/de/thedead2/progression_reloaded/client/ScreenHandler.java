@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.client;
 
+import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
@@ -19,6 +20,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.CustomizeGuiOverlayEvent;
+import net.minecraftforge.client.event.RenderGuiEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -100,6 +102,9 @@ public class ScreenHandler {
                 if(data != null) {
                     event.getRight().add("");
                     event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME);
+                    if(ConfigManager.MAX_EXTRA_LIVES.get() > 0) {
+                        event.getRight().add("Extra Lives: " + data.getExtraLives());
+                    }
                     event.getRight().add("Level: " + data.getProgressionLevel().getName());
                     data.getTeam().ifPresent(team -> event.getRight().add("Team: " + team.getName()));
                     event.getRight().add("Active Quests:");
@@ -128,6 +133,12 @@ public class ScreenHandler {
                 event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME + " [Shift]");
             }
         }
+    }
+
+
+    @SubscribeEvent
+    public static void onRender(final RenderGuiEvent.Pre event) {
+        RenderUtil.renderExtraLifeAnimation(event.getWindow().getGuiScaledWidth(), event.getWindow().getGuiScaledHeight(), event.getPartialTick());
     }
 }
 

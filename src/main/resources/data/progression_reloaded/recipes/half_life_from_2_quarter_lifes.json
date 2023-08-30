@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "progression_reloaded:quarter_extra_life"
+    },
+    {
+      "item": "progression_reloaded:quarter_extra_life"
+    }
+  ],
+  "result": {
+    "item": "progression_reloaded:half_extra_life",
+    "count": 1
+  }
+}

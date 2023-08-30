@@ -3,12 +3,20 @@ package de.thedead2.progression_reloaded.client.gui.util;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.util.objects.RenderObject;
+import de.thedead2.progression_reloaded.items.ModItems;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
 import org.joml.Quaternionf;
 import org.joml.Vector2i;
 
@@ -130,6 +138,60 @@ public class RenderUtil {
 
     public static Vector2i getScreenD() {
         return new Vector2i(getScreenWidth(), getScreenHeight());
+    }
+
+
+    private static final ItemStack extraLifeItem = new ItemStack(ModItems.EXTRA_LIFE.get());
+
+    private static int itemActivationTicks = 0;
+
+    private static float itemActivationOffX = 0;
+
+    private static float itemActivationOffY = 0;
+
+
+    //TODO: Animation is twice as fast as intended --> why?
+    public static void renderExtraLifeAnimation(int guiWidth, int guiHeight, float partialTick) {
+        if(itemActivationTicks > 0) {
+            int i = 40 - itemActivationTicks;
+            float f = ((float) i + partialTick) / 40.0F;
+            float f1 = f * f;
+            float f2 = f * f1;
+            float f3 = 10.25F * f2 * f1 - 24.95F * f1 * f1 + 25.5F * f2 - 13.8F * f1 + 4.0F * f;
+            float f4 = f3 * (float) Math.PI;
+            float f5 = itemActivationOffX * (float) (guiWidth / 4);
+            float f6 = itemActivationOffY * (float) (guiHeight / 4);
+            RenderSystem.enableDepthTest();
+            RenderSystem.disableCull();
+            PoseStack posestack = new PoseStack();
+            posestack.pushPose();
+            posestack.translate((float) (guiWidth / 2) + f5 * Mth.abs(Mth.sin(f4 * 2.0F)), (float) (guiHeight / 2) + f6 * Mth.abs(Mth.sin(f4 * 2.0F)), -50.0F);
+            float f7 = 50.0F + 175.0F * Mth.sin(f4);
+            posestack.scale(f7, -f7, f7);
+            posestack.mulPose(Axis.YP.rotationDegrees(900.0F * Mth.abs(Mth.sin(f4))));
+            posestack.mulPose(Axis.XP.rotationDegrees(6.0F * Mth.cos(f * 8.0F)));
+            posestack.mulPose(Axis.ZP.rotationDegrees(6.0F * Mth.cos(f * 8.0F)));
+            MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
+            Minecraft.getInstance().getItemRenderer().renderStatic(extraLifeItem, ItemTransforms.TransformType.FIXED, 15728880, OverlayTexture.NO_OVERLAY, posestack, multibuffersource$buffersource, 0);
+            /*PoseStack poseStack2 = new PoseStack();
+            poseStack2.pushPose();
+            poseStack2.scale(2, 2, 2);*/
+            GuiComponent.drawCenteredString(new PoseStack(), Minecraft.getInstance().font, extraLifeItem.getHoverName(), guiWidth / 2, guiHeight / 2, 16777215);
+            //poseStack2.popPose();
+            posestack.popPose();
+            multibuffersource$buffersource.endBatch();
+            RenderSystem.enableCull();
+            RenderSystem.disableDepthTest();
+            itemActivationTicks--;
+        }
+    }
+
+
+    public static void displayExtraLifeAnimation() {
+        itemActivationTicks = 40;
+        RandomSource random = RandomSource.create();
+        itemActivationOffX = random.nextFloat() * 2.0F - 1.0F;
+        itemActivationOffY = random.nextFloat() * 2.0F - 1.0F;
     }
 
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {

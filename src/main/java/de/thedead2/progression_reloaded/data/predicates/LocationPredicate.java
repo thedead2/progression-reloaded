@@ -193,13 +193,9 @@ public class LocationPredicate implements ITriggerPredicate<BlockPos> {
             }
 
             if(this.dimension != null) {
-                Level.RESOURCE_KEY_CODEC.encodeStart(
-                        JsonOps.INSTANCE,
-                        this.dimension
-                ).resultOrPartial(LOGGER::fatal).ifPresent((jsonElement) -> jsonObject.add(
-                        "dimension",
-                        jsonElement
-                ));
+                Level.RESOURCE_KEY_CODEC.encodeStart(JsonOps.INSTANCE, this.dimension)
+                                        .resultOrPartial(LOGGER::fatal)
+                                        .ifPresent((jsonElement) -> jsonObject.add("dimension", jsonElement));
             }
 
             if(this.structure != null) {

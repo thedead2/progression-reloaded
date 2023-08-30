@@ -33,6 +33,9 @@ public class ModItemTabs {
     public static void addToCreativeModTab(final CreativeModeTabEvent.BuildContents event) {
         if(event.getTab() == PROGRESSION_RELOADED_TAB) {
             event.accept(ModItems.PROGRESSION_BOOK);
+            event.accept(ModItems.EXTRA_LIFE);
+            event.accept(ModItems.HALF_EXTRA_LIFE);
+            event.accept(ModItems.QUARTER_EXTRA_LIFE);
         }
     }
 }

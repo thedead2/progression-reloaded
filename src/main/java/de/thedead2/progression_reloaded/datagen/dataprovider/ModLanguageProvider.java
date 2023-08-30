@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.generation.dataprovider;
+package de.thedead2.progression_reloaded.datagen.dataprovider;
 
 import net.minecraft.data.PackOutput;
 import net.minecraftforge.common.data.LanguageProvider;

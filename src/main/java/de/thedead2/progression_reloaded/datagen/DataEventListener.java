@@ -1,6 +1,6 @@
-package de.thedead2.progression_reloaded.generation;
+package de.thedead2.progression_reloaded.datagen;
 
-import de.thedead2.progression_reloaded.generation.dataprovider.ModLanguageProvider;
+import de.thedead2.progression_reloaded.datagen.dataprovider.ModGlobalLootModifiersProvider;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.data.DataGenerator;
 import net.minecraft.data.PackOutput;
@@ -24,7 +24,9 @@ public class DataEventListener {
         PackOutput output = generator.getPackOutput();
         CompletableFuture<HolderLookup.Provider> lookUpProvider = event.getLookupProvider();
 
-        generator.addProvider(event.includeClient(), new ModLanguageProvider(output, MOD_ID, "en_us"));
+        /*generator.addProvider(event.includeClient(), new ModLanguageProvider(output, MOD_ID, "en_us"));
         generator.addProvider(event.includeClient(), new ModLanguageProvider(output, MOD_ID, "de_de"));
+        */
+        generator.addProvider(event.includeServer(), new ModGlobalLootModifiersProvider(output));
     }
 }

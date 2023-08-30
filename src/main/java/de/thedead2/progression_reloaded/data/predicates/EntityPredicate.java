@@ -233,10 +233,8 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             jsonobject.add("equipment", this.equipment.toJson());
             jsonobject.add("vehicle", this.vehicle != this ? this.vehicle.toJson() : JsonNull.INSTANCE);
             jsonobject.add("passenger", this.passenger != this ? this.passenger.toJson() : JsonNull.INSTANCE);
-            jsonobject.add(
-                    "targeted_entity",
-                    this.targetedEntity != this ? this.targetedEntity.toJson() : JsonNull.INSTANCE
-            );
+            jsonobject.add("targeted_entity", this.targetedEntity != this ? this.targetedEntity.toJson() : JsonNull.INSTANCE);
+
             return jsonobject;
         }
     }

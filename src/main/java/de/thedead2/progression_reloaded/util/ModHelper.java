@@ -4,13 +4,14 @@ import com.google.common.collect.Lists;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
-import net.minecraft.SharedConstants;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.world.level.storage.WorldData;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.targets.CommonDevLaunchHandler;
 import net.minecraftforge.forgespi.locating.IModFile;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -59,7 +60,7 @@ public abstract class ModHelper {
 
 
     public static boolean isDevEnv() {
-        return SharedConstants.IS_RUNNING_IN_IDE;
+        return FMLLoader.getLaunchHandler() instanceof CommonDevLaunchHandler;
     }
 
 
@@ -77,6 +78,16 @@ public abstract class ModHelper {
 
     public static void init() {
 
+    }
+
+
+    public static int secondsToTicks(int seconds) {
+        return seconds * 20;
+    }
+
+
+    public static int ticksToSeconds(int ticks) {
+        return ticks / 20;
     }
 
 

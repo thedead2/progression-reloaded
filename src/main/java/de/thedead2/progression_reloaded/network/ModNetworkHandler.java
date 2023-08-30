@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.network;
 
 import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
+import de.thedead2.progression_reloaded.network.packages.ClientUsedExtraLifePacket;
 import de.thedead2.progression_reloaded.network.packages.ModNetworkPacket;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
@@ -42,6 +43,7 @@ public abstract class ModNetworkHandler {
         LOGGER.debug("Registering network packages...");
 
         registerPacket(ClientOpenProgressionBookPacket.class);
+        registerPacket(ClientUsedExtraLifePacket.class);
 
         LOGGER.debug("Network registration complete.");
     }

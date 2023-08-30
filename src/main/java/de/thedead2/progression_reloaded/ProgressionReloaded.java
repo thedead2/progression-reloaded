@@ -9,8 +9,11 @@ import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
+import de.thedead2.progression_reloaded.loot.ModLootModifiers;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packages.ClientUsedExtraLifePacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import de.thedead2.progression_reloaded.util.VersionManager;
@@ -21,15 +24,20 @@ import de.thedead2.progression_reloaded.util.logger.UnknownAdvancementFilter;
 import de.thedead2.progression_reloaded.util.logger.UnknownRecipeCategoryFilter;
 import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.CrashReportCallables;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -85,6 +93,7 @@ public class ProgressionReloaded {
         ModRegistries.register(TestLevels.CREATIVE);
 
         ModRegistries.register(modEventBus);
+        ModLootModifiers.register(modEventBus);
 
 
         modEventBus.addListener(this::setup);
@@ -92,16 +101,6 @@ public class ProgressionReloaded {
         loadingContext.registerConfig(ModConfig.Type.COMMON, ConfigManager.CONFIG_SPEC, MOD_ID + "-common.toml");
 
         forgeEventBus.addListener(ModRegistries::onMissingMappings);
-        forgeEventBus.addListener(this::onCommandsRegistration);
-        forgeEventBus.addListener(this::onServerStarting);
-        forgeEventBus.addListener(this::onServerStopping);
-        forgeEventBus.addListener(this::onServerStopped);
-        forgeEventBus.addListener(this::onPlayerFileLoad);
-        forgeEventBus.addListener(this::onPlayerFileSave);
-        forgeEventBus.addListener(this::onPlayerLoggedIn);
-        forgeEventBus.addListener(this::onPlayerLoggedOut);
-        forgeEventBus.addListener(this::onGameShuttingDown);
-        forgeEventBus.addListener(this::onGameTick);
         forgeEventBus.addListener(LevelManager::onGameModeChange);
 
         forgeEventBus.register(this);
@@ -140,56 +139,83 @@ public class ProgressionReloaded {
     }
 
 
-    private void onCommandsRegistration(final RegisterCommandsEvent event) {
+    @SubscribeEvent
+    public void onCommandsRegistration(final RegisterCommandsEvent event) {
         ModCommand.registerCommands(event.getDispatcher());
     }
 
 
-    private void onServerStarting(final ServerStartingEvent event) {
+    @SubscribeEvent
+    public void onServerStarting(final ServerStartingEvent event) {
         PlayerDataHandler.loadData(event.getServer().overworld());
         LevelManager.create();
     }
 
 
-    private void onServerStopping(final ServerStoppingEvent event) {
+    @SubscribeEvent
+    public void onServerStopping(final ServerStoppingEvent event) {
         LevelManager.getInstance().saveData();
         LevelManager.getInstance().getQuestManager().stopListening();
     }
 
 
-    private void onServerStopped(final ServerStoppedEvent event) {
+    @SubscribeEvent
+    public void onServerStopped(final ServerStoppedEvent event) {
         LevelManager.getInstance().reset();
     }
 
 
-    private void onPlayerFileLoad(final PlayerEvent.LoadFromFile event) {
+    @SubscribeEvent
+    public void onPlayerFileLoad(final PlayerEvent.LoadFromFile event) {
         PlayerDataHandler.loadPlayerData(event.getPlayerFile(MOD_ID), event.getEntity());
         LevelManager.getInstance().updateData();
     }
 
 
-    private void onPlayerFileSave(final PlayerEvent.SaveToFile event) {
+    @SubscribeEvent
+    public void onPlayerFileSave(final PlayerEvent.SaveToFile event) {
         PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
     }
 
 
-    private void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
+    @SubscribeEvent
+    public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
         LevelManager.getInstance().checkForCreativeMode(PlayerDataHandler.getActivePlayer(event.getEntity()));
     }
 
 
-    private void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
+    @SubscribeEvent
+    public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
         PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
     }
 
 
-    private void onGameShuttingDown(final GameShuttingDownEvent event) {
+    @SubscribeEvent
+    public void onGameShuttingDown(final GameShuttingDownEvent event) {
         //ModRegistries.saveRegistries();
     }
 
 
-    private void onGameTick(final TickEvent.ServerTickEvent event) {
+    @SubscribeEvent
+    public void onGameTick(final TickEvent.ServerTickEvent event) {
 
+    }
+
+
+    @SubscribeEvent
+    public void onPlayerDeath(final LivingDeathEvent event) {
+        if(event.getEntity() instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide()) {
+            SinglePlayer player = PlayerDataHandler.getActivePlayer(serverPlayer);
+            if(player.hasExtraLife()) {
+                serverPlayer.setHealth(serverPlayer.getMaxHealth());
+                serverPlayer.removeAllEffects();
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(30), 1));
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, secondsToTicks(15), 1));
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, secondsToTicks(25), 0));
+                event.setCanceled(true);
+                ModNetworkHandler.sendToPlayer(new ClientUsedExtraLifePacket(serverPlayer), serverPlayer);
+            }
+        }
     }
 
 

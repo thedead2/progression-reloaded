@@ -9,8 +9,10 @@ import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.helper.ResourceLocationHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.Level;
@@ -39,21 +41,15 @@ public class SinglePlayer {
 
     private boolean isOffline;
 
+    private int extraLives;
+
 
     public SinglePlayer(ServerPlayer player, ResourceLocation id) {
-        this(
-                null,
-                player,
-                id,
-                player.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? TestLevels.CREATIVE.getId() : ResourceLocationHelper.getOrDefault(
-                        ConfigManager.DEFAULT_STARTING_LEVEL.get(),
-                        TestLevels.CREATIVE.getId()
-                )
-        );
+        this(null, player, id, player.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? TestLevels.CREATIVE.getId() : ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId()), 0);
     }
 
 
-    public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId) {
+    public SinglePlayer(PlayerTeam team, ServerPlayer player, ResourceLocation id, ResourceLocation progressionLevelId, int extraLives) {
         this.playerName = player.getScoreboardName();
         this.team = team;
         this.uuid = player.getUUID();
@@ -61,6 +57,7 @@ public class SinglePlayer {
         this.player = player;
         this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId);
         this.isOffline = false;
+        this.extraLives = extraLives;
     }
 
 
@@ -70,11 +67,7 @@ public class SinglePlayer {
             tag = NbtIo.read(playerDataFile);
         }
         catch(IOException e) {
-            CrashHandler.getInstance().handleException(
-                    "Failed to read compound tag from" + playerDataFile.getName(),
-                    e,
-                    Level.FATAL
-            );
+            CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.FATAL);
         }
         return fromCompoundTag(tag, player);
     }
@@ -87,8 +80,9 @@ public class SinglePlayer {
         UUID uuid = tag.getUUID("uuid");
         String level = tag.getString("level");
         String team = tag.getString("team");
+        int extraLives = tag.getInt("extra_lives");
         if(player.getUUID().equals(uuid)) {
-            return new SinglePlayer(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ResourceLocation.tryParse(level));
+            return new SinglePlayer(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ResourceLocation.tryParse(level), extraLives);
         }
         throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
     }
@@ -167,6 +161,7 @@ public class SinglePlayer {
         if(this.team != null) {
             tag.putString("team", this.team.getId().toString());
         }
+        tag.putInt("extra_lives", this.extraLives);
         return tag;
     }
 
@@ -253,5 +248,29 @@ public class SinglePlayer {
             }
         });
         return ability.get();
+    }
+
+
+    public boolean addExtraLife() {
+        if(ConfigManager.MAX_EXTRA_LIVES.get() > this.extraLives) {
+            this.extraLives++;
+            this.player.sendSystemMessage(Component.literal("Congratulations " + playerName + "! You earned an extra life!").withStyle(ChatFormatting.AQUA));
+            return true;
+        }
+        return false;
+    }
+
+
+    public boolean hasExtraLife() {
+        if(this.extraLives > 0) {
+            this.extraLives--;
+            return true;
+        }
+        return false;
+    }
+
+
+    public int getExtraLives() {
+        return this.extraLives;
     }
 }
