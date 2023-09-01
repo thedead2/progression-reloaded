@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
-import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -26,41 +25,38 @@ public class QuestProgress implements Comparable<QuestProgress> {
     /**
      * Corresponding quest of this Progress
      **/
-    private final ProgressionQuest quest;
+    private final ResourceLocation quest;
 
 
     public QuestProgress(ProgressionQuest quest) {
-        this(Maps.newHashMap(), quest);
+        this(Maps.newHashMap(), quest.getCriteriaStrategy(), quest.getId());
     }
 
 
-    private QuestProgress(Map<String, CriterionProgress> criteria, ProgressionQuest quest) {
+    private QuestProgress(Map<String, CriterionProgress> criteria, CriteriaStrategy strategy, ResourceLocation quest) {
         this.criteria = criteria;
+        this.criteriaStrategy = strategy;
         this.quest = quest;
-        this.criteriaStrategy = this.quest.getCriteriaStrategy();
     }
 
 
     public static QuestProgress loadFromCompoundTag(CompoundTag tag) {
         Map<String, CriterionProgress> criteria = new HashMap<>();
-        ProgressionQuest quest;
+        ResourceLocation quest;
 
         tag.getAllKeys().stream().filter(s -> !s.equals("quest")).forEach(s -> criteria.put(s, CriterionProgress.loadFromCompoundTag(tag.getCompound(s))));
-        quest = ModRegistries.QUESTS.get().getValue(new ResourceLocation(tag.getString("quest")));
+        quest = new ResourceLocation(tag.getString("quest"));
+        CriteriaStrategy strategy = CriteriaStrategy.valueOf(tag.getString("strategy"));
 
-        return new QuestProgress(criteria, quest);
+        return new QuestProgress(criteria, strategy, quest);
     }
 
 
-    public void updateProgress() {
-        Set<String> set = this.quest.getCriteria().keySet();
-        this.criteria.entrySet().removeIf((entry) -> !set.contains(entry.getKey()));
-
-        for(String s : set) {
-            if(!this.criteria.containsKey(s)) {
-                this.criteria.put(s, new CriterionProgress());
-            }
-        }
+    public static QuestProgress fromNetwork(FriendlyByteBuf buf) {
+        Map<String, CriterionProgress> map = buf.readMap(FriendlyByteBuf::readUtf, CriterionProgress::fromNetwork);
+        ResourceLocation quest = buf.readResourceLocation();
+        CriteriaStrategy strategy = buf.readEnum(CriteriaStrategy.class);
+        return new QuestProgress(map, strategy, quest);
     }
 
 
@@ -80,12 +76,15 @@ public class QuestProgress implements Comparable<QuestProgress> {
     }
 
 
-    public void serializeToNetwork(FriendlyByteBuf buf) {
-        buf.writeMap(
-                this.criteria,
-                FriendlyByteBuf::writeUtf,
-                (buf1, criterionProgress) -> criterionProgress.serializeToNetwork(buf1)
-        );
+    public void updateProgress(ProgressionQuest quest) {
+        Set<String> set = quest.getCriteria().keySet();
+        this.criteria.entrySet().removeIf((entry) -> !set.contains(entry.getKey()));
+
+        for(String s : set) {
+            if(!this.criteria.containsKey(s)) {
+                this.criteria.put(s, new CriterionProgress());
+            }
+        }
     }
 
 
@@ -216,20 +215,28 @@ public class QuestProgress implements Comparable<QuestProgress> {
     }
 
 
-    public ProgressionQuest getQuest() {
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeMap(this.criteria, FriendlyByteBuf::writeUtf, (buf1, criterionProgress) -> criterionProgress.toNetwork(buf1));
+        buf.writeResourceLocation(this.quest);
+        buf.writeEnum(this.criteriaStrategy);
+    }
+
+
+    public ResourceLocation getQuest() {
         return this.quest;
+    }
+
+
+    public Map<String, CriterionProgress> getCriteria() {
+        return criteria;
     }
 
 
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();
         this.criteria.forEach((s, criterionProgress) -> tag.put(s, criterionProgress.saveToCompoundTag()));
-        tag.putString("quest", this.quest.getId().toString());
+        tag.putString("quest", this.quest.toString());
+        tag.putString("strategy", this.criteriaStrategy.name());
         return tag;
-    }
-
-
-    public Map<String, CriterionProgress> getCriteria() {
-        return criteria;
     }
 }

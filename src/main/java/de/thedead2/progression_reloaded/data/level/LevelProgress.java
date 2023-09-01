@@ -1,12 +1,14 @@
 package de.thedead2.progression_reloaded.data.level;
 
 import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -50,10 +52,7 @@ public class LevelProgress {
      **/
     public boolean isDone(KnownPlayer player) {
         boolean flag = false;
-        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(
-                this.level,
-                player
-        )) {
+        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, player)) {
             if(questProgress != null && questProgress.isDone()) {
                 flag = true;
             }
@@ -66,28 +65,31 @@ public class LevelProgress {
         return flag;
     }
 
-    /*public float getPercent(SinglePlayer player) {
-        if (this.level.getQuestManager().isEmpty()) {
+
+    public float getPercent(KnownPlayer player) {
+        Collection<ProgressionQuest> levelQuests = LevelManager.getInstance().getQuestManager().getMainQuestsForLevel(this.level);
+        if(levelQuests.isEmpty()) {
             return 0.0F;
-        } else {
-            float f = (float) this.level.getQuestManager().size();
-            float f1 = (float) this.countCompletedCriteria(player);
-            return f1 / f;
+        }
+        else {
+            float quests = (float) levelQuests.size();
+            float completedQuests = this.countCompletedCriteria(player);
+            return completedQuests / quests;
         }
     }
 
-    private int countCompletedCriteria(SinglePlayer player) {
-        int i = 0;
 
-        for (ProgressionQuest quest : this.level.getQuestManager().getQuests().values()) {
-            QuestProgress questProgress = this.level.getQuestManager().getProgress(quest, player);
-            if (questProgress != null && questProgress.isDone()) {
+    private float countCompletedCriteria(KnownPlayer player) {
+        float i = 0f;
+
+        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, player)) {
+            if(questProgress != null && questProgress.isDone()) {
                 i++;
             }
         }
 
         return i;
-    }*/
+    }
 
 
     public boolean hasBeenRewarded(KnownPlayer player) {

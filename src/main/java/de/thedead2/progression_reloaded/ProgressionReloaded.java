@@ -11,7 +11,8 @@ import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.loot.ModLootModifiers;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packages.ClientUsedExtraLifePacket;
+import de.thedead2.progression_reloaded.network.packets.ClientUsedExtraLifePacket;
+import de.thedead2.progression_reloaded.network.packets.SyncPlayerPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
@@ -27,6 +28,7 @@ import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.GameShuttingDownEvent;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -180,13 +182,25 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
-        LevelManager.getInstance().checkForCreativeMode(PlayerDataHandler.getActivePlayer(event.getEntity()));
+        Player player = event.getEntity();
+        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+        singlePlayer.loggedIn();
+        LevelManager.getInstance().checkForCreativeMode(singlePlayer);
+        LevelManager.getInstance().updateStatus();
+        if(player instanceof ServerPlayer serverPlayer) {
+            ModNetworkHandler.sendToPlayer(new SyncPlayerPacket(singlePlayer), serverPlayer);
+        }
     }
 
 
     @SubscribeEvent
     public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
-        PlayerDataHandler.getPlayerData().orElseThrow().playerLoggedOut(event.getEntity());
+        Player player = event.getEntity();
+        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+        singlePlayer.loggedOut();
+        if(player instanceof ServerPlayer serverPlayer) {
+            ModNetworkHandler.sendToPlayer(new SyncPlayerPacket(singlePlayer), serverPlayer);
+        }
     }
 
 
@@ -211,7 +225,9 @@ public class ProgressionReloaded {
                 serverPlayer.removeAllEffects();
                 serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(30), 1));
                 serverPlayer.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, secondsToTicks(15), 1));
-                serverPlayer.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, secondsToTicks(25), 0));
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.SATURATION, secondsToTicks(25), 1));
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.FIRE_RESISTANCE, secondsToTicks(15), 0));
+                serverPlayer.addEffect(new MobEffectInstance(MobEffects.CONFUSION, secondsToTicks(10)));
                 event.setCanceled(true);
                 ModNetworkHandler.sendToPlayer(new ClientUsedExtraLifePacket(serverPlayer), serverPlayer);
             }

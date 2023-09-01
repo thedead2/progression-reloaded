@@ -31,7 +31,7 @@ public class ExtraLifeReward implements IReward {
     @Override
     public void rewardPlayer(ServerPlayer player) {
         for(int i = 0; i < amount; i++) {
-            ExtraLifeItem.rewardExtraLife(player);
+            ExtraLifeItem.rewardExtraLife(player, true);
         }
     }
 

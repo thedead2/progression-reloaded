@@ -54,8 +54,7 @@ public abstract class SimpleTrigger<T> {
     @SuppressWarnings("unchecked")
     public static <T extends SimpleTrigger<T>> T fromJson(JsonElement jsonElement) {
         if(jsonElement.isJsonObject()) {
-            ResourceLocation resourceLocation = new ResourceLocation(((JsonObject) jsonElement).get("id")
-                                                                                               .getAsString());
+            ResourceLocation resourceLocation = new ResourceLocation(((JsonObject) jsonElement).get("id").getAsString());
             Class<? extends SimpleTrigger<?>> triggerClass = DynamicRegistries.PROGRESSION_TRIGGER.get(resourceLocation);
             try {
                 return (T) triggerClass.getDeclaredMethod("fromJson", JsonElement.class).invoke(null, ((JsonObject) jsonElement).get("data").getAsJsonObject());
@@ -150,7 +149,6 @@ public abstract class SimpleTrigger<T> {
 
 
     public abstract void toJson(JsonObject data);
-
 
     public static class Listener {
 

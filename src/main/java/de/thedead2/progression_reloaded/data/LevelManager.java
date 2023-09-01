@@ -5,6 +5,8 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.events.ModEvents;
+import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientUpdateLevelsPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.PlayerTeamSynchronizer;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
@@ -114,25 +116,23 @@ public class LevelManager {
     }
 
 
-    public void updateStatus() {
-        this.playerLevels.forEach((player, level) -> {
-            LOGGER.debug(MARKER, "Updating level status for player: {}", player.name());
-            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelProgress progress = this.levelProgress.get(level);
-            ModEvents.onLevelStatusUpdate(level, singlePlayer, progress);
-            if(progress.isDone(player)) {
-                if(!progress.hasBeenRewarded(player)) {
-                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
-                    LOGGER.debug(MARKER, "Player {} completed level {}", player.name(), level.getId());
-                    level.rewardPlayer(singlePlayer);
-                    progress.setRewarded(player, true);
-                    this.updateLevel(singlePlayer, level.getNextLevel());
-                }
-            }
-            else {
-                questManager.updateStatus(player, true);
-            }
-        });
+    public void updateLevel(SinglePlayer player, ProgressionLevel nextLevel) {
+        if(nextLevel != null && !ModEvents.onLevelUpdate(nextLevel, player, this.playerLevels.get(KnownPlayer.fromSinglePlayer(player)))) {
+            PlayerTeamSynchronizer.updateProgressionLevel(player, nextLevel);
+            this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+            this.syncLevelsWithTeam(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+            this.saveData();
+        }
+        this.updateStatus();
+    }
+
+
+    private void syncLevelsWithTeam(KnownPlayer player, ProgressionLevel level) {
+        PlayerTeam team = PlayerDataHandler.getTeam(player);
+        if(team == null) {
+            return;
+        }
+        team.forEachMember(player1 -> this.playerLevels.put(player1, level));
     }
 
 
@@ -146,14 +146,26 @@ public class LevelManager {
     }
 
 
-    public void updateLevel(SinglePlayer player, ProgressionLevel nextLevel) {
-        if(nextLevel != null && !ModEvents.onLevelUpdate(nextLevel, player, this.playerLevels.get(KnownPlayer.fromSinglePlayer(player)))) {
-            PlayerTeamSynchronizer.updateProgressionLevel(player, nextLevel);
-            this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-            this.syncLevels(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-            this.saveData();
-        }
-        this.updateStatus();
+    public void updateStatus() {
+        this.playerLevels.forEach((player, level) -> {
+            LOGGER.debug(MARKER, "Updating level status for player: {}", player.name());
+            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+            LevelProgress progress = this.levelProgress.get(level);
+            ModEvents.onLevelStatusUpdate(level, singlePlayer, progress);
+            this.syncLevelsToClient(player, level);
+            if(progress.isDone(player)) {
+                if(!progress.hasBeenRewarded(player)) {
+                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
+                    LOGGER.debug(MARKER, "Player {} completed level {}", player.name(), level.getId());
+                    level.rewardPlayer(singlePlayer);
+                    progress.setRewarded(player, true);
+                    this.updateLevel(singlePlayer, level.getNextLevel());
+                }
+            }
+            else {
+                questManager.updateStatus(player, true);
+            }
+        });
     }
 
 
@@ -188,7 +200,6 @@ public class LevelManager {
         this.loadPlayerLevels();
         this.loadLevelProgress();
         questManager.updateData();
-        this.updateStatus();
     }
 
 
@@ -207,12 +218,12 @@ public class LevelManager {
     }
 
 
-    private void syncLevels(KnownPlayer player, ProgressionLevel level) {
-        PlayerTeam team = PlayerDataHandler.getTeam(player);
-        if(team == null) {
+    private void syncLevelsToClient(KnownPlayer player, ProgressionLevel level) {
+        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+        if(singlePlayer == null) {
             return;
         }
-        team.forEachMember(player1 -> this.playerLevels.put(player1, level));
+        ModNetworkHandler.sendToPlayer(new ClientUpdateLevelsPacket(player, level, this.levelProgress), singlePlayer.getServerPlayer());
     }
 
 

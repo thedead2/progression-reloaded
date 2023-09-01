@@ -1,8 +1,6 @@
 package de.thedead2.progression_reloaded.network;
 
-import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
-import de.thedead2.progression_reloaded.network.packages.ClientUsedExtraLifePacket;
-import de.thedead2.progression_reloaded.network.packages.ModNetworkPacket;
+import de.thedead2.progression_reloaded.network.packets.*;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -15,6 +13,9 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
+import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
@@ -26,6 +27,8 @@ import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 
 public abstract class ModNetworkHandler {
+
+    private static final Marker marker = new MarkerManager.Log4jMarker("NetworkHandler");
 
     private static final String PROTOCOL_VERSION = "1";
 
@@ -40,12 +43,17 @@ public abstract class ModNetworkHandler {
 
 
     public static void registerPackets() {
-        LOGGER.debug("Registering network packages...");
+        LOGGER.debug(marker, "Registering network packets...");
 
         registerPacket(ClientOpenProgressionBookPacket.class);
         registerPacket(ClientUsedExtraLifePacket.class);
+        registerPacket(ClientUpdateQuestsPacket.class);
+        registerPacket(ClientUpdateLevelsPacket.class);
+        registerPacket(SyncPlayerPacket.class);
+        registerPacket(ClientSyncExtraLives.class);
+        registerPacket(ClientSyncTeamPacket.class);
 
-        LOGGER.debug("Network registration complete.");
+        LOGGER.debug(marker, "Network registration complete.");
     }
 
 
@@ -116,23 +124,35 @@ public abstract class ModNetworkHandler {
 
     private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx) {
         try {
-            DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> packet.onClient(ctx));
-            DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> packet.onServer(ctx));
+            DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> {
+                LOGGER.debug(marker, "Received packet {} from server, attempting to handle it...", packet.getClass().getName());
+                return packet.onClient(ctx);
+            });
+            DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> {
+                LOGGER.debug(marker, "Received packet {} from player {}, attempting to handle it...", packet.getClass().getName(), ctx.get().getSender().getUUID());
+                return packet.onServer(ctx);
+            });
             ctx.get().setPacketHandled(true);
+            LOGGER.debug(marker, "Handled packet {} successfully...", packet.getClass().getName());
         }
         catch(Throwable throwable) {
-            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), "NetworkHandler", throwable, Level.FATAL);
+            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), marker, throwable, Level.FATAL);
             ctx.get().setPacketHandled(false);
         }
     }
 
 
-    public static <MSG extends ModNetworkPacket> void sendToServer(MSG msg) {
+    public static <MSG extends ModNetworkPacket> void sendToServer(@NotNull MSG msg) {
         INSTANCE.sendToServer(msg);
     }
 
 
-    public static <MSG extends ModNetworkPacket> void sendToPlayer(MSG msg, ServerPlayer player) {
+    @SuppressWarnings("ConstantValue")
+    public static <MSG extends ModNetworkPacket> void sendToPlayer(@NotNull MSG msg, @NotNull ServerPlayer player) {
+        if(player.connection == null) {
+            LOGGER.error(marker, "Can't send packet {} to player {} as the connection is null!", msg.getClass().getName(), player.getName().getString());
+            return;
+        }
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);
     }
 }

@@ -58,7 +58,7 @@ public class PlayerCommands {
         );
         ModCommand.Builder.newModCommand("players/level", context -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-            context.getSource().sendSuccess(Component.literal("Your current level is: " + player.getProgressionLevel().getName()), false);
+            context.getSource().sendSuccess(Component.literal("Your current level is: " + player.getProgressionLevel().getTitle()), false);
             return ModCommand.COMMAND_SUCCESS;
         });
 

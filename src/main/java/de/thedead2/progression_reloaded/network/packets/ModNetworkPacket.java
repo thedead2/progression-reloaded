@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.network.packages;
+package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
@@ -15,7 +15,7 @@ public interface ModNetworkPacket {
     /**
      * Due to the way how classes are compiled this cannot be a lambda, it has to be an inner class
      **/
-    @SuppressWarnings("all")
+    @SuppressWarnings("Convert2Lambda")
     DistExecutor.SafeRunnable EMPTY_SAFE_RUNNABLE = new DistExecutor.SafeRunnable() {
         @Override
         public void run() {

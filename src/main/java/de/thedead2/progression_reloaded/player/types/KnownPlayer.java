@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.base.Objects;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 
@@ -49,5 +50,19 @@ public record KnownPlayer(ResourceLocation id, String name) {
         tag.putString("id", id.toString());
         tag.putString("name", name);
         return tag;
+    }
+
+
+    public static KnownPlayer fromNetwork(FriendlyByteBuf buf) {
+        ResourceLocation id = buf.readResourceLocation();
+        String name = buf.readUtf();
+
+        return new KnownPlayer(id, name);
+    }
+
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeResourceLocation(this.id);
+        buf.writeUtf(this.name);
     }
 }

@@ -1,11 +1,8 @@
 package de.thedead2.progression_reloaded.client;
 
+import de.thedead2.progression_reloaded.client.data.ClientPlayer;
+import de.thedead2.progression_reloaded.client.data.ClientQuest;
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
-import de.thedead2.progression_reloaded.data.LevelManager;
-import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.ChatFormatting;
@@ -16,6 +13,7 @@ import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.advancements.AdvancementsScreen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraftforge.api.distmarker.Dist;
@@ -96,7 +94,7 @@ public class ScreenHandler {
 
             if(minecraft.player.isShiftKeyDown()) {
 
-                final SinglePlayer data = PlayerDataHandler.getActivePlayer(minecraft.player);
+                final ClientPlayer data = ClientManager.getInstance().getPlayer();
                 final int maxQuests = 5;
 
                 if(data != null) {
@@ -105,15 +103,15 @@ public class ScreenHandler {
                     if(ConfigManager.MAX_EXTRA_LIVES.get() > 0) {
                         event.getRight().add("Extra Lives: " + data.getExtraLives());
                     }
-                    event.getRight().add("Level: " + data.getProgressionLevel().getName());
+                    event.getRight().add("Level: " + data.getLevels().getCurrent().getTitle().getString());
                     data.getTeam().ifPresent(team -> event.getRight().add("Team: " + team.getName()));
                     event.getRight().add("Active Quests:");
-                    var list = LevelManager.getInstance()
-                                           .getQuestManager()
-                                           .getActiveQuests(KnownPlayer.fromSinglePlayer(data))
-                                           .stream()
-                                           .map(ProgressionQuest::getName)
-                                           .toList();
+                    var list = data.getQuests()
+                                   .getActiveQuests()
+                                   .stream()
+                                   .map(ClientQuest::getTitle)
+                                   .map(Component::getString)
+                                   .toList();
                     list.forEach(s -> {
                         if(list.indexOf(s) < maxQuests) {
                             event.getRight().add(s);

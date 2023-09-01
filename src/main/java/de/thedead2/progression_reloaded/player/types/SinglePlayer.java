@@ -4,6 +4,9 @@ import com.google.common.base.Objects;
 import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
+import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncExtraLives;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncTeamPacket;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
@@ -56,7 +59,7 @@ public class SinglePlayer {
         this.id = id;
         this.player = player;
         this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId);
-        this.isOffline = false;
+        this.isOffline = true;
         this.extraLives = extraLives;
     }
 
@@ -105,6 +108,7 @@ public class SinglePlayer {
 
     public void setTeam(PlayerTeam playerTeam) {
         this.team = playerTeam;
+        ModNetworkHandler.sendToPlayer(new ClientSyncTeamPacket(playerTeam), this.player);
     }
 
 
@@ -254,7 +258,8 @@ public class SinglePlayer {
     public boolean addExtraLife() {
         if(ConfigManager.MAX_EXTRA_LIVES.get() > this.extraLives) {
             this.extraLives++;
-            this.player.sendSystemMessage(Component.literal("Congratulations " + playerName + "! You earned an extra life!").withStyle(ChatFormatting.AQUA));
+            this.player.sendSystemMessage(Component.literal("Congratulations " + playerName + "! You earned an extra life!").withStyle(ChatFormatting.LIGHT_PURPLE));
+            ModNetworkHandler.sendToPlayer(new ClientSyncExtraLives(this.extraLives), this.player);
             return true;
         }
         return false;
@@ -264,6 +269,7 @@ public class SinglePlayer {
     public boolean hasExtraLife() {
         if(this.extraLives > 0) {
             this.extraLives--;
+            ModNetworkHandler.sendToPlayer(new ClientSyncExtraLives(this.extraLives), this.player);
             return true;
         }
         return false;
@@ -272,5 +278,10 @@ public class SinglePlayer {
 
     public int getExtraLives() {
         return this.extraLives;
+    }
+
+
+    public void loggedIn() {
+        this.isOffline = false;
     }
 }

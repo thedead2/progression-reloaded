@@ -288,14 +288,18 @@ public class CrashHandler implements ISystemReportExtender {
 
 
     public void handleException(String description, Throwable e, Level level) {
-        handleException(description, null, e, level);
+        handleException(description, (String) null, e, level);
     }
 
 
     public void handleException(String description, String callingClass, Throwable e, Level level) {
         String callingClassName = ReflectionHelper.getCallerCallerClassName();
         String exceptionClass = callingClass != null ? callingClass : callingClassName.substring(callingClassName.lastIndexOf(".") + 1);
-        Marker marker = new MarkerManager.Log4jMarker(exceptionClass);
+        this.handleException(description, new MarkerManager.Log4jMarker(exceptionClass), e, level);
+    }
+
+
+    public void handleException(String description, Marker marker, Throwable e, Level level) {
         if(level.equals(Level.DEBUG)) {
             LOGGER.debug(marker, description);
         }

@@ -17,12 +17,12 @@ public class DevCommands {
         ModCommand.Builder.newModCommand("dev/level/questManager", context -> {
             SinglePlayer player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
             var level = player.getProgressionLevel();
-            context.getSource().sendSuccess(Component.literal("Current questManager for level " + level.getName() + ": " + level.getQuests().toString()), true);
+            context.getSource().sendSuccess(Component.literal("Current questManager for level " + level.getTitle() + ": " + level.getQuests().toString()), true);
             return ModCommand.COMMAND_SUCCESS;
         });
 
         ModCommand.Builder.newModCommand("dev/lives/add", context -> {
-            if(ExtraLifeItem.rewardExtraLife(context.getSource().getPlayerOrException())) {
+            if(ExtraLifeItem.rewardExtraLife(context.getSource().getPlayerOrException(), true)) {
                 return ModCommand.COMMAND_SUCCESS;
             }
             else {

@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.network.packages;
+package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.items.ModItems;
 import net.minecraft.client.Minecraft;
@@ -25,12 +25,14 @@ public class ClientUsedExtraLifePacket implements ModNetworkPacket {
     }
 
 
+    @SuppressWarnings("unused")
     public ClientUsedExtraLifePacket(FriendlyByteBuf buf) {
         this.entityId = buf.readInt();
     }
 
 
     @Override
+    @SuppressWarnings("Convert2Lambda")
     public DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
         return new DistExecutor.SafeRunnable() {
             @Override

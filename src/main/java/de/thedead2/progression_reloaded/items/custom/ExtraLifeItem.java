@@ -31,7 +31,7 @@ public class ExtraLifeItem extends Item {
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level pLevel, @NotNull Player pPlayer, @NotNull InteractionHand pUsedHand) {
         if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer) {
             ItemStack stack = serverPlayer.getItemInHand(pUsedHand);
-            if(rewardExtraLife(serverPlayer)) {
+            if(rewardExtraLife(serverPlayer, false)) {
                 stack.shrink(1);
                 return InteractionResultHolder.success(stack);
             }
@@ -43,13 +43,13 @@ public class ExtraLifeItem extends Item {
     }
 
 
-    public static boolean rewardExtraLife(ServerPlayer serverPlayer) {
+    public static boolean rewardExtraLife(ServerPlayer serverPlayer, boolean isCommand) {
         SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(serverPlayer);
 
-        if(serverPlayer.isCreative() || !singlePlayer.addExtraLife()) {
+        if((!isCommand && serverPlayer.isCreative()) || !singlePlayer.addExtraLife()) {
             return false;
         }
-        serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(15)));
+        serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(15), 1));
         serverPlayer.level.playSound(null, new BlockPos(serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ()), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1F, 1F);
         return true;
     }

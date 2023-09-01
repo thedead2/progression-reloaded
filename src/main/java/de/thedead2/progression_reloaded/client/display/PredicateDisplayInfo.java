@@ -1,4 +1,4 @@
 package de.thedead2.progression_reloaded.client.display;
 
-public class RewardDisplayInfo {
+public class PredicateDisplayInfo extends DisplayInfo {
 }

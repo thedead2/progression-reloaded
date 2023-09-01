@@ -22,9 +22,9 @@ public class CriterionProgress {
     private Date obtained;
 
 
-    public static CriterionProgress fromNetwork(FriendlyByteBuf pBuffer) {
+    public static CriterionProgress fromNetwork(FriendlyByteBuf buf) {
         CriterionProgress criterionprogress = new CriterionProgress();
-        criterionprogress.obtained = pBuffer.readNullable(FriendlyByteBuf::readDate);
+        criterionprogress.obtained = buf.readNullable(FriendlyByteBuf::readDate);
         return criterionprogress;
     }
 
@@ -83,8 +83,8 @@ public class CriterionProgress {
     }
 
 
-    public void serializeToNetwork(FriendlyByteBuf pBuffer) {
-        pBuffer.writeNullable(this.obtained, FriendlyByteBuf::writeDate);
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeNullable(this.obtained, FriendlyByteBuf::writeDate);
     }
 
 

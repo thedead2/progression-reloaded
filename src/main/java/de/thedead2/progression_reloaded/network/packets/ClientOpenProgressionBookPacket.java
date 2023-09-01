@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.network.packages;
+package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.client.gui.screens.ProgressionBookGUI;
 import net.minecraft.client.Minecraft;
@@ -19,7 +19,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
 
 
     @Override
-    @SuppressWarnings("all")
+    @SuppressWarnings("Convert2Lambda")
     public DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
         return new DistExecutor.SafeRunnable() {
             @Override

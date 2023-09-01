@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import de.thedead2.progression_reloaded.client.display.TeamDisplayInfo;
 import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
@@ -211,5 +212,10 @@ public class PlayerTeam {
 
     public void forEachMember(Consumer<KnownPlayer> action) {
         this.knownMembers.forEach(action);
+    }
+
+
+    public TeamDisplayInfo getDisplay() {
+        return new TeamDisplayInfo(this.teamName, this.knownMembers);
     }
 }

@@ -6,6 +6,8 @@ import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.events.ModEvents;
+import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientUpdateQuestsPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
@@ -152,15 +154,25 @@ public class QuestManager {
     /**
      * Updates the quests of a player depending on whether the quest has been completed or not.
      */
-    public void updateStatus(KnownPlayer player, boolean shouldSync) {
+    public void updateStatus(KnownPlayer player, boolean shouldSyncToTeam) {
         LOGGER.debug(MARKER, "Updating quests for player: {}", player.name());
         this.activePlayerQuests.replace(player, searchQuestsForActive(player));
         searchQuestsForComplete(player).forEach(quest -> this.unregisterListeners(quest, player));
         this.activePlayerQuests.get(player).forEach(quest -> this.registerListeners(quest, player));
         ModEvents.onQuestStatusUpdate(player, this.activePlayerQuests.get(player));
-        if(shouldSync) {
-            this.syncQuestProgress(player);
+        if(shouldSyncToTeam) {
+            this.syncQuestProgressToTeam(player);
         }
+        this.syncQuestsToClient(player);
+    }
+
+
+    private void syncQuestsToClient(KnownPlayer player) {
+        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
+        if(singlePlayer == null) {
+            return;
+        }
+        ModNetworkHandler.sendToPlayer(new ClientUpdateQuestsPacket(this.activePlayerQuests.get(player), this.questProgress.get(player)), singlePlayer.getServerPlayer());
     }
 
 
@@ -229,16 +241,20 @@ public class QuestManager {
 
     public Collection<QuestProgress> getMainQuestProgress(ProgressionLevel level, KnownPlayer player) {
         Collection<QuestProgress> questProgresses = new HashSet<>();
-        Collection<ProgressionQuest> levelQuests = level.getQuests()
-                                                        .stream()
-                                                        .map(this::findQuest)
-                                                        .collect(Collectors.toSet());
-        levelQuests.forEach(quest -> {
+        this.getMainQuestsForLevel(level).forEach(quest -> {
             if(quest.isMainQuest()) {
                 questProgresses.add(this.getOrStartProgress(quest, player));
             }
         });
         return questProgresses;
+    }
+
+
+    public Collection<ProgressionQuest> getMainQuestsForLevel(ProgressionLevel level) {
+        return level.getQuests()
+                    .stream()
+                    .map(this::findQuest)
+                    .collect(Collectors.toSet());
     }
 
 
@@ -253,7 +269,7 @@ public class QuestManager {
 
 
     private void startProgress(ProgressionQuest quest, QuestProgress questProgress, KnownPlayer player) {
-        questProgress.updateProgress();
+        questProgress.updateProgress(quest);
         this.questProgress.computeIfAbsent(player, player1 -> new HashMap<>()).put(quest, questProgress);
         this.saveData();
     }
@@ -369,7 +385,7 @@ public class QuestManager {
     }
 
 
-    private void syncQuestProgress(KnownPlayer player) {
+    private void syncQuestProgressToTeam(KnownPlayer player) {
         PlayerTeam team = PlayerDataHandler.getTeam(player);
         var questProgress = this.questProgress.get(player);
         if(team == null) {

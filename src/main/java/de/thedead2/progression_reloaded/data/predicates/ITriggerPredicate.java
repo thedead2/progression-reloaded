@@ -14,9 +14,4 @@ public interface ITriggerPredicate<T> {
     boolean matches(T t, Object... addArgs);
 
     JsonElement toJson();
-
-    interface Builder<R extends ITriggerPredicate<?>> {
-
-        R build();
-    }
 }

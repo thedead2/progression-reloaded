@@ -64,7 +64,8 @@ public class ProgressData extends SavedData {
             Map<ProgressionQuest, QuestProgress> progressMap = new HashMap<>();
             tag1.getAllKeys().forEach(s1 -> {
                 QuestProgress progress = QuestProgress.loadFromCompoundTag(tag1.getCompound(s1));
-                progressMap.put(progress.getQuest(), progress);
+                ProgressionQuest quest = ModRegistries.QUESTS.get().getValue(progress.getQuest());
+                progressMap.put(quest, progress);
             });
             questProgress.put(player, progressMap);
         });

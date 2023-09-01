@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.items.custom;
 
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packages.ClientOpenProgressionBookPacket;
+import de.thedead2.progression_reloaded.network.packets.ClientOpenProgressionBookPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
