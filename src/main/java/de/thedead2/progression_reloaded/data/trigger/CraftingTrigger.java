@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.predicates.ItemPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -49,7 +49,7 @@ public class CraftingTrigger extends SimpleTrigger<ItemStack> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, ItemStack craftedItem, Object... data) {
+    public boolean trigger(PlayerData player, ItemStack craftedItem, Object... data) {
         if(craftCounter < amountCrafted && this.predicate.matches(craftedItem)) {
             craftCounter++;
             return false;

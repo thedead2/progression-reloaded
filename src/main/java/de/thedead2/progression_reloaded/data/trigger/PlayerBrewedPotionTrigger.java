@@ -3,7 +3,7 @@ package de.thedead2.progression_reloaded.data.trigger;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.alchemy.Potion;
@@ -47,7 +47,7 @@ public class PlayerBrewedPotionTrigger extends SimpleTrigger<Potion> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, Potion potion, Object... data) {
+    public boolean trigger(PlayerData player, Potion potion, Object... data) {
         return this.trigger(player, listener -> this.potion == null || this.potion == potion);
     }
 

@@ -90,7 +90,14 @@ dependencies {
     implementation('com.google.guava:guava:31.1-jre')
     //implementation 'com.netflix.nebula:nebula-release-plugin:17.2.2'
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
+    implementation fg.deobf(group: 'com.blamejared.crafttweaker', name: "CraftTweaker-forge-${minecraft_version}", version: getProperty('crafttweaker_version'))
+    //implementation fg.deobf(group: 'mezz.jei', name: "jei-${minecraft_version}-forge", version: getProperty('jei_version'))
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    // JEI API
+    compileOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"))
+    compileOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"))
+
+    runtimeOnly(fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}"))
 }
 
 mixin {
@@ -141,6 +148,26 @@ publishing {
 
 repositories {
     mavenCentral()
+    // JEI API
+    maven {
+        url 'https://maven.blamejared.com'
+    }
+
+    maven {
+        // location of the maven that hosts JEI files before January 2023
+        name = "Progwml6's maven"
+        url = "https://dvs1.progwml6.com/files/maven/"
+    }
+    maven {
+        // location of the maven that hosts JEI files since January 2023
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
+    maven {
+        // location of a maven mirror for JEI files, as a fallback
+        name = "ModMaven"
+        url = "https://modmaven.dev"
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {

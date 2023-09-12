@@ -25,12 +25,12 @@ public class Alignment {
     }
 
 
-    public int getXPos(int screenWidth, int width) {
+    public float getXPos(float screenWidth, float width) {
         return x.getXPos(screenWidth, width);
     }
 
 
-    public int getYPos(int screenHeight, int height) {
+    public float getYPos(float screenHeight, float height) {
         return y.getYPos(screenHeight, height);
     }
 
@@ -38,48 +38,48 @@ public class Alignment {
     public enum X {
         LEFT {
             @Override
-            public int getXPos(int screenWidth, int width) {
+            public float getXPos(float screenWidth, float width) {
                 return 0;
             }
         },
         RIGHT {
             @Override
-            public int getXPos(int screenWidth, int width) {
+            public float getXPos(float screenWidth, float width) {
                 return screenWidth - width;
             }
         },
         CENTER {
             @Override
-            public int getXPos(int screenWidth, int width) {
+            public float getXPos(float screenWidth, float width) {
                 return (screenWidth - width) / 2;
             }
         };
 
 
-        protected abstract int getXPos(int screenWidth, int width);
+        protected abstract float getXPos(float screenWidth, float width);
     }
 
     public enum Y {
         TOP {
             @Override
-            public int getYPos(int screenHeight, int height) {
+            public float getYPos(float screenHeight, float height) {
                 return 0;
             }
         },
         BOTTOM {
             @Override
-            public int getYPos(int screenHeight, int height) {
+            public float getYPos(float screenHeight, float height) {
                 return screenHeight - height;
             }
         },
         CENTER {
             @Override
-            public int getYPos(int screenHeight, int height) {
+            public float getYPos(float screenHeight, float height) {
                 return (screenHeight - height) / 2;
             }
         };
 
 
-        protected abstract int getYPos(int screenHeight, int height);
+        protected abstract float getYPos(float screenHeight, float height);
     }
 }

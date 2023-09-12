@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.items;
 
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
+import de.thedead2.progression_reloaded.items.custom.LootChestItem;
 import de.thedead2.progression_reloaded.items.custom.ProgressionBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
@@ -24,7 +25,7 @@ public class ModItems {
 
     public static final RegistryObject<Item> QUARTER_EXTRA_LIFE = ITEMS.register("quarter_extra_life", () -> new Item(new Item.Properties().stacksTo(4).rarity(Rarity.UNCOMMON)));
 
-
+    public static final RegistryObject<Item> LOOT_CHEST = ITEMS.register("loot_chest", LootChestItem::new);
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

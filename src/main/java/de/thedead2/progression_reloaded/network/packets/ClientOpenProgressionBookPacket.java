@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.network.packets;
 
+import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
 import de.thedead2.progression_reloaded.client.gui.screens.ProgressionBookGUI;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;

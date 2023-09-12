@@ -3,7 +3,7 @@ package de.thedead2.progression_reloaded.data.trigger;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -49,7 +49,7 @@ public class PlayerChangedDimensionTrigger extends SimpleTrigger<ResourceKey<Lev
 
 
     @Override
-    public boolean trigger(SinglePlayer player, ResourceKey<Level> from, Object... data) {
+    public boolean trigger(PlayerData player, ResourceKey<Level> from, Object... data) {
         return this.trigger(player, listener -> {
             if(this.from != null && this.from != from) {
                 return false;

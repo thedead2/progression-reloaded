@@ -2,5 +2,31 @@
   "parent": "minecraft:item/generated",
   "textures": {
     "layer0": "progression_reloaded:item/progression_book"
-  }
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "progression_reloaded:default_theme": 0
+      },
+      "model": "progression_reloaded:item/progression_book_default"
+    },
+    {
+      "predicate": {
+        "progression_reloaded:old_map_theme": 1
+      },
+      "model": "progression_reloaded:item/progression_book_old"
+    },
+    {
+      "predicate": {
+        "progression_reloaded:futuristic_theme": 2
+      },
+      "model": "progression_reloaded:item/progression_book_futuristic"
+    },
+    {
+      "predicate": {
+        "progression_reloaded:custom_theme": 3
+      },
+      "model": "progression_reloaded:item/progression_book_custom"
+    }
+  ]
 }

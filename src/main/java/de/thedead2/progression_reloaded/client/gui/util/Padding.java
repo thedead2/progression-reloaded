@@ -4,26 +4,26 @@ public class Padding {
 
     public static final Padding NONE = new Padding(0);
 
-    private final int paddingLeft;
+    private final float paddingLeft;
 
-    private final int paddingRight;
+    private final float paddingRight;
 
-    private final int paddingTop;
+    private final float paddingTop;
 
-    private final int paddingBottom;
+    private final float paddingBottom;
 
 
-    public Padding(int padding) {
+    public Padding(float padding) {
         this(padding, padding);
     }
 
 
-    public Padding(int paddingLeftRight, int paddingTopBottom) {
+    public Padding(float paddingLeftRight, float paddingTopBottom) {
         this(paddingLeftRight, paddingLeftRight, paddingTopBottom, paddingTopBottom);
     }
 
 
-    public Padding(int paddingLeft, int paddingRight, int paddingTop, int paddingBottom) {
+    public Padding(float paddingLeft, float paddingRight, float paddingTop, float paddingBottom) {
         this.paddingLeft = paddingLeft;
         this.paddingRight = paddingRight;
         this.paddingTop = paddingTop;
@@ -31,22 +31,22 @@ public class Padding {
     }
 
 
-    public int getLeft() {
+    public float getLeft() {
         return paddingLeft;
     }
 
 
-    public int getTop() {
+    public float getTop() {
         return paddingTop;
     }
 
 
-    public int getRight() {
+    public float getRight() {
         return paddingRight;
     }
 
 
-    public int getBottom() {
+    public float getBottom() {
         return paddingBottom;
     }
 }

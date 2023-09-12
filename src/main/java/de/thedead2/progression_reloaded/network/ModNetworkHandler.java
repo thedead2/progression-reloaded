@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.network;
 
+import de.thedead2.progression_reloaded.api.network.ModLoginNetworkPacket;
+import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
 import de.thedead2.progression_reloaded.network.packets.*;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.network.FriendlyByteBuf;
@@ -47,11 +49,10 @@ public abstract class ModNetworkHandler {
 
         registerPacket(ClientOpenProgressionBookPacket.class);
         registerPacket(ClientUsedExtraLifePacket.class);
-        registerPacket(ClientUpdateQuestsPacket.class);
-        registerPacket(ClientUpdateLevelsPacket.class);
-        registerPacket(SyncPlayerPacket.class);
-        registerPacket(ClientSyncExtraLives.class);
-        registerPacket(ClientSyncTeamPacket.class);
+        registerPacket(ClientSyncQuestsPacket.class);
+        registerPacket(ClientSyncLevelsPacket.class);
+        registerPacket(ClientSyncRestrictionsPacket.class);
+        registerPacket(ClientSyncPlayerPacket.class);
 
         LOGGER.debug(marker, "Network registration complete.");
     }
@@ -59,24 +60,33 @@ public abstract class ModNetworkHandler {
 
     private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet) {
         try {
+            boolean loginPacket = false;
             packet.getConstructor(FriendlyByteBuf.class);
-            if(packet.getName().contains("Login")) {
-                boolean flag = false;
-                for(Class<?> anInterface : packet.getInterfaces()) {
-                    if(anInterface.getName().equals("java.util.function.Supplier")) {
-                        flag = true;
-                        break;
-                    }
-                }
-                if(!flag) {
-                    throw new IllegalStateException("Login Packet should implement Supplier<Integer>");
+            for(Class<?> anInterface : packet.getInterfaces()) {
+                if(anInterface.getName().equals(ModLoginNetworkPacket.class.getName())) {
+                    loginPacket = true;
+                    break;
                 }
             }
-            INSTANCE.messageBuilder(packet, nextMessageId(), getDirection(packet))
-                    .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
-                    .encoder(ModNetworkPacket::toBytes)
-                    .consumerMainThread(ModNetworkHandler::handlePacket)
-                    .add();
+            NetworkDirection direction = getDirection(packet, loginPacket);
+
+            if(loginPacket) {
+                INSTANCE.messageBuilder(packet, nextMessageId(), direction)
+                        .markAsLoginPacket()
+                        .loginIndex(t -> ((ModLoginNetworkPacket) t).getAsInt(), (t, integer) -> ((ModLoginNetworkPacket) t).setLoginIndex(integer))
+                        .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
+                        .encoder(ModNetworkPacket::toBytes)
+                        .consumerMainThread(ModNetworkHandler::handlePacket)
+                        .add();
+            }
+            else {
+                INSTANCE.messageBuilder(packet, nextMessageId(), direction)
+                        .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
+                        .encoder(ModNetworkPacket::toBytes)
+                        .consumerMainThread(ModNetworkHandler::handlePacket)
+                        .add();
+            }
+
         }
         catch(Throwable e) {
             CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
@@ -89,9 +99,8 @@ public abstract class ModNetworkHandler {
     }
 
 
-    private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet) {
+    private static <T extends ModNetworkPacket> NetworkDirection getDirection(Class<T> packet, boolean loginPacket) {
         Set<String> methodNames = new HashSet<>();
-        String clazzName = packet.getName();
         for(Method declaredMethod : packet.getDeclaredMethods()) {
             if(declaredMethod.getName().equals("onClient") || declaredMethod.getName().equals("onServer")) {
                 methodNames.add(declaredMethod.getName());
@@ -101,7 +110,7 @@ public abstract class ModNetworkHandler {
             return null;
         }
         else if(methodNames.contains("onClient")) {
-            if(clazzName.contains("Login")) {
+            if(loginPacket) {
                 return NetworkDirection.LOGIN_TO_CLIENT;
             }
             else {
@@ -109,7 +118,7 @@ public abstract class ModNetworkHandler {
             }
         }
         else if(methodNames.contains("onServer")) {
-            if(clazzName.contains("Login")) {
+            if(loginPacket) {
                 return NetworkDirection.LOGIN_TO_SERVER;
             }
             else {

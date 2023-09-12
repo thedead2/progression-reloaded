@@ -1,6 +1,5 @@
 package de.thedead2.progression_reloaded.data.predicates;
 
-
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;

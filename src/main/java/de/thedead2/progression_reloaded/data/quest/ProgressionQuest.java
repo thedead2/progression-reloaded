@@ -2,24 +2,25 @@ package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.client.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
+import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
 
 
-public class ProgressionQuest implements ModRegistriesDynamicSerializer {
+public class ProgressionQuest implements ModRegistriesDynamicSerializer, Comparable<ProgressionQuest> {
 
     private final QuestDisplayInfo displayInfo;
 
@@ -60,7 +61,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
     }
 
 
-    public void rewardPlayer(SinglePlayer player) {
+    public void rewardPlayer(PlayerData player) {
         this.rewards.reward(player);
     }
 
@@ -130,5 +131,25 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer {
 
     public Rewards getRewards() {
         return this.rewards;
+    }
+
+
+    @Override
+    public int compareTo(@NotNull ProgressionQuest o) {
+        ResourceLocation thisId = this.getId();
+        ResourceLocation otherId = o.getId();
+
+        ResourceLocation thisPrevious = this.getParentQuest();
+        ResourceLocation otherPrevious = o.getParentQuest();
+
+        if(otherId.equals(thisId) || (otherPrevious == null && thisPrevious == null)) {
+            return 0;
+        }
+        else if(otherPrevious != null && otherPrevious.equals(thisId)) {
+            return -1;
+        }
+        else {
+            return 1;
+        }
     }
 }

@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.util.helper;
 
+import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.ResourceLocationException;
 import net.minecraft.resources.ResourceLocation;
 
@@ -29,5 +30,10 @@ public class ResourceLocationHelper {
         catch(ResourceLocationException e) {
             return defaultVal;
         }
+    }
+
+
+    public static ResourceLocation createId(String path) {
+        return new ResourceLocation(ModHelper.MOD_ID, path);
     }
 }

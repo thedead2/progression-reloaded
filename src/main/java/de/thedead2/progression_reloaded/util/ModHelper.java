@@ -9,9 +9,11 @@ import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.world.level.storage.WorldData;
 import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLLoader;
 import net.minecraftforge.fml.loading.FMLPaths;
 import net.minecraftforge.fml.loading.targets.CommonDevLaunchHandler;
+import net.minecraftforge.fml.util.thread.EffectiveSide;
 import net.minecraftforge.forgespi.locating.IModFile;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +21,9 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Locale;
 
 
 public abstract class ModHelper {
@@ -48,6 +52,10 @@ public abstract class ModHelper {
 
     public static final String MOD_NAME = MOD_PROPERTIES.getProperty("mod_name");
 
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
+
+    public static GameState GAME_STATE = GameState.INACTIVE;
+
 
     public static IModFile THIS_MOD_FILE() {
         return ModList.get().getModFileById(MOD_ID).getFile();
@@ -61,6 +69,16 @@ public abstract class ModHelper {
 
     public static boolean isDevEnv() {
         return FMLLoader.getLaunchHandler() instanceof CommonDevLaunchHandler;
+    }
+
+
+    public static boolean isRunningOnServerThread() {
+        return EffectiveSide.get().isServer();
+    }
+
+
+    public static boolean isRunningOnPhysicalServer() {
+        return FMLEnvironment.dist.isDedicatedServer();
     }
 
 
@@ -78,16 +96,6 @@ public abstract class ModHelper {
 
     public static void init() {
 
-    }
-
-
-    public static int secondsToTicks(int seconds) {
-        return seconds * 20;
-    }
-
-
-    public static int ticksToSeconds(int ticks) {
-        return ticks / 20;
     }
 
 
@@ -111,4 +119,5 @@ public abstract class ModHelper {
             return null;
         });
     }
+
 }

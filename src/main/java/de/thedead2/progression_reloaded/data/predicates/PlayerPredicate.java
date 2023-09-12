@@ -3,8 +3,8 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.GsonHelper;
@@ -19,7 +19,7 @@ import net.minecraft.world.phys.Vec3;
 import javax.annotation.Nullable;
 
 
-public class PlayerPredicate implements ITriggerPredicate<SinglePlayer> {
+public class PlayerPredicate implements ITriggerPredicate<PlayerData> {
 
     public static final ResourceLocation ID = ITriggerPredicate.createId("player");
 
@@ -48,7 +48,7 @@ public class PlayerPredicate implements ITriggerPredicate<SinglePlayer> {
     }
 
 
-    public static PlayerPredicate from(SinglePlayer player) {
+    public static PlayerPredicate from(PlayerData player) {
         ServerPlayer serverPlayer = player.getServerPlayer();
         int experienceLevel = serverPlayer.experienceLevel;
         GameType gameMode = serverPlayer.gameMode.getGameModeForPlayer();
@@ -97,7 +97,7 @@ public class PlayerPredicate implements ITriggerPredicate<SinglePlayer> {
 
 
     @Override
-    public boolean matches(SinglePlayer player, Object... addArgs) {
+    public boolean matches(PlayerData player, Object... addArgs) {
         if(this == ANY) {
             return true;
         }

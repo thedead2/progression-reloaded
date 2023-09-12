@@ -136,4 +136,9 @@ public abstract class ReflectionHelper {
         }
         return true;
     }
+
+
+    public static Class<?> findClassWithName(String className) throws ClassNotFoundException {
+        return ReflectionHelper.class.getClassLoader().loadClass(className);
+    }
 }

@@ -1,85 +1,123 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
+import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.util.objects.RenderObject;
-import de.thedead2.progression_reloaded.items.ModItems;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import org.joml.Quaternionf;
 import org.joml.Vector2i;
+import org.joml.Vector3f;
 
-import java.util.Collection;
-import java.util.Comparator;
+import java.awt.*;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
+import static net.minecraft.client.gui.GuiComponent.fill;
 
 
 public class RenderUtil {
 
-    public static void rotate(int degrees) {
+    private static LivingEntity entity = null;
 
+
+    public static Color colorFromHex(String hex) {
+        return Color.decode(hex);
     }
 
 
-    public static void renderEntityInInventory(int pPosX, int pPosY, int pScale, float pMouseX, float pMouseY, LivingEntity pLivingEntity) {
-        float f = (float) Math.atan(pMouseX / 40.0F);
-        float f1 = (float) Math.atan(pMouseY / 40.0F);
-        renderEntityInInventoryRaw(pPosX, pPosY, pScale, f, f1, pLivingEntity);
+    public static int getColorFromHex(String hex) {
+        return Integer.decode(hex);
     }
 
 
-    public static void renderEntityInInventoryRaw(int pPosX, int pPosY, int pScale, float angleXComponent, float angleYComponent, LivingEntity pLivingEntity) {
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.translate((float) pPosX, (float) pPosY, 1050.0F);
-        posestack.scale(1.0F, 1.0F, -1.0F);
+    public static int getColor(float red, float green, float blue) {
+        return Mth.color(red, green, blue);
+    }
+
+
+    @SuppressWarnings("DataFlowIssue")
+    public static void renderEntity(EntityType<? extends LivingEntity> entityType, int xPos, int yPos, int scale, float xRot, float yRot) {
+        if(entity == null || !entity.getType().equals(entityType)) {
+            entity = entityType.create(Minecraft.getInstance().level); //TODO: returns sometimes null
+        }
+        renderEntityInternal(entity, xPos, yPos, scale, xRot, yRot);
+    }
+
+
+    private static void renderEntityInternal(LivingEntity entity, int xPos, int yPos, int scale, float xRot, float yRot) {
+        PoseStack poseStack = RenderSystem.getModelViewStack();
+        poseStack.pushPose();
+        poseStack.translate((float) xPos, (float) yPos, 1050.0F);
+        poseStack.scale(1.0F, 1.0F, -1.0F);
         RenderSystem.applyModelViewMatrix();
-        PoseStack posestack1 = new PoseStack();
-        posestack1.translate(0.0F, 0.0F, 1000.0F);
-        posestack1.scale((float) pScale, (float) pScale, (float) pScale);
-        Quaternionf quaternionf = (new Quaternionf()).rotateZ((float) Math.PI);
-        Quaternionf quaternionf1 = (new Quaternionf()).rotateX(angleYComponent * 20.0F * ((float) Math.PI / 180F));
-        quaternionf.mul(quaternionf1);
-        posestack1.mulPose(quaternionf);
-        float f2 = pLivingEntity.yBodyRot;
-        float f3 = pLivingEntity.getYRot();
-        float f4 = pLivingEntity.getXRot();
-        float f5 = pLivingEntity.yHeadRotO;
-        float f6 = pLivingEntity.yHeadRot;
-        pLivingEntity.yBodyRot = 180.0F + angleXComponent * 20.0F;
-        pLivingEntity.setYRot(180.0F + angleXComponent * 40.0F);
-        pLivingEntity.setXRot(-angleYComponent * 20.0F);
-        pLivingEntity.yHeadRot = pLivingEntity.getYRot();
-        pLivingEntity.yHeadRotO = pLivingEntity.getYRot();
+
+        PoseStack poseStack1 = new PoseStack();
+        poseStack1.translate(0.0F, 0.0F, 1000.0F);
+        poseStack1.scale((float) scale, (float) scale, (float) scale);
+        flip(poseStack1, Axis.ZP);
+
+        entity.setYBodyRot(180 + yRot);
+        entity.setYHeadRot(180 + yRot);
+        entity.setXRot(xRot);
+
         Lighting.setupForEntityInInventory();
         EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
-        quaternionf1.conjugate();
-        entityrenderdispatcher.overrideCameraOrientation(quaternionf1);
         entityrenderdispatcher.setRenderShadow(false);
         MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderSystem.runAsFancy(() -> entityrenderdispatcher.render(pLivingEntity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, posestack1, multibuffersource$buffersource, 15728880));
+        RenderSystem.runAsFancy(() -> entityrenderdispatcher.render(entity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, poseStack1, multibuffersource$buffersource, 15728880));
         multibuffersource$buffersource.endBatch();
         entityrenderdispatcher.setRenderShadow(true);
-        pLivingEntity.yBodyRot = f2;
-        pLivingEntity.setYRot(f3);
-        pLivingEntity.setXRot(f4);
-        pLivingEntity.yHeadRotO = f5;
-        pLivingEntity.yHeadRot = f6;
-        posestack.popPose();
+
+        poseStack.popPose();
         RenderSystem.applyModelViewMatrix();
         Lighting.setupFor3DItems();
+    }
+
+
+    /**
+     * Flips the pose stack 180 degrees around the given axis.
+     *
+     * @param poseStack The pose stack to flip.
+     * @param axis      The axis the pose stack should be flipped around.
+     *
+     * @return The applied rotation in form of a Quaternionf
+     **/
+    @CanIgnoreReturnValue
+    public static Quaternionf flip(PoseStack poseStack, Axis axis) {
+        Quaternionf rotation = axis.rotation((float) Math.PI);
+        poseStack.mulPose(rotation);
+        return rotation;
+    }
+
+
+    public static void renderItem(PoseStack poseStack, float xPos, float yPos, float scale, ItemStack icon) {
+        renderItem(poseStack, xPos, yPos, scale, 0, 0, icon);
+    }
+
+
+    public static void renderItem(PoseStack poseStack, float xPos, float yPos, float scale, float xRot, float yRot, ItemStack item) {
+        poseStack.pushPose();
+
+        poseStack.translate(xPos, yPos, 0);
+        poseStack.scale(scale, scale, 1);
+        poseStack.mulPose(Axis.XP.rotationDegrees(xRot));
+        poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
+
+        MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
+        Minecraft.getInstance().getItemRenderer().renderStatic(item, ItemTransforms.TransformType.FIXED, 15728880, OverlayTexture.NO_OVERLAY, poseStack, multibuffersource$buffersource, 0);
+        poseStack.popPose();
+        multibuffersource$buffersource.endBatch();
     }
 
 
@@ -99,25 +137,18 @@ public class RenderUtil {
     }
 
 
-    public static Vector2i getScreenCenter() {
-        return new Vector2i(getScreenWidth() / 2, getScreenHeight() / 2);
+    public static Vector3f getScreenCenter() {
+        return new Vector3f(getScreenWidth() / 2, getScreenHeight() / 2, 0);
     }
 
 
-    public static int getScreenWidth() {
+    public static float getScreenWidth() {
         return Minecraft.getInstance().getWindow().getGuiScaledWidth();
     }
 
 
-    public static int getScreenHeight() {
+    public static float getScreenHeight() {
         return Minecraft.getInstance().getWindow().getGuiScaledHeight();
-    }
-
-
-    public static void renderPerLayer(Collection<RenderObject> renderObjects, PoseStack poseStack, int mouseX, int mouseY, float partialTicks) {
-        renderObjects.stream()
-                     .sorted(Comparator.comparingInt(RenderObject::getRenderLayer))
-                     .forEachOrdered(object -> object.render(poseStack, mouseX, mouseY, partialTicks));
     }
 
 
@@ -127,73 +158,72 @@ public class RenderUtil {
 
 
     public static Vector2i getScreenB() {
-        return new Vector2i(getScreenWidth(), 0);
+        return new Vector2i(Math.round(getScreenWidth()), 0);
     }
 
 
     public static Vector2i getScreenC() {
-        return new Vector2i(0, getScreenHeight());
+        return new Vector2i(0, Math.round(getScreenHeight()));
     }
 
 
     public static Vector2i getScreenD() {
-        return new Vector2i(getScreenWidth(), getScreenHeight());
+        return new Vector2i(Math.round(getScreenWidth()), Math.round(getScreenHeight()));
     }
 
 
-    private static final ItemStack extraLifeItem = new ItemStack(ModItems.EXTRA_LIFE.get());
+    public static void renderObjectOutline(PoseStack poseStack, RenderObject renderObject) {
+        poseStack.pushPose();
+        renderObject.getPoseStackTransformation(poseStack);
 
-    private static int itemActivationTicks = 0;
+        renderArea(poseStack, renderObject.getObjectArea(), Color.MAGENTA.getRGB());
+        renderArea(poseStack, renderObject.getRenderArea(), Color.ORANGE.getRGB());
 
-    private static float itemActivationOffX = 0;
+        renderCross(poseStack, 0, 0, 8, Color.RED.getRGB());
 
-    private static float itemActivationOffY = 0;
+        poseStack.popPose();
+    }
 
 
-    //TODO: Animation is twice as fast as intended --> why?
-    public static void renderExtraLifeAnimation(int guiWidth, int guiHeight, float partialTick) {
-        if(itemActivationTicks > 0) {
-            int i = 40 - itemActivationTicks;
-            float f = ((float) i + partialTick) / 40.0F;
-            float f1 = f * f;
-            float f2 = f * f1;
-            float f3 = 10.25F * f2 * f1 - 24.95F * f1 * f1 + 25.5F * f2 - 13.8F * f1 + 4.0F * f;
-            float f4 = f3 * (float) Math.PI;
-            float f5 = itemActivationOffX * (float) (guiWidth / 4);
-            float f6 = itemActivationOffY * (float) (guiHeight / 4);
-            RenderSystem.enableDepthTest();
-            RenderSystem.disableCull();
-            PoseStack posestack = new PoseStack();
-            posestack.pushPose();
-            posestack.translate((float) (guiWidth / 2) + f5 * Mth.abs(Mth.sin(f4 * 2.0F)), (float) (guiHeight / 2) + f6 * Mth.abs(Mth.sin(f4 * 2.0F)), -50.0F);
-            float f7 = 50.0F + 175.0F * Mth.sin(f4);
-            posestack.scale(f7, -f7, f7);
-            posestack.mulPose(Axis.YP.rotationDegrees(900.0F * Mth.abs(Mth.sin(f4))));
-            posestack.mulPose(Axis.XP.rotationDegrees(6.0F * Mth.cos(f * 8.0F)));
-            posestack.mulPose(Axis.ZP.rotationDegrees(6.0F * Mth.cos(f * 8.0F)));
-            MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
-            Minecraft.getInstance().getItemRenderer().renderStatic(extraLifeItem, ItemTransforms.TransformType.FIXED, 15728880, OverlayTexture.NO_OVERLAY, posestack, multibuffersource$buffersource, 0);
-            /*PoseStack poseStack2 = new PoseStack();
-            poseStack2.pushPose();
-            poseStack2.scale(2, 2, 2);*/
-            GuiComponent.drawCenteredString(new PoseStack(), Minecraft.getInstance().font, extraLifeItem.getHoverName(), guiWidth / 2, guiHeight / 2, 16777215);
-            //poseStack2.popPose();
-            posestack.popPose();
-            multibuffersource$buffersource.endBatch();
-            RenderSystem.enableCull();
-            RenderSystem.disableDepthTest();
-            itemActivationTicks--;
+    public static void renderArea(PoseStack poseStack, Area area, int color) {
+        renderSquareOutline(poseStack, area.getXMin(), area.getXMax(), area.getYMin(), area.getYMax(), color);
+    }
+
+
+    public static void renderCross(PoseStack poseStack, float xPos, float yPos, float width, int color) {
+        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, 2, color);
+        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, 2, color);
+    }
+
+
+    public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, 2, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, 2, color);
+        verticalLine(poseStack, xMin, yMin, yMax, 2, color);
+        verticalLine(poseStack, xMax, yMin, yMax, 2, color);
+    }
+
+
+    public static void horizontalLine(PoseStack poseStack, float xMin, float xMax, float yPos, float lineWidth, int color) {
+        if(xMax < xMin) {
+            float i = xMin;
+            xMin = xMax;
+            xMax = i;
         }
+
+        fill(poseStack, Math.round(xMin), Math.round(yPos), Math.round(xMax + lineWidth / 2), Math.round(yPos + lineWidth / 2), color);
     }
 
 
-    public static void displayExtraLifeAnimation() {
-        itemActivationTicks = 40;
-        RandomSource random = RandomSource.create();
-        itemActivationOffX = random.nextFloat() * 2.0F - 1.0F;
-        itemActivationOffY = random.nextFloat() * 2.0F - 1.0F;
-    }
+    public static void verticalLine(PoseStack poseStack, float xPos, float yMin, float yMax, float lineWidth, int color) {
+        if(yMax < yMin) {
+            float i = yMin;
+            yMin = yMax;
+            yMax = i;
+        }
 
+        fill(poseStack, Math.round(xPos), Math.round(yMin + lineWidth / 2), Math.round(xPos + lineWidth / 2), Math.round(yMax), color);
+    }
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {
         this.blit(pPoseStack, pX, pY, pUOffset, pVOffset, pPadding, pPadding);
         renderRepeating(pPoseStack, pX + pPadding, pY, pWidth - pPadding - pPadding, pPadding, pUOffset + pPadding, pVOffset, pUWidth - pPadding - pPadding, pVHeight);

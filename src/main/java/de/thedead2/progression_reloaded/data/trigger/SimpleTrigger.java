@@ -13,21 +13,16 @@ import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
-import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
+import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
-import org.apache.logging.log4j.Level;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public abstract class SimpleTrigger<T> {
@@ -55,7 +50,7 @@ public abstract class SimpleTrigger<T> {
     public static <T extends SimpleTrigger<T>> T fromJson(JsonElement jsonElement) {
         if(jsonElement.isJsonObject()) {
             ResourceLocation resourceLocation = new ResourceLocation(((JsonObject) jsonElement).get("id").getAsString());
-            Class<? extends SimpleTrigger<?>> triggerClass = DynamicRegistries.PROGRESSION_TRIGGER.get(resourceLocation);
+            Class<? extends SimpleTrigger<?>> triggerClass = TypeRegistries.PROGRESSION_TRIGGER.get(resourceLocation);
             try {
                 return (T) triggerClass.getDeclaredMethod("fromJson", JsonElement.class).invoke(null, ((JsonObject) jsonElement).get("data").getAsJsonObject());
             }
@@ -71,8 +66,8 @@ public abstract class SimpleTrigger<T> {
 
     protected static <T> void fireTrigger(Class<? extends SimpleTrigger<T>> triggerClass, Entity entity, T toTest, Object... addArgs) {
         if(entity instanceof Player player) {
-            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, singlePlayer, toTest, addArgs);
+            PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, playerData, toTest, addArgs);
         }
     }
 
@@ -92,7 +87,7 @@ public abstract class SimpleTrigger<T> {
     }
 
 
-    protected boolean trigger(SinglePlayer player, Predicate<Listener> triggerPredicate) {
+    protected boolean trigger(PlayerData player, Predicate<Listener> triggerPredicate) {
         List<Listener> list = Lists.newArrayList();
 
         for(Listener listener : this.playerListeners.get(KnownPlayer.fromSinglePlayer(player))) {
@@ -109,36 +104,14 @@ public abstract class SimpleTrigger<T> {
     }
 
 
-    public abstract boolean trigger(SinglePlayer player, T toTest, Object... data);
-
-
-    public Iterable<ITriggerPredicate<?>> getPredicates() {
-        Stream<ITriggerPredicate<?>> stream = Stream.of(this.player);
-        return Stream.concat(
-                stream,
-                Arrays.stream(this.getClass().getDeclaredFields())
-                      .filter(field -> Arrays.stream(field.getType().getInterfaces()).anyMatch(aClass -> aClass.getName().equals(ITriggerPredicate.class.getName())))
-                      .map(field -> {
-                          try {
-                              field.setAccessible(true);
-
-                              return (ITriggerPredicate<?>) field.get(this);
-                          }
-                          catch(IllegalAccessException e) {
-                              CrashHandler.getInstance().handleException("Unable to get field value of field: " + field.getName(), e, Level.ERROR);
-
-                              return null;
-                          }
-                      })
-        ).collect(Collectors.toList());
-    }
+    public abstract boolean trigger(PlayerData player, T toTest, Object... data);
 
 
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("id", new JsonPrimitive(this.id.toString()));
         JsonObject data = new JsonObject();
-        data.add("player", this.player.toJson());
+        //data.add("player", this.player.toJson());
         if(this.predicate != null) {
             data.add(this.predicateName, this.predicate.toJson());
         }
@@ -163,7 +136,7 @@ public abstract class SimpleTrigger<T> {
         }
 
 
-        public boolean award(SinglePlayer player) {
+        public boolean award(PlayerData player) {
             return LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
         }
 

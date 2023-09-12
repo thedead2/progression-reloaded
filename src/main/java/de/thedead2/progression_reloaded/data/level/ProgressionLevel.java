@@ -3,14 +3,15 @@ package de.thedead2.progression_reloaded.data.level;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.client.display.LevelDisplayInfo;
+import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -18,7 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-public class ProgressionLevel implements ModRegistriesDynamicSerializer {
+public class ProgressionLevel implements ModRegistriesDynamicSerializer, Comparable<ProgressionLevel> {
 
     private final LevelDisplayInfo displayInfo;
 
@@ -73,6 +74,10 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
 
 
     public boolean contains(ProgressionLevel other) {
+        if(this.equals(TestLevels.CREATIVE)) {
+            return true;
+        }
+
         ProgressionLevel previousLevel = this.getPreviousLevel() != null ? ModRegistries.LEVELS.get().getValue(this.getPreviousLevel()) : null;
         if(this.equals(other) || (previousLevel != null && previousLevel.equals(other))) {
             return true;
@@ -102,18 +107,13 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
     }
 
 
-    public void rewardPlayer(SinglePlayer player) {
+    public void rewardPlayer(PlayerData player) {
         this.rewards.reward(player);
     }
 
 
     public Collection<ResourceLocation> getQuests() {
         return this.quests;
-    }
-
-
-    public @Nullable ResourceLocation getNextLevel() {
-        return this.displayInfo.getNextLevel();
     }
 
 
@@ -124,5 +124,25 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer {
 
     public Rewards getRewards() {
         return this.rewards;
+    }
+
+
+    @Override
+    public int compareTo(@NotNull ProgressionLevel o) {
+        ResourceLocation thisId = this.getId();
+        ResourceLocation otherId = o.getId();
+
+        ResourceLocation thisPrevious = this.getPreviousLevel();
+        ResourceLocation otherPrevious = o.getPreviousLevel();
+
+        if(otherId.equals(thisId) || (otherPrevious == null && thisPrevious == null)) {
+            return 0;
+        }
+        else if(otherPrevious != null && otherPrevious.equals(thisId)) {
+            return -1;
+        }
+        else {
+            return 1;
+        }
     }
 }

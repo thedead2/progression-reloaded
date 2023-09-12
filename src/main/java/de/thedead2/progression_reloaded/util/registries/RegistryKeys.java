@@ -1,6 +1,5 @@
 package de.thedead2.progression_reloaded.util.registries;
 
-import de.thedead2.progression_reloaded.data.abilities.IAbility;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
@@ -23,6 +22,4 @@ public abstract class RegistryKeys {
     public static final ResourceKey<Registry<Class<IReward>>> REWARDS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "rewards"));
 
     public static final ResourceKey<Registry<Class<ITriggerPredicate<?>>>> PREDICATES = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "predicates"));
-
-    public static final ResourceKey<Registry<Class<IAbility<?>>>> ABILITIES = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "abilities"));
 }

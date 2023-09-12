@@ -2,12 +2,14 @@ package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
-import de.thedead2.progression_reloaded.client.display.TeamDisplayInfo;
-import de.thedead2.progression_reloaded.data.abilities.IAbility;
+import com.google.common.collect.Sets;
+import de.thedead2.progression_reloaded.data.display.TeamDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -22,11 +24,9 @@ public class PlayerTeam {
 
     private final ResourceLocation id;
 
-    private final Set<SinglePlayer> activeMembers = new HashSet<>();
+    private final Set<PlayerData> activeMembers = new HashSet<>();
 
     private final Set<KnownPlayer> knownMembers = new HashSet<>();
-
-    private final Map<ResourceLocation, IAbility<?>> teamAbilities = new HashMap<>();
 
     private ProgressionLevel progressionLevel;
 
@@ -54,7 +54,12 @@ public class PlayerTeam {
         String id = tag.getString("id");
         CompoundTag members = tag.getCompound("members");
         List<KnownPlayer> memberIds = new ArrayList<>();
-        members.getAllKeys().forEach(s -> memberIds.add(new KnownPlayer(ResourceLocation.tryParse(s), members.getString(s))));
+        members.getAllKeys().forEach(s -> {
+            KnownPlayer player = KnownPlayer.fromCompoundTag(members.getCompound(s));
+            if(!PlayerDataHandler.playerLastOnlineLongAgo(player)) {
+                memberIds.add(player);
+            }
+        });
 
         return new PlayerTeam(name, new ResourceLocation(id), memberIds, ProgressionLevel.fromKey(new ResourceLocation(level)));
     }
@@ -86,7 +91,17 @@ public class PlayerTeam {
     }
 
 
-    public void updateProgressionLevel(ProgressionLevel level, SinglePlayer player) {
+    public static PlayerTeam fromNetwork(FriendlyByteBuf buf) {
+        String teamName = buf.readUtf();
+        ResourceLocation id = buf.readResourceLocation();
+        Set<KnownPlayer> members = buf.readCollection(Sets::newHashSetWithExpectedSize, KnownPlayer::fromNetwork);
+        ProgressionLevel level = ModRegistries.LEVELS.get().getValue(buf.readResourceLocation());
+
+        return new PlayerTeam(teamName, id, members, level);
+    }
+
+
+    public void updateProgressionLevel(ProgressionLevel level, PlayerData player) {
         this.progressionLevel = level;
         this.activeMembers.forEach(player1 -> {
             if(!player1.equals(player)) {
@@ -96,27 +111,13 @@ public class PlayerTeam {
     }
 
 
-    public ImmutableSet<SinglePlayer> getActiveMembers() {
-        return ImmutableSet.copyOf(activeMembers);
-    }
-
-
     public String getName() {
         return teamName;
     }
 
 
-    public CompoundTag toCompoundTag() {
-        CompoundTag tag = new CompoundTag();
-        if(this.progressionLevel != null) {
-            tag.putString("level", this.progressionLevel.getId().toString());
-        }
-        tag.putString("name", this.teamName);
-        tag.putString("id", this.id.toString());
-        CompoundTag members = new CompoundTag();
-        this.knownMembers.forEach(knownPlayer -> members.putString(knownPlayer.id().toString(), knownPlayer.name()));
-        tag.put("members", members);
-        return tag;
+    public ImmutableSet<PlayerData> getActiveMembers() {
+        return ImmutableSet.copyOf(activeMembers);
     }
 
 
@@ -130,12 +131,17 @@ public class PlayerTeam {
     }
 
 
-    public void addActivePlayer(SinglePlayer singlePlayer) {
-        if(singlePlayer == null || !this.accept(singlePlayer)) {
-            return;
+    public CompoundTag toCompoundTag() {
+        CompoundTag tag = new CompoundTag();
+        if(this.progressionLevel != null) {
+            tag.putString("level", this.progressionLevel.getId().toString());
         }
-        activeMembers.add(singlePlayer);
-        singlePlayer.setTeam(this);
+        tag.putString("name", this.teamName);
+        tag.putString("id", this.id.toString());
+        CompoundTag members = new CompoundTag();
+        this.knownMembers.forEach(knownPlayer -> members.put(knownPlayer.id().toString(), knownPlayer.toCompoundTag()));
+        tag.put("members", members);
+        return tag;
     }
 
 
@@ -150,8 +156,12 @@ public class PlayerTeam {
     }
 
 
-    private boolean accept(SinglePlayer player) {
-        return this.isPlayerInTeam(KnownPlayer.fromSinglePlayer(player));
+    public void addActivePlayer(PlayerData playerData) {
+        if(playerData == null || !this.accept(playerData)) {
+            return;
+        }
+        activeMembers.add(playerData);
+        playerData.setTeam(this);
     }
 
 
@@ -165,48 +175,21 @@ public class PlayerTeam {
     }
 
 
+    private boolean accept(PlayerData player) {
+        return this.isPlayerInTeam(KnownPlayer.fromSinglePlayer(player));
+    }
+
+
     private void removePlayer(KnownPlayer knownPlayer) {
         this.knownMembers.remove(knownPlayer);
-        var singlePlayer = PlayerDataHandler.getPlayerData().orElseThrow().getActivePlayer(knownPlayer);
+        var singlePlayer = PlayerDataHandler.getActivePlayer(knownPlayer);
         this.removeActivePlayer(singlePlayer);
         singlePlayer.setTeam(null);
     }
 
 
-    public void removeActivePlayer(SinglePlayer singlePlayer) {
-        activeMembers.remove(singlePlayer);
-    }
-
-
     public ImmutableCollection<KnownPlayer> getMembers() {
         return ImmutableSet.copyOf(this.knownMembers);
-    }
-
-
-    public void addAbilities(Collection<IAbility<?>> abilities) {
-        abilities.forEach(this::addAbility);
-    }
-
-
-    public void addAbility(IAbility<?> ability) {
-        this.teamAbilities.put(ability.getId(), ability);
-        this.activeMembers.forEach(player -> player.addAbility(ability));
-    }
-
-
-    public void removeAbilities(Collection<IAbility<?>> abilities) {
-        abilities.forEach(this::removeAbility);
-    }
-
-
-    public void removeAbility(IAbility<?> ability) {
-        this.teamAbilities.remove(ability.getId());
-        this.activeMembers.forEach(player -> player.removeAbility(ability));
-    }
-
-
-    public boolean hasAbility(IAbility<?> ability) {
-        return this.teamAbilities.containsValue(ability);
     }
 
 
@@ -217,5 +200,18 @@ public class PlayerTeam {
 
     public TeamDisplayInfo getDisplay() {
         return new TeamDisplayInfo(this.teamName, this.knownMembers);
+    }
+
+
+    public void removeActivePlayer(PlayerData playerData) {
+        activeMembers.remove(playerData);
+    }
+
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeUtf(this.teamName);
+        buf.writeResourceLocation(this.id);
+        buf.writeCollection(this.knownMembers, (buf1, player) -> player.toNetwork(buf1));
+        buf.writeResourceLocation(this.progressionLevel.getId());
     }
 }

@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.BlockPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
@@ -36,7 +36,7 @@ public class PlacedBlockTrigger extends SimpleTrigger<BlockState> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, BlockState block, Object... data) {
+    public boolean trigger(PlayerData player, BlockState block, Object... data) {
         return this.trigger(player, trigger -> this.predicate.matches(block, data[0]));
     }
 

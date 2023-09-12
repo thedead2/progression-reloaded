@@ -1,7 +1,9 @@
 package de.thedead2.progression_reloaded.items.custom;
 
+import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -17,13 +19,27 @@ import net.minecraft.world.item.Rarity;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 
-import static de.thedead2.progression_reloaded.util.ModHelper.secondsToTicks;
+import static de.thedead2.progression_reloaded.util.helper.MathHelper.secondsToTicks;
 
 
 public class ExtraLifeItem extends Item {
 
     public ExtraLifeItem() {
         super(new Properties().stacksTo(1).rarity(Rarity.EPIC));
+    }
+
+
+    private static boolean unlimited = false;
+
+
+    public static boolean unlimited() {
+        unlimited = !unlimited;
+        return unlimited;
+    }
+
+
+    public static boolean isUnlimited() {
+        return unlimited;
     }
 
 
@@ -44,13 +60,14 @@ public class ExtraLifeItem extends Item {
 
 
     public static boolean rewardExtraLife(ServerPlayer serverPlayer, boolean isCommand) {
-        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(serverPlayer);
+        PlayerData playerData = PlayerDataHandler.getActivePlayer(serverPlayer);
 
-        if((!isCommand && serverPlayer.isCreative()) || !singlePlayer.addExtraLife()) {
+        if((!isCommand && serverPlayer.isCreative()) || !playerData.addExtraLife()) {
             return false;
         }
         serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(15), 1));
         serverPlayer.level.playSound(null, new BlockPos(serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ()), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1F, 1F);
+        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(playerData), serverPlayer);
         return true;
     }
 }

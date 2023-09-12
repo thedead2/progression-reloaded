@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.EffectsPredicate;
 import de.thedead2.progression_reloaded.data.predicates.EntityPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.annotation.ExcludeFromEventBus;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,7 +42,7 @@ public class PlayerEffectsChangedTrigger extends SimpleTrigger<Entity> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+    public boolean trigger(PlayerData player, Entity entity, Object... data) {
         return this.trigger(player, listener -> this.effects.matches(player.getServerPlayer().getActiveEffectsMap()) && this.predicate.matches(entity, player));
     }
 

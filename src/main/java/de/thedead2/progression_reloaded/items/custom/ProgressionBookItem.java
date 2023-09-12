@@ -23,6 +23,7 @@ public class ProgressionBookItem extends Item {
 
     public ProgressionBookItem() {
         super(new Properties().stacksTo(1).fireResistant());
+
     }
 
 

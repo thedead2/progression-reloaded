@@ -3,7 +3,7 @@ package de.thedead2.progression_reloaded.data.rewards;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.registries.DynamicRegistries;
+import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -14,7 +14,7 @@ public interface IReward {
 
     static IReward createFromJson(JsonElement element) {
         ResourceLocation id = new ResourceLocation(((JsonObject) element).get("id").getAsString());
-        Class<IReward> rewardsClass = DynamicRegistries.PROGRESSION_REWARDS.get(id);
+        Class<IReward> rewardsClass = TypeRegistries.PROGRESSION_REWARDS.get(id);
         try {
             return (IReward) rewardsClass.getDeclaredMethod("fromJson", JsonElement.class).invoke(null, ((JsonObject) element).get("data"));
         }

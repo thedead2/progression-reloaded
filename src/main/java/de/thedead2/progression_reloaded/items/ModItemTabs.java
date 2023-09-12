@@ -36,6 +36,7 @@ public class ModItemTabs {
             event.accept(ModItems.EXTRA_LIFE);
             event.accept(ModItems.HALF_EXTRA_LIFE);
             event.accept(ModItems.QUARTER_EXTRA_LIFE);
+            event.accept(ModItems.LOOT_CHEST);
         }
     }
 }

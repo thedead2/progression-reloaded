@@ -3,8 +3,8 @@ package de.thedead2.progression_reloaded.data.rewards;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.client.display.RewardsDisplayInfo;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.data.display.RewardsDisplayInfo;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,7 +34,7 @@ public class Rewards {
     }
 
 
-    public void reward(SinglePlayer player) {
+    public void reward(PlayerData player) {
         this.rewardStrategy.reward(this.rewards, player);
     }
 

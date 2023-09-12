@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.data.level;
 
-import de.thedead2.progression_reloaded.client.display.LevelDisplayInfo;
+import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.rewards.ItemReward;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.util.ModHelper;
@@ -25,7 +25,6 @@ public class TestLevels {
             LevelDisplayInfo.Builder.builder()
                                     .withId("test-level")
                                     .withName("test")
-                                    .withChild("test-level2")
                                     .build(),
             Rewards.Builder.builder()
                            .withReward(new ItemReward(Items.ITEM_FRAME.getDefaultInstance(), 5))
@@ -50,5 +49,33 @@ public class TestLevels {
                     new ResourceLocation(ModHelper.MOD_ID, "quest_test4"),
                     new ResourceLocation(ModHelper.MOD_ID, "quest_test5")
             )
+    );
+
+    public static final ProgressionLevel TEST3 = new ProgressionLevel(
+            LevelDisplayInfo.Builder.builder()
+                                    .withId("test-level3")
+                                    .withName("test3")
+                                    .withParent("test-level2")
+                                    .build(),
+            Rewards.Builder.builder().build(),
+            Collections.emptySet()
+    );
+
+    public static final ProgressionLevel TEST4 = new ProgressionLevel(
+            LevelDisplayInfo.Builder.builder()
+                                    .withId("test-level4")
+                                    .withName("test4")
+                                    .build(),
+            Rewards.Builder.builder().build(),
+            Collections.emptySet()
+    );
+
+    public static final ProgressionLevel TEST5 = new ProgressionLevel(
+            LevelDisplayInfo.Builder.builder()
+                                    .withId("test-level5")
+                                    .withName("test5")
+                                    .build(),
+            Rewards.Builder.builder().build(),
+            Collections.emptySet()
     );
 }

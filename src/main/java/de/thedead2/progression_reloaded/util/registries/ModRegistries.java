@@ -38,11 +38,11 @@ public abstract class ModRegistries {
 
     private static final DeferredRegister<ProgressionLevel> LEVEL_REGISTER = DeferredRegister.create(RegistryKeys.LEVELS, MOD_ID);
 
-    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().setDefaultKey(TestLevels.CREATIVE.getId()));
+    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().allowModification().setDefaultKey(TestLevels.CREATIVE.getId()));
 
     private static final DeferredRegister<ProgressionQuest> QUEST_REGISTER = DeferredRegister.create(RegistryKeys.QUESTS, MOD_ID);
 
-    public static final Supplier<IForgeRegistry<ProgressionQuest>> QUESTS = QUEST_REGISTER.makeRegistry(RegistryBuilder::new);
+    public static final Supplier<IForgeRegistry<ProgressionQuest>> QUESTS = QUEST_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionQuest>().allowModification());
 
 
     public static void register(IEventBus bus) {

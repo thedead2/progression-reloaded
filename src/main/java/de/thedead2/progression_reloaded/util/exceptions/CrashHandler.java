@@ -22,7 +22,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -30,8 +29,6 @@ import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
 
 public class CrashHandler implements ISystemReportExtender {
-
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
 
     private static CrashHandler instance;
 

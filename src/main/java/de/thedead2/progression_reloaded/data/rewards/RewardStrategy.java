@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 
 import java.util.Iterator;
 import java.util.Random;
@@ -21,17 +21,17 @@ public enum RewardStrategy {
             var teamMembers = team.getActiveMembers();
             Random rand = new Random();
             int index = rand.nextInt(teamMembers.size());
-            Iterator<SinglePlayer> iterator = teamMembers.iterator();
+            Iterator<PlayerData> iterator = teamMembers.iterator();
             for(int i = 0; i < index; i++) {
                 iterator.next();
             }
-            SinglePlayer player = iterator.next();
+            PlayerData player = iterator.next();
             questRewards.forEach(reward -> reward.rewardPlayer(player.getServerPlayer()));
         }
     };
 
 
-    public void reward(Set<IReward> questRewards, SinglePlayer player) {
+    public void reward(Set<IReward> questRewards, PlayerData player) {
         if(player.isInTeam()) {
             this.reward(questRewards, player.getTeam().orElseThrow());
         }

@@ -1,7 +1,26 @@
 package de.thedead2.progression_reloaded.client.gui.themes;
 
-public record ProgressionTheme(/*@Nullable ResourceLocation background, ResourceLocation mainFrame, ResourceLocation logo, ResourceLocation questFrame, Color mainColor*/) {
+import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.resources.ResourceLocation;
 
-    record Color(float red, float blue, float green, float alpha) {
+
+public class ProgressionTheme {
+
+    private final String locationsPath;
+
+    private final ResourceLocation logo;
+
+    private final ResourceLocation toast;
+
+
+    public ProgressionTheme(String locationsPath, String logo, String toast) {
+        this.locationsPath = locationsPath;
+        this.logo = createId(logo);
+        this.toast = createId(toast);
+    }
+
+
+    private ResourceLocation createId(String name) {
+        return new ResourceLocation(ModHelper.MOD_ID, this.locationsPath + name);
     }
 }

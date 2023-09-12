@@ -5,7 +5,7 @@ import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraftforge.eventbus.api.Cancelable;
 
 import java.util.Set;
@@ -33,10 +33,10 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
 
         private final String criterionName;
 
-        private final SinglePlayer player;
+        private final PlayerData player;
 
 
-        public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, String criterionName, SinglePlayer player) {
+        public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, String criterionName, PlayerData player) {
             super(quest);
             this.progress = progress;
             this.criterionName = criterionName;
@@ -44,7 +44,7 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
         }
 
 
-        public SinglePlayer getPlayer() {
+        public PlayerData getPlayer() {
             return player;
         }
 
@@ -66,10 +66,10 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
 
         private final String criterionName;
 
-        private final SinglePlayer player;
+        private final PlayerData player;
 
 
-        public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, String criterionName, SinglePlayer activePlayer) {
+        public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, String criterionName, PlayerData activePlayer) {
             super(quest);
             this.progress = questProgress;
             this.criterionName = criterionName;
@@ -77,7 +77,7 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
         }
 
 
-        public SinglePlayer getPlayer() {
+        public PlayerData getPlayer() {
             return player;
         }
 
@@ -120,14 +120,14 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
 
         private final SimpleTrigger<?> trigger;
 
-        private final SinglePlayer player;
+        private final PlayerData player;
 
         private final Object toTest;
 
         private final Object[] addData;
 
 
-        public <T> TriggerEvent(SimpleTrigger<T> trigger, SinglePlayer player, T toTest, Object[] data) {
+        public <T> TriggerEvent(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data) {
             this.trigger = trigger;
             this.player = player;
             this.toTest = toTest;
@@ -135,7 +135,7 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
         }
 
 
-        public SinglePlayer getPlayer() {
+        public PlayerData getPlayer() {
             return player;
         }
 

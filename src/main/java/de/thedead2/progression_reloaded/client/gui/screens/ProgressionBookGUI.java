@@ -1,11 +1,15 @@
 package de.thedead2.progression_reloaded.client.gui.screens;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
-import de.thedead2.progression_reloaded.client.gui.util.*;
+import de.thedead2.progression_reloaded.client.gui.util.Area;
+import de.thedead2.progression_reloaded.client.gui.util.Padding;
+import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.client.gui.util.objects.ImageRenderObject;
 import de.thedead2.progression_reloaded.client.gui.util.objects.RenderObject;
 import de.thedead2.progression_reloaded.util.ConfigManager;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -16,52 +20,14 @@ import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 
 public class ProgressionBookGUI extends Screen {
-    /* This combination
-            0,
-            100,
-            50,
-            new Area.Position(60, 45, Area.Point.A),
-            new Padding(10, 5),
-            new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/background.png"),
-            false,
-            (float) 3072/1157,
-            ImageRenderObject.FixedParameter.WIDTH,
-            Alignment.CENTERED
-
-            is with repetition --> why?
-     */
 
     private final Player player;
 
     private final ProgressionTheme theme;
 
-    private final ImageRenderObject background = new ImageRenderObject(
-            0,
-            RenderUtil.getScreenWidth(),
-            RenderUtil.getScreenHeight(),
-            new Area.Position(RenderUtil.getScreenCenter(), Area.Point.CENTER),
-            Padding.NONE,
-            PoseStackTransformer.NONE,
-            new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/background.png"),
-            true,
-            (float) 4476 / 1953,
-            ImageRenderObject.FixedParameter.HEIGHT, //TODO: Picture still gets stretched --> why?
-            Alignment.CENTERED
-    );
+    private RenderObject renderObject;
 
-    private final ImageRenderObject frame = new ImageRenderObject(
-            1,
-            RenderUtil.getScreenWidth(),
-            RenderUtil.getScreenHeight(),
-            new Area.Position(RenderUtil.getScreenCenter(), Area.Point.CENTER),
-            new Padding(0, 0), //TODO: With Padding strangely projected like AnchorPoint is A
-            PoseStackTransformer.NONE,
-            new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/futuristic_logo_bright_text.png"),
-            true,
-            (float) 13731 / 9250,
-            ImageRenderObject.FixedParameter.WIDTH,
-            Alignment.CENTERED
-    );
+    private float rot = 1f;
 
 
     public ProgressionBookGUI(Player player) {
@@ -74,18 +40,25 @@ public class ProgressionBookGUI extends Screen {
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(poseStack);
-        //ModHelper.LOGGER.debug(background.isInRenderArea(mouseX, mouseY) + " --> " + background.isInArea(mouseX, mouseY));
+        //TODO: When rotating backside doesn't get rendered
+        renderObject.rotateY(Axis.YN.rotationDegrees(rot += 1f));
+        /*Vector3f anchor = renderObject.getPositionAnchor();
+        renderObject.changePosition(new Area.Position(anchor.x <= this.width ? anchor.x + 1 : anchor.x - this.width, anchor.y, anchor.z, renderObject.getAnchorPoint()));
+        */
+        ModHelper.LOGGER.debug(renderObject.isInArea(mouseX, mouseY));
         super.render(poseStack, mouseX, mouseY, partialTick);
+        RenderUtil.renderObjectOutline(poseStack, renderObject);
     }
 
 
     @Override
     protected void init() {
-        //this.addRenderableOnly(background);
-        //this.addRenderableOnly(frame);
-        this.renderables.stream()
-                        .filter(renderable -> renderable instanceof RenderObject)
-                        .forEach(renderable -> ((RenderObject) renderable).onResize(this.width, this.height));
+        renderObject = new ImageRenderObject((float) this.width / 2, (float) this.height / 2, 0, Area.AnchorPoint.CENTER, 300, 150, new Padding(10),
+                                             new ResourceLocation(MOD_ID, "textures/gui/themes/futuristic/pr_logo_futuristic_bg.png")
+        );
+        this.addRenderableOnly(renderObject);
+        /*if(renderObject instanceof ImageRenderObject imageRenderObject){
+            imageRenderObject.enableRatioKeeping((float) 3072 /2051, ImageRenderObject.FixedParameter.WIDTH, Alignment.CENTERED);
+        }*/
     }
-
 }

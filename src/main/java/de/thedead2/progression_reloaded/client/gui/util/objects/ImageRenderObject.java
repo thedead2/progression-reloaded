@@ -2,20 +2,17 @@ package de.thedead2.progression_reloaded.client.gui.util.objects;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import de.thedead2.progression_reloaded.client.gui.util.*;
+import de.thedead2.progression_reloaded.client.gui.util.Alignment;
+import de.thedead2.progression_reloaded.client.gui.util.Area;
+import de.thedead2.progression_reloaded.client.gui.util.Padding;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
+import org.joml.Quaternionf;
 
 
 public class ImageRenderObject extends RenderObject {
 
     private final ResourceLocation texture;
-
-    private final Area.Position originalPosition;
-
-    private final boolean shouldFillScreen;
-
-    private final boolean isInCenter;
 
     private boolean keepRatio;
 
@@ -26,53 +23,38 @@ public class ImageRenderObject extends RenderObject {
     private FixedParameter fixedParameter;
 
 
-    public ImageRenderObject(int renderLayer, int width, int height, Area.Position position, Padding padding, PoseStackTransformer poseStackTransformer, ResourceLocation texture) {
-        this(renderLayer, width, height, position, padding, poseStackTransformer, texture, false, 1, FixedParameter.NONE, Alignment.DEFAULT);
-    }
-
-
-    public ImageRenderObject(int renderLayer, int width, int height, Area.Position position, Padding padding, PoseStackTransformer poseStackTransformer, ResourceLocation texture, boolean keepRatio, float aspectRatio, FixedParameter fixedParameter, Alignment imageAlignment) {
-        super(renderLayer, width, height, position, padding, poseStackTransformer);
+    public ImageRenderObject(float xPos, float yPos, float zPos, Area.AnchorPoint anchorPoint, float width, float height, Padding padding, ResourceLocation texture) {
+        super(xPos, yPos, zPos, anchorPoint, width, height, padding);
         this.texture = texture;
-        this.keepRatio = keepRatio;
-        this.aspectRatio = aspectRatio;
-        this.imageAlignment = imageAlignment;
-        this.fixedParameter = fixedParameter;
-
-        this.originalPosition = position;
-        this.shouldFillScreen = RenderUtil.getScreenWidth() == width && RenderUtil.getScreenHeight() == height;
-        this.isInCenter = RenderUtil.getScreenCenter().equals(this.getCenter());
     }
 
 
-    public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        int width = this.getWidth();
-        int height = this.getHeight();
-        int relativeWidth = (keepRatio && fixedParameter == FixedParameter.HEIGHT && height != 0 ? Math.round(this.getRelativeWidth(height)) : width);
-        int relativeHeight = (keepRatio && fixedParameter == FixedParameter.WIDTH && width != 0 ? Math.round(this.getRelativeHeight(width)) : height);
-        int uOffset = keepRatio ? Math.negateExact(imageAlignment.getXPos(width, relativeWidth)) : 0;
-        int vOffset = keepRatio ? Math.negateExact(imageAlignment.getYPos(height, relativeHeight)) : 0;
+    public ImageRenderObject(float xPos, float yPos, float zPos, Area.AnchorPoint anchorPoint, float width, float height, Quaternionf xRot, Quaternionf yRot, Quaternionf zRot, Padding padding, ResourceLocation texture) {
+        super(xPos, yPos, zPos, anchorPoint, width, height, xRot, yRot, zRot, padding);
+        this.texture = texture;
+    }
 
-        //poseStack.pushTransformation(this.poseStackTransformer.createTransformation(this.objectArea));
+
+    @Override
+    public void renderInternal(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+        float width = this.getWidth();
+        float height = this.getHeight();
+        float relativeWidth = (keepRatio && fixedParameter == FixedParameter.HEIGHT && height != 0 ? Math.round(this.getRelativeWidth(height)) : width);
+        float relativeHeight = (keepRatio && fixedParameter == FixedParameter.WIDTH && width != 0 ? Math.round(this.getRelativeHeight(width)) : height);
+        int uOffset = keepRatio ? Math.negateExact(Math.round(imageAlignment.getXPos(width, relativeWidth))) : 0;
+        int vOffset = keepRatio ? Math.negateExact(Math.round(imageAlignment.getYPos(height, relativeHeight))) : 0;
+
         RenderSystem.enableBlend();
         RenderSystem.setShaderTexture(0, texture);
-        /*RenderSystem.bindTexture(0);
-        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_COLOR, GlStateManager.DestFactor.SRC_COLOR);
-        RenderSystem.setShaderColor(231, 255, 0, 0.2f);
-*/
-        blit(poseStack, this.renderArea.getXMin(), this.renderArea.getYMin(), uOffset, vOffset, this.renderArea.getWidth(), this.renderArea.getHeight(), relativeWidth, relativeHeight);
-        /*
-        blit(poseStack, this.renderArea.getXMin(), this.renderArea.getYMin(), uOffset, vOffset, this.renderArea.getWidth(), this.renderArea.getHeight(), relativeWidth, relativeHeight);
-        */
+        blit(poseStack, Math.round(this.renderArea.getXMin()), Math.round(this.renderArea.getYMin()), uOffset, vOffset, Math.round(this.renderArea.getWidth()), Math.round(this.renderArea.getHeight()), Math.round(relativeWidth), Math.round(relativeHeight));
         RenderSystem.disableBlend();
-        //poseStack.popPose();
     }
 
 
     /**
      * Returns the relative width of the object for the given height
      **/
-    private float getRelativeWidth(int height) {
+    private float getRelativeWidth(float height) {
         return height * aspectRatio;
     }
 
@@ -80,13 +62,13 @@ public class ImageRenderObject extends RenderObject {
     /**
      * Returns the relative height of the object for the given width
      **/
-    private float getRelativeHeight(int width) {
+    private float getRelativeHeight(float width) {
         return width / aspectRatio;
     }
 
 
-    public void enableRatioKeeping(boolean keepRatio, float aspectRatio, FixedParameter fixedParameter, Alignment imageAlignment) {
-        this.keepRatio = keepRatio;
+    public void enableRatioKeeping(float aspectRatio, FixedParameter fixedParameter, Alignment imageAlignment) {
+        this.keepRatio = true;
         this.aspectRatio = aspectRatio;
         this.fixedParameter = fixedParameter;
         this.imageAlignment = imageAlignment;
@@ -98,37 +80,6 @@ public class ImageRenderObject extends RenderObject {
         this.aspectRatio = 1;
         this.fixedParameter = FixedParameter.NONE;
         this.imageAlignment = Alignment.DEFAULT;
-    }
-
-
-    public void onResize(int screenWidth, int screenHeight) {
-        if(shouldFillScreen) {
-            this.setWidth(screenWidth);
-            this.setHeight(screenHeight);
-        }
-        if(keepRatio && shouldFillScreen) {
-            int width = this.getWidth();
-            int height = this.getHeight();
-            int relativeWidth = (fixedParameter == FixedParameter.HEIGHT && height != 0 ? Math.round(this.getRelativeWidth(height)) : width);
-            int relativeHeight = (fixedParameter == FixedParameter.WIDTH && width != 0 ? Math.round(this.getRelativeHeight(width)) : height);
-
-            if(screenWidth > relativeWidth) {
-                this.setWidth(relativeWidth);
-            }
-            else if(screenHeight > relativeHeight) {
-                this.setHeight(relativeHeight);
-            }
-            else if(!this.getPosition().equals(originalPosition)) {
-                this.setPosition(originalPosition);
-            }
-        }
-        if(isInCenter) {
-            this.setPosition(RenderUtil.getScreenCenter(), Area.Point.CENTER);
-        }
-
-        if(poseStackTransformer.isTransformed()) {
-            //this.rotate(this.poseStackTransformer.getRotation());
-        }
     }
 
 

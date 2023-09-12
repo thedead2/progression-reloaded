@@ -1,13 +1,13 @@
 package de.thedead2.progression_reloaded.player;
 
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 
 
 //TODO: Class to ensure the synchronization between each player and its team for example for level/ quest progress, rewards, new level, etc.
 public class PlayerTeamSynchronizer {
 
-    public static void updateProgressionLevel(SinglePlayer player, ProgressionLevel level) {
+    public static void updateProgressionLevel(PlayerData player, ProgressionLevel level) {
         if(level == null) {
             return;
         }

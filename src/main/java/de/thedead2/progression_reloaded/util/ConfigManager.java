@@ -24,6 +24,8 @@ public abstract class ConfigManager {
 
     public static final ForgeConfigSpec.ConfigValue<ThemeType> THEME;
 
+    public static final ForgeConfigSpec.BooleanValue SHOULD_RENDER_OVERLAY;
+
     private static final ForgeConfigSpec.Builder CONFIG_BUILDER = new ForgeConfigSpec.Builder();
 
 
@@ -55,6 +57,8 @@ public abstract class ConfigManager {
 
         THEME = CONFIG_BUILDER.comment("The Theme the Progression Book uses. \ndefault = " + ThemeType.DEFAULT)
                               .defineEnum("progressionBookTheme", ThemeType.DEFAULT);
+
+        SHOULD_RENDER_OVERLAY = newBoolean("Should render level/ quest overlay", "shouldRenderOverlay", true);
 
         CONFIG_BUILDER.pop();
         CONFIG_SPEC = CONFIG_BUILDER.build();

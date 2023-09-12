@@ -3,7 +3,7 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
@@ -163,7 +163,7 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
             return false;
         }
         else {
-            SinglePlayer player = addArgs[0] != null ? (SinglePlayer) addArgs[0] : null;
+            PlayerData player = addArgs[0] != null ? (PlayerData) addArgs[0] : null;
             if(player == null) {
                 if(this.distanceToPlayer != DistancePredicate.ANY) {
                     return false;

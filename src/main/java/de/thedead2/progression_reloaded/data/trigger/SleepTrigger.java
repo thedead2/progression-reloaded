@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.LocationPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
@@ -41,7 +41,7 @@ public class SleepTrigger extends SimpleTrigger<BlockPos> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, BlockPos pos, Object... data) {
+    public boolean trigger(PlayerData player, BlockPos pos, Object... data) {
         return this.trigger(player, trigger -> this.predicate.matches(pos, data[0]));
     }
 

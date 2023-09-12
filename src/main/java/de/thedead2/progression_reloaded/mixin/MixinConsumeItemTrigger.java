@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.mixin;
 
+
 import de.thedead2.progression_reloaded.data.trigger.PlayerConsumedItemTrigger;
 import net.minecraft.advancements.critereon.ConsumeItemTrigger;
 import net.minecraft.server.level.ServerPlayer;

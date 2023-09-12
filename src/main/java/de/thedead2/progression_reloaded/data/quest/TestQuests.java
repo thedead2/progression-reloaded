@@ -1,14 +1,15 @@
 package de.thedead2.progression_reloaded.data.quest;
 
-import de.thedead2.progression_reloaded.client.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
+import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.predicates.*;
 import de.thedead2.progression_reloaded.data.rewards.*;
 import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
+import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -95,6 +96,7 @@ public class TestQuests {
                            .withReward(new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART))
                            .withReward(new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34))
                            .withReward(new ExtraLifeReward())
+                           .withReward(new WorldBorderReward(25, MathHelper.secondsToMillis(30)))
                            .build(),
             QuestCriteria.Builder.builder()
                                  .withCriterion(

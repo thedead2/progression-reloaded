@@ -6,30 +6,35 @@ import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.events.ModEvents;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientUpdateLevelsPacket;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncLevelsPacket;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.PlayerTeamSynchronizer;
-import de.thedead2.progression_reloaded.player.data.ProgressData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.player.types.PlayerTeam;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.helper.ResourceLocationHelper;
 import de.thedead2.progression_reloaded.util.language.ChatMessageHandler;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.jetbrains.annotations.NotNull;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.annotation.Nullable;
+import java.util.*;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
@@ -52,7 +57,7 @@ public class LevelManager {
     /**
      * Map of all known levels and their corresponding progress.
      **/
-    private final Map<ProgressionLevel, LevelProgress> levelProgress = new HashMap<>();
+    private final Map<KnownPlayer, Map<ProgressionLevel, LevelProgress>> levelProgress = new HashMap<>();
 
     private final List<ProgressionLevel> levelOrder = new ArrayList<>(ModRegistries.LEVELS.get().getValues());
 
@@ -60,21 +65,55 @@ public class LevelManager {
 
     private final QuestManager questManager;
 
+    private final LevelProgressData levelProgressData;
 
-    private LevelManager() {
+
+    private LevelManager(DimensionDataStorage dataStorage) {
         instance = this;
-        this.questManager = new QuestManager();
+        this.levelProgressData = dataStorage.computeIfAbsent(LevelProgressData::load, () -> new LevelProgressData(new HashMap<>(), new HashMap<>(), new HashMap<>()), "levelProgress");
+        this.questManager = new QuestManager(dataStorage, this);
         init();
     }
 
 
-    public static LevelManager create() {
-        return new LevelManager();
+    public static LevelManager create(ServerLevel level) {
+        DimensionDataStorage dataStorage = level.getDataStorage();
+        return new LevelManager(dataStorage);
     }
 
 
     public static LevelManager getInstance() {
         return instance;
+    }
+
+
+    @NotNull
+    public ProgressionLevel getPlayerLevel(KnownPlayer player) {
+        return this.playerLevels.getOrDefault(player, TestLevels.CREATIVE);
+    }
+
+
+    public Pair<Player, ProgressionLevel> getHighestPlayerLevel(Collection<? extends Player> players) {
+        Player player1;
+        ProgressionLevel level1;
+        List<Triple<Integer, Player, ProgressionLevel>> levels = new ArrayList<>();
+
+        for(Player player : players) {
+            PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+            if(playerData == null) {
+                continue;
+            }
+            ProgressionLevel level = playerData.getProgressionLevel();
+            levels.add(Triple.of(this.levelOrder.indexOf(level), player, level));
+        }
+
+        levels.sort(Comparator.comparingInt(Triple::getLeft));
+
+        var triple = levels.get(levels.size() - 1);
+        player1 = triple.getMiddle();
+        level1 = triple.getRight();
+
+        return Pair.of(player1, level1);
     }
 
 
@@ -109,6 +148,7 @@ public class LevelManager {
 
 
     private void init() {
+        loadLevelOrder();
         loadPlayerLevels();
         loadLevelProgress();
         loadLevelCache();
@@ -116,11 +156,18 @@ public class LevelManager {
     }
 
 
-    public void updateLevel(SinglePlayer player, ProgressionLevel nextLevel) {
-        if(nextLevel != null && !ModEvents.onLevelUpdate(nextLevel, player, this.playerLevels.get(KnownPlayer.fromSinglePlayer(player)))) {
+    private void loadLevelOrder() {
+        Collections.sort(this.levelOrder);
+    }
+
+
+    public void updateLevel(PlayerData player, ProgressionLevel nextLevel) {
+        KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
+
+        if(nextLevel != null && !ModEvents.onLevelUpdate(nextLevel, player, this.playerLevels.get(knownPlayer))) {
             PlayerTeamSynchronizer.updateProgressionLevel(player, nextLevel);
-            this.playerLevels.put(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
-            this.syncLevelsWithTeam(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel());
+            this.playerLevels.put(knownPlayer, nextLevel);
+            this.syncLevelsWithTeam(knownPlayer, nextLevel);
             this.saveData();
         }
         this.updateStatus();
@@ -136,7 +183,7 @@ public class LevelManager {
     }
 
 
-    public void updateLevel(SinglePlayer player, ResourceLocation nextLevel) {
+    public void updateLevel(PlayerData player, ResourceLocation nextLevel) {
         if(nextLevel != null) {
             this.updateLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
         }
@@ -147,42 +194,74 @@ public class LevelManager {
 
 
     public void updateStatus() {
+        Set<KnownPlayer> playersToRemove = new HashSet<>();
         this.playerLevels.forEach((player, level) -> {
             LOGGER.debug(MARKER, "Updating level status for player: {}", player.name());
-            SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-            LevelProgress progress = this.levelProgress.get(level);
-            ModEvents.onLevelStatusUpdate(level, singlePlayer, progress);
-            this.syncLevelsToClient(player, level);
-            if(progress.isDone(player)) {
-                if(!progress.hasBeenRewarded(player)) {
-                    ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, singlePlayer.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
-                    LOGGER.debug(MARKER, "Player {} completed level {}", player.name(), level.getId());
-                    level.rewardPlayer(singlePlayer);
-                    progress.setRewarded(player, true);
-                    this.updateLevel(singlePlayer, level.getNextLevel());
-                }
+
+            if(PlayerDataHandler.playerLastOnlineLongAgo(player)) {
+                LOGGER.debug(MARKER, "Marked player {} for removal!", player.name());
+                playersToRemove.add(player);
+            }
+
+            PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+            LevelProgress progress = this.levelProgress.get(player).get(level);
+
+            if(progress.isDone() && !progress.hasBeenRewarded()) {
+                ChatMessageHandler.sendMessage("Congratulations " + player.name() + " for completing level " + level.getId().toString() + "!", true, playerData.getServerPlayer(), ChatFormatting.BOLD, ChatFormatting.GOLD);
+                LOGGER.debug(MARKER, "Player {} completed level {}", player.name(), level.getId());
+                level.rewardPlayer(playerData);
+                progress.setRewarded(true);
+                this.updateLevel(playerData, this.getNextLevel(level));
             }
             else {
+                this.syncLevelsToClient(player, level);
+                ModEvents.onLevelStatusUpdate(level, playerData, progress);
                 questManager.updateStatus(player, true);
             }
+        });
+
+        playersToRemove.forEach(player -> {
+            LOGGER.debug(MARKER, "Removing data for player {}!", player.name());
+            this.playerLevels.remove(player);
+            this.levelProgress.remove(player);
+            this.levelCache.remove(player);
+            questManager.removePlayerData(player);
+            this.saveData();
         });
     }
 
 
-    private void loadPlayerLevels() {
-        this.playerLevels.putAll(PlayerDataHandler.getProgressData().orElseThrow().getPlayerLevels());
-        PlayerDataHandler.allPlayers().forEach(player -> this.playerLevels.putIfAbsent(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel()));
-    }
-
-
-    private void loadLevelProgress() {
-        this.levelProgress.putAll(PlayerDataHandler.getProgressData().orElseThrow().getLevelProgress());
-        ModRegistries.LEVELS.get().getValues().forEach(level -> this.levelProgress.computeIfAbsent(level, LevelProgress::new));
+    @Nullable
+    private ProgressionLevel getNextLevel(ProgressionLevel level) {
+        int i = this.levelOrder.indexOf(level) + 1;
+        if(this.levelOrder.size() < i) {
+            return null;
+        }
+        else {
+            return this.levelOrder.get(i);
+        }
     }
 
 
     private void loadLevelCache() {
-        this.levelCache.putAll(PlayerDataHandler.getProgressData().orElseThrow().getLevelCache());
+        this.levelCache.putAll(this.levelProgressData.levelCache);
+    }
+
+
+    public void updateData() {
+        this.saveData();
+        this.loadPlayerLevels();
+        this.loadLevelProgress();
+        this.questManager.updateData();
+    }
+
+
+    public void saveData() {
+        LOGGER.debug(MARKER, "Saving data!");
+        this.levelProgressData.updateLevelProgressData(this.levelProgress);
+        this.levelProgressData.updatePlayerLevels(this.playerLevels);
+        this.levelProgressData.updateLevelCache(this.levelCache);
+        this.questManager.saveData();
     }
 
 
@@ -195,21 +274,23 @@ public class LevelManager {
     }
 
 
-    public void updateData() {
-        this.saveData();
-        this.loadPlayerLevels();
-        this.loadLevelProgress();
-        questManager.updateData();
+    private void loadPlayerLevels() {
+        this.playerLevels.putAll(this.levelProgressData.playerLevels);
+        PlayerDataHandler.allPlayers().forEach(player -> this.playerLevels.putIfAbsent(KnownPlayer.fromSinglePlayer(player), player.getProgressionLevel()));
     }
 
 
-    public void saveData() {
-        LOGGER.debug(MARKER, "Saving data!");
-        ProgressData progressData = PlayerDataHandler.getProgressData().orElseThrow();
-        progressData.updateLevelProgressData(this.levelProgress);
-        progressData.updatePlayerLevels(this.playerLevels);
-        progressData.updateLevelCache(this.levelCache);
-        questManager.saveData();
+    private void loadLevelProgress() {
+        this.levelProgress.putAll(this.levelProgressData.levelProgress);
+        PlayerDataHandler.allPlayers().forEach(player -> {
+            Map<ProgressionLevel, LevelProgress> levelProgressMap = new HashMap<>();
+            KnownPlayer knownPlayer = KnownPlayer.fromSinglePlayer(player);
+            ModRegistries.LEVELS.get().getValues().forEach(level -> {
+                levelProgressMap.put(level, new LevelProgress(level, knownPlayer));
+            });
+
+            this.levelProgress.putIfAbsent(knownPlayer, levelProgressMap);
+        });
     }
 
 
@@ -219,31 +300,43 @@ public class LevelManager {
 
 
     private void syncLevelsToClient(KnownPlayer player, ProgressionLevel level) {
-        SinglePlayer singlePlayer = PlayerDataHandler.getActivePlayer(player);
-        if(singlePlayer == null) {
+        LOGGER.debug(MARKER, "Attempting to sync level status with client...");
+        PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+        if(playerData == null) {
+            LOGGER.debug(MARKER, "No client found to sync level status with! Skipping...");
             return;
         }
-        ModNetworkHandler.sendToPlayer(new ClientUpdateLevelsPacket(player, level, this.levelProgress), singlePlayer.getServerPlayer());
+        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(playerData), playerData.getServerPlayer());
+        ModNetworkHandler.sendToPlayer(new ClientSyncLevelsPacket(level, this.levelProgress.get(player)), playerData.getServerPlayer());
     }
 
 
-    public void revoke(SinglePlayer player, ResourceLocation level) {
+    public void revoke(PlayerData player, ResourceLocation level) {
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         if(!ModEvents.onLevelRevoke(player, level1)) {
             KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
-            this.levelProgress.get(level1).setRewarded(player1, false);
-            level1.getQuests().forEach(id -> this.questManager.revoke(id, player1));
-            this.updateLevel(player, level1);
+            LevelProgress progress = this.levelProgress.get(player1).get(level1);
+            progress.reset();
+            ProgressionLevel nextLevel = this.getNextLevel(level1);
+            if(nextLevel != null) {
+                revoke(player, nextLevel.getId());
+            }
+            this.updateStatus();
         }
     }
 
 
-    public void award(SinglePlayer player, ResourceLocation level) {
+    public void award(PlayerData player, ResourceLocation level) {
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(level);
         if(!ModEvents.onLevelAward(player, level1)) {
             KnownPlayer player1 = KnownPlayer.fromSinglePlayer(player);
-            level1.getQuests().forEach(id -> this.questManager.award(id, player1));
-            this.updateLevel(player, level1);
+            LevelProgress levelProgress = this.levelProgress.get(player1).get(level1);
+            levelProgress.complete();
+            ResourceLocation previousLevel = level1.getPreviousLevel();
+            if(previousLevel != null) {
+                award(player, previousLevel);
+            }
+            this.updateStatus();
         }
     }
 
@@ -263,10 +356,109 @@ public class LevelManager {
     }
 
 
-    public void checkForCreativeMode(SinglePlayer singlePlayer) {
-        ServerPlayer player = singlePlayer.getServerPlayer();
-        if((player.gameMode.isCreative() || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() && !singlePlayer.hasProgressionLevel(TestLevels.CREATIVE.getId())) {
+    public void checkForCreativeMode(PlayerData playerData) {
+        ServerPlayer player = playerData.getServerPlayer();
+        if((player.gameMode.isCreative() || player.gameMode.getGameModeForPlayer() == GameType.SPECTATOR) && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() && !playerData.hasProgressionLevel(TestLevels.CREATIVE.getId())) {
             this.onCreativeChange(player);
+        }
+    }
+
+
+    private static final class LevelProgressData extends SavedData {
+
+        private final Map<KnownPlayer, Map<ProgressionLevel, LevelProgress>> levelProgress;
+
+        private final Map<KnownPlayer, ProgressionLevel> playerLevels;
+
+        private final Map<KnownPlayer, ProgressionLevel> levelCache;
+
+
+        public LevelProgressData(Map<KnownPlayer, Map<ProgressionLevel, LevelProgress>> levelProgress, Map<KnownPlayer, ProgressionLevel> playerLevels, Map<KnownPlayer, ProgressionLevel> levelCache) {
+            this.levelProgress = levelProgress;
+            this.playerLevels = playerLevels;
+            this.levelCache = levelCache;
+            this.setDirty();
+        }
+
+
+        public static LevelProgressData load(CompoundTag tag) {
+            final Map<KnownPlayer, Map<ProgressionLevel, LevelProgress>> levelProgress = new HashMap<>();
+            final Map<KnownPlayer, ProgressionLevel> playerLevels = new HashMap<>();
+            final Map<KnownPlayer, ProgressionLevel> levelCache = new HashMap<>();
+
+            CompoundTag levelProgressTag = tag.getCompound("levelProgress");
+            levelProgressTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
+                KnownPlayer player = KnownPlayer.fromCompoundTag(levelProgressTag.getCompound(s));
+                CompoundTag progressTag = levelProgressTag.getCompound(player.id() + "-progress");
+                Map<ProgressionLevel, LevelProgress> map = new HashMap<>();
+                progressTag.getAllKeys().forEach(s1 -> {
+                    ProgressionLevel level = ModRegistries.LEVELS.get().getValue(new ResourceLocation(s1));
+                    LevelProgress progress = LevelProgress.loadFromCompoundTag(progressTag.getCompound(s1));
+                    map.put(level, progress);
+                });
+                levelProgress.put(player, map);
+            });
+            CompoundTag playerLevelsTag = tag.getCompound("playerLevels");
+            playerLevelsTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
+                KnownPlayer player = KnownPlayer.fromCompoundTag(playerLevelsTag.getCompound(s));
+                ProgressionLevel level = ModRegistries.LEVELS.get().getValue(new ResourceLocation(playerLevelsTag.getString(player.id() + "-level")));
+                playerLevels.put(player, level);
+            });
+            CompoundTag levelCacheTag = tag.getCompound("levelCache");
+            levelCacheTag.getAllKeys().stream().filter(s -> s.contains("-player")).forEach(s -> {
+                KnownPlayer player = KnownPlayer.fromCompoundTag(levelCacheTag.getCompound(s));
+                ProgressionLevel level = ModRegistries.LEVELS.get().getValue(new ResourceLocation(levelCacheTag.getString(player.id() + "-level")));
+                levelCache.put(player, level);
+            });
+
+            return new LevelProgressData(levelProgress, playerLevels, levelCache);
+        }
+
+
+        @Override
+        public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
+            CompoundTag levelProgressTag = new CompoundTag();
+            this.levelProgress.forEach((player, levelProgress1) -> {
+                levelProgressTag.put(player.id() + "-player", player.toCompoundTag());
+                CompoundTag tag1 = new CompoundTag();
+                levelProgress1.forEach((level, progress) -> tag1.put(level.getId().toString(), progress.saveToCompoundTag()));
+                levelProgressTag.put(player.id() + "-progress", tag1);
+            });
+            tag.put("levelProgress", levelProgressTag);
+
+            CompoundTag tag4 = new CompoundTag();
+            this.playerLevels.forEach((knownPlayer, level) -> {
+                tag4.put(knownPlayer.id() + "-player", knownPlayer.toCompoundTag());
+                tag4.putString(knownPlayer.id() + "-level", level.getId().toString());
+            });
+            tag.put("playerLevels", tag4);
+
+            CompoundTag tag5 = new CompoundTag();
+            this.levelCache.forEach((player, level) -> {
+                tag5.put(player.id() + "-player", player.toCompoundTag());
+                tag5.putString(player.id() + "-level", level.getId().toString());
+            });
+            tag.put("levelCache", tag5);
+
+            return tag;
+        }
+
+
+        public void updateLevelProgressData(Map<KnownPlayer, Map<ProgressionLevel, LevelProgress>> levelProgress) {
+            this.levelProgress.putAll(levelProgress);
+            this.setDirty();
+        }
+
+
+        public void updatePlayerLevels(Map<KnownPlayer, ProgressionLevel> playerLevels) {
+            this.playerLevels.putAll(playerLevels);
+            this.setDirty();
+        }
+
+
+        public void updateLevelCache(Map<KnownPlayer, ProgressionLevel> levelCache) {
+            this.levelCache.putAll(levelCache);
+            this.setDirty();
         }
     }
 }

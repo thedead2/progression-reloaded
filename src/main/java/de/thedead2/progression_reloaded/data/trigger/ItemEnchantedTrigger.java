@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.ItemPredicate;
 import de.thedead2.progression_reloaded.data.predicates.MinMax;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.annotation.ExcludeFromEventBus;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -42,7 +42,7 @@ public class ItemEnchantedTrigger extends SimpleTrigger<ItemStack> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, ItemStack itemStack, Object... data) {
+    public boolean trigger(PlayerData player, ItemStack itemStack, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(itemStack) && this.levels.matches((int) data[0]));
     }
 

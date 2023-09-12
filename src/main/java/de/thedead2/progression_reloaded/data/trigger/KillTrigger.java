@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.DamageSourcePredicate;
 import de.thedead2.progression_reloaded.data.predicates.EntityPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
-import de.thedead2.progression_reloaded.player.types.SinglePlayer;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
@@ -48,7 +48,7 @@ public class KillTrigger extends SimpleTrigger<Entity> {
 
 
     @Override
-    public boolean trigger(SinglePlayer player, Entity entity, Object... data) {
+    public boolean trigger(PlayerData player, Entity entity, Object... data) {
         return this.trigger(player, listener -> this.predicate.matches(entity, player) && (this.damage == null || this.damage.matches((DamageSource) data[0])));
     }
 
