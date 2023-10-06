@@ -47,12 +47,14 @@ public abstract class ModNetworkHandler {
     public static void registerPackets() {
         LOGGER.debug(marker, "Registering network packets...");
 
+        registerPacket(ClientDisplayProgressToast.class);
         registerPacket(ClientOpenProgressionBookPacket.class);
-        registerPacket(ClientUsedExtraLifePacket.class);
-        registerPacket(ClientSyncQuestsPacket.class);
         registerPacket(ClientSyncLevelsPacket.class);
-        registerPacket(ClientSyncRestrictionsPacket.class);
         registerPacket(ClientSyncPlayerPacket.class);
+        registerPacket(ClientSyncQuestsPacket.class);
+        registerPacket(ClientSyncRestrictionsPacket.class);
+        registerPacket(ClientUsedExtraLifePacket.class);
+        registerPacket(UpdateRenderersPacket.class);
 
         LOGGER.debug(marker, "Network registration complete.");
     }

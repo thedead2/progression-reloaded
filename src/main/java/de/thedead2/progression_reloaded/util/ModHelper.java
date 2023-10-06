@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.util;
 
 import com.google.common.collect.Lists;
+import com.ibm.icu.text.DecimalFormat;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
@@ -53,6 +54,8 @@ public abstract class ModHelper {
     public static final String MOD_NAME = MOD_PROPERTIES.getProperty("mod_name");
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
+
+    public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     public static GameState GAME_STATE = GameState.INACTIVE;
 

@@ -3,10 +3,10 @@ package de.thedead2.progression_reloaded.client.gui.util;
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
-import de.thedead2.progression_reloaded.client.gui.util.objects.RenderObject;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
@@ -16,11 +16,10 @@ import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Quaternionf;
-import org.joml.Vector2i;
-import org.joml.Vector3f;
+import org.joml.*;
 
 import java.awt.*;
+import java.lang.Math;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
 import static net.minecraft.client.gui.GuiComponent.fill;
@@ -137,6 +136,22 @@ public class RenderUtil {
     }
 
 
+    public static void drawTexture(ResourceLocation texture, Matrix4f transformationMatrix, Vector2f a, Vector2f d, float z, Vector2f textureA, Vector2f textureD) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShaderTexture(0, texture);
+
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.vertex(transformationMatrix, a.x, d.y, z).uv(textureA.x, textureD.y).endVertex();
+        bufferbuilder.vertex(transformationMatrix, d.x, d.y, z).uv(textureD.x, textureD.y).endVertex();
+        bufferbuilder.vertex(transformationMatrix, d.x, a.y, z).uv(textureD.x, textureA.x).endVertex();
+        bufferbuilder.vertex(transformationMatrix, a.x, a.y, z).uv(textureA.x, textureA.x).endVertex();
+        BufferUploader.drawWithShader(bufferbuilder.end());
+        RenderSystem.disableBlend();
+    }
+
+
     public static Vector3f getScreenCenter() {
         return new Vector3f(getScreenWidth() / 2, getScreenHeight() / 2, 0);
     }
@@ -172,7 +187,7 @@ public class RenderUtil {
     }
 
 
-    public static void renderObjectOutline(PoseStack poseStack, RenderObject renderObject) {
+    /*public static void renderObjectOutline(PoseStack poseStack, RenderObject renderObject) {
         poseStack.pushPose();
         renderObject.getPoseStackTransformation(poseStack);
 
@@ -182,11 +197,11 @@ public class RenderUtil {
         renderCross(poseStack, 0, 0, 8, Color.RED.getRGB());
 
         poseStack.popPose();
-    }
+    }*/
 
 
     public static void renderArea(PoseStack poseStack, Area area, int color) {
-        renderSquareOutline(poseStack, area.getXMin(), area.getXMax(), area.getYMin(), area.getYMax(), color);
+        renderSquareOutline(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), color);
     }
 
 

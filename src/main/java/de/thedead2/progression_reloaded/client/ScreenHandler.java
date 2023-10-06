@@ -91,8 +91,9 @@ public class ScreenHandler {
         if(minecraft.options.renderDebug) {
 
             if(minecraft.player.isShiftKeyDown()) {
+                var clientDataManager = ModClientInstance.getInstance().getClientDataManager();
 
-                final PlayerData clientData = ClientDataManager.getInstance().getClientData();
+                final PlayerData clientData = clientDataManager.getClientData();
                 final int maxQuests = 5;
 
                 if(clientData != null) {
@@ -104,7 +105,7 @@ public class ScreenHandler {
                     event.getRight().add("Level: " + clientData.getProgressionLevel().getTitle().getString());
                     clientData.getTeam().ifPresent(team -> event.getRight().add("Team: " + team.getName()));
                     event.getRight().add("Active Quests:");
-                    List<String> list = (List<String>) CollectionHelper.convertCollection(ClientDataManager.getInstance().getActiveQuests(), new ArrayList<>(), quest -> quest.getTitle().getString());
+                    List<String> list = (List<String>) CollectionHelper.convertCollection(clientDataManager.getActiveQuests(), new ArrayList<>(), quest -> quest.getTitle().getString());
                     list.forEach(s -> {
                         if(list.indexOf(s) < maxQuests) {
                             event.getRight().add(s);

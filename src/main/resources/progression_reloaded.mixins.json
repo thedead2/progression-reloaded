@@ -4,6 +4,8 @@
   "compatibilityLevel": "JAVA_17",
   "refmap": "progression_reloaded.refmap.json",
   "mixins": [
+    "MixinChunkMap",
+    "MixinChunkStatus",
     "MixinConsumeItemTrigger",
     "MixinCrashReport",
     "MixinEffectsTrigger",
@@ -12,7 +14,8 @@
     "MixinJsonReloadListener"
   ],
   "client": [
-    "MixinAdvancementsScreen"
+    "MixinAdvancementsScreen",
+    "MixinChunkRenderDispatcher"
   ],
   "server": [
   ],

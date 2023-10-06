@@ -8,7 +8,7 @@ import net.minecraftforge.eventbus.api.Cancelable;
 import java.util.Map;
 
 
-public abstract class LevelEvent extends ModEvents.ProgressionEvent {
+public abstract class LevelEvent extends PREventFactory.ProgressionEvent {
 
     private final ProgressionLevel level;
 

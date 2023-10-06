@@ -3,8 +3,9 @@ package de.thedead2.progression_reloaded.util.registries;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import de.thedead2.progression_reloaded.api.IProgressable;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
@@ -38,7 +39,7 @@ public abstract class ModRegistries {
 
     private static final DeferredRegister<ProgressionLevel> LEVEL_REGISTER = DeferredRegister.create(RegistryKeys.LEVELS, MOD_ID);
 
-    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().allowModification().setDefaultKey(TestLevels.CREATIVE.getId()));
+    public static final Supplier<IForgeRegistry<ProgressionLevel>> LEVELS = LEVEL_REGISTER.makeRegistry(() -> new RegistryBuilder<ProgressionLevel>().allowModification().setDefaultKey(LevelManager.CREATIVE.getId()));
 
     private static final DeferredRegister<ProgressionQuest> QUEST_REGISTER = DeferredRegister.create(RegistryKeys.QUESTS, MOD_ID);
 
@@ -59,7 +60,7 @@ public abstract class ModRegistries {
 
 
     @SuppressWarnings("unchecked")
-    private static <T extends ModRegistriesDynamicSerializer> void load(Path directoryPath, Class<T> type, DeferredRegister<T> deferredRegister) {
+    private static <T extends IProgressable> void load(Path directoryPath, Class<T> type, DeferredRegister<T> deferredRegister) {
         final Map<ResourceLocation, T> temp = new HashMap<>();
         FileHandler.readDirectory(directoryPath.toFile(), directory -> {
             for(File file : Objects.requireNonNull(directory.listFiles(File::isFile))) {
@@ -121,7 +122,7 @@ public abstract class ModRegistries {
     }
 
 
-    private static <T extends ModRegistriesDynamicSerializer> void save(Path directoryPath, Collection<T> buildObjects) {
+    private static <T extends IProgressable> void save(Path directoryPath, Collection<T> buildObjects) {
         FileHandler.createDirectory(directoryPath.toFile());
         buildObjects.forEach(t -> {
             ByteArrayInputStream stream = new ByteArrayInputStream(JsonHelper.formatJsonObject(t.toJson()).getBytes());

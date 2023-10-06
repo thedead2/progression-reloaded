@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.data.display;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.network.FriendlyByteBuf;
@@ -11,9 +12,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 
-public class LevelDisplayInfo {
+public final class LevelDisplayInfo implements IDisplayInfo {
 
     private final ResourceLocation id;
 
@@ -63,32 +65,17 @@ public class LevelDisplayInfo {
     }
 
 
-    public ResourceLocation getId() {
-        return id;
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeResourceLocation(this.id);
+        buf.writeComponent(this.title);
+        buf.writeComponent(this.description);
+        buf.writeItem(this.icon);
+        buf.writeNullable(this.previousLevel, FriendlyByteBuf::writeResourceLocation);
     }
 
 
-    public Component getTitle() {
-        return title;
-    }
-
-
-    public Component getDescription() {
-        return description;
-    }
-
-
-    public ItemStack getIcon() {
-        return icon;
-    }
-
-
-    @Nullable
-    public ResourceLocation getPreviousLevel() {
-        return previousLevel;
-    }
-
-
+    @Override
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("id", this.id.toString());
@@ -104,12 +91,63 @@ public class LevelDisplayInfo {
     }
 
 
-    public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeResourceLocation(this.id);
-        buf.writeComponent(this.title);
-        buf.writeComponent(this.description);
-        buf.writeItem(this.icon);
-        buf.writeNullable(this.previousLevel, FriendlyByteBuf::writeResourceLocation);
+    @Override
+    public ItemStack getIcon() {
+        return icon;
+    }
+
+
+    public Component getTitle() {
+        return title;
+    }
+
+
+    @Override
+    public Component getDescription() {
+        return description;
+    }
+
+
+    public ResourceLocation id() {
+        return id;
+    }
+
+
+    @Nullable
+    public ResourceLocation previousLevel() {return previousLevel;}
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, description, icon, previousLevel);
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == this) {
+            return true;
+        }
+        if(obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        var that = (LevelDisplayInfo) obj;
+        return Objects.equals(this.id, that.id) &&
+                Objects.equals(this.title, that.title) &&
+                Objects.equals(this.description, that.description) &&
+                Objects.equals(this.icon, that.icon) &&
+                Objects.equals(this.previousLevel, that.previousLevel);
+    }
+
+
+    @Override
+    public String toString() {
+        return "LevelDisplayInfo[" +
+                "id=" + id + ", " +
+                "title=" + title + ", " +
+                "description=" + description + ", " +
+                "icon=" + icon + ", " +
+                "previousLevel=" + previousLevel + ']';
     }
 
 

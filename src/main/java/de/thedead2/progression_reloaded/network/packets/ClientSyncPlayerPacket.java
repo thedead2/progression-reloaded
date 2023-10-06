@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
-import de.thedead2.progression_reloaded.client.ClientDataManager;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.fml.DistExecutor;
@@ -34,7 +34,7 @@ public class ClientSyncPlayerPacket implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
-                ClientDataManager.getInstance().setClientData(ClientSyncPlayerPacket.this.playerData);
+                ModClientInstance.getInstance().getClientDataManager().setClientData(ClientSyncPlayerPacket.this.playerData);
             }
         };
     }

@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.data.display;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.network.FriendlyByteBuf;
@@ -11,9 +12,10 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 
 
-public class QuestDisplayInfo {
+public final class QuestDisplayInfo implements IDisplayInfo {
 
     private final ResourceLocation id;
 
@@ -64,37 +66,18 @@ public class QuestDisplayInfo {
     }
 
 
-    public ResourceLocation getId() {
-        return id;
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeResourceLocation(this.id);
+        buf.writeComponent(this.title);
+        buf.writeComponent(this.description);
+        buf.writeItem(this.icon);
+        buf.writeBoolean(this.mainQuest);
+        buf.writeNullable(this.parentQuest, FriendlyByteBuf::writeResourceLocation);
     }
 
 
-    public Component getTitle() {
-        return title;
-    }
-
-
-    public Component getDescription() {
-        return description;
-    }
-
-
-    public ItemStack getIcon() {
-        return icon;
-    }
-
-
-    @Nullable
-    public ResourceLocation getParentQuest() {
-        return parentQuest;
-    }
-
-
-    public boolean isMainQuest() {
-        return mainQuest;
-    }
-
-
+    @Override
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("id", this.id.toString());
@@ -110,13 +93,67 @@ public class QuestDisplayInfo {
     }
 
 
-    public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeResourceLocation(this.id);
-        buf.writeComponent(this.title);
-        buf.writeComponent(this.description);
-        buf.writeItem(this.icon);
-        buf.writeBoolean(this.mainQuest);
-        buf.writeNullable(this.parentQuest, FriendlyByteBuf::writeResourceLocation);
+    @Override
+    public ItemStack getIcon() {
+        return icon;
+    }
+
+
+    @Override
+    public Component getTitle() {return title;}
+
+
+    @Override
+    public Component getDescription() {
+        return description;
+    }
+
+
+    public ResourceLocation id() {return id;}
+
+
+    public boolean mainQuest() {
+        return mainQuest;
+    }
+
+
+    @Nullable
+    public ResourceLocation parentQuest() {return parentQuest;}
+
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, description, icon, mainQuest, parentQuest);
+    }
+
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == this) {
+            return true;
+        }
+        if(obj == null || obj.getClass() != this.getClass()) {
+            return false;
+        }
+        var that = (QuestDisplayInfo) obj;
+        return Objects.equals(this.id, that.id) &&
+                Objects.equals(this.title, that.title) &&
+                Objects.equals(this.description, that.description) &&
+                Objects.equals(this.icon, that.icon) &&
+                this.mainQuest == that.mainQuest &&
+                Objects.equals(this.parentQuest, that.parentQuest);
+    }
+
+
+    @Override
+    public String toString() {
+        return "QuestDisplayInfo[" +
+                "id=" + id + ", " +
+                "title=" + title + ", " +
+                "description=" + description + ", " +
+                "icon=" + icon + ", " +
+                "mainQuest=" + mainQuest + ", " +
+                "parentQuest=" + parentQuest + ']';
     }
 
 

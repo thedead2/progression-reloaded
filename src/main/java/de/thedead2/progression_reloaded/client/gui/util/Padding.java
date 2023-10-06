@@ -1,9 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
 public class Padding {
-
     public static final Padding NONE = new Padding(0);
-
     private final float paddingLeft;
 
     private final float paddingRight;

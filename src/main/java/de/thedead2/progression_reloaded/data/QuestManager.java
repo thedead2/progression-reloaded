@@ -5,8 +5,9 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.events.ModEvents;
+import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncQuestsPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
@@ -175,7 +176,7 @@ public class QuestManager {
     public boolean award(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        if(!ModEvents.onQuestAward(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))) {
+        if(!PREventFactory.onQuestAward(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))) {
             boolean flag1 = questProgress.isDone();
             PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
             if(criterionName == null || questProgress.grantProgress(criterionName)) {
@@ -186,6 +187,7 @@ public class QuestManager {
                 flag = true;
                 if(!flag1 && questProgress.isDone()) {
                     quest.rewardPlayer(playerData); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
+                    ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(quest.getDisplay(), null), playerData.getServerPlayer());
                 }
             }
 
@@ -235,7 +237,7 @@ public class QuestManager {
                                                  .stream()
                                                  .filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass))
                                                  .forEach(trigger -> {
-                                                     if(!ModEvents.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)) {
+                                                     if(!PREventFactory.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)) {
                                                          this.updateStatus(knownPlayer, true);
                                                      }
                                                  })
@@ -280,11 +282,21 @@ public class QuestManager {
     }
 
 
-    public Collection<ProgressionQuest> getMainQuestsForLevel(ProgressionLevel level) {
-        return level.getQuests()
-                    .stream()
-                    .map(this::findQuest)
-                    .collect(Collectors.toSet());
+    /**
+     * Updates the quests of a player depending on whether the quest has been completed or not.
+     */
+    public void updateStatus(KnownPlayer player, boolean shouldSyncToTeam) {
+        LOGGER.debug(MARKER, "Updating quests for player: {}", player.name());
+
+        this.activePlayerQuests.replace(player, searchQuestsForActive(player));
+        searchQuestsForComplete(player).forEach(quest -> this.unregisterListeners(quest, player));
+        this.activePlayerQuests.get(player).forEach(quest -> this.registerListeners(quest, player));
+
+        if(shouldSyncToTeam) {
+            this.syncQuestProgressToTeam(player);
+        }
+        this.syncQuestsToClient(player);
+        PREventFactory.onQuestStatusUpdate(player, this.activePlayerQuests.get(player));
     }
 
 
@@ -335,21 +347,12 @@ public class QuestManager {
     }
 
 
-    /**
-     * Updates the quests of a player depending on whether the quest has been completed or not.
-     */
-    public void updateStatus(KnownPlayer player, boolean shouldSyncToTeam) {
-        LOGGER.debug(MARKER, "Updating quests for player: {}", player.name());
-
-        this.activePlayerQuests.replace(player, searchQuestsForActive(player));
-        searchQuestsForComplete(player).forEach(quest -> this.unregisterListeners(quest, player));
-        this.activePlayerQuests.get(player).forEach(quest -> this.registerListeners(quest, player));
-
-        if(shouldSyncToTeam) {
-            this.syncQuestProgressToTeam(player);
-        }
-        this.syncQuestsToClient(player);
-        ModEvents.onQuestStatusUpdate(player, this.activePlayerQuests.get(player));
+    public Collection<ProgressionQuest> getMainQuestsForLevel(ProgressionLevel level) {
+        return level.getQuests()
+                    .stream()
+                    .map(this::findQuest)
+                    .filter(ProgressionQuest::isMainQuest)
+                    .collect(Collectors.toSet());
     }
 
 
@@ -369,7 +372,7 @@ public class QuestManager {
     public boolean revoke(ProgressionQuest quest, String criterionName, KnownPlayer player) {
         boolean flag = false;
         QuestProgress questProgress = this.getOrStartProgress(quest, player);
-        if(!ModEvents.onQuestRevoke(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))) {
+        if(!PREventFactory.onQuestRevoke(quest, criterionName, questProgress, PlayerDataHandler.getActivePlayer(player))) {
             if(criterionName == null || questProgress.revokeProgress(criterionName)) {
                 if(criterionName == null) {
                     questProgress.reset();

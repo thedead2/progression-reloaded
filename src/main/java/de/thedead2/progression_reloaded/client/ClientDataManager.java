@@ -2,22 +2,19 @@ package de.thedead2.progression_reloaded.client;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import de.thedead2.progression_reloaded.client.gui.GuiFactory;
+import de.thedead2.progression_reloaded.client.gui.overlays.LevelProgressOverlay;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
-import de.thedead2.progression_reloaded.events.ModEvents;
+import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,10 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 
-@Mod.EventBusSubscriber(modid = ModHelper.MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.FORGE)
-public class ClientDataManager {
 
-    private static ClientDataManager instance;
+public class ClientDataManager {
 
     private final Map<ProgressionLevel, LevelProgress> levelProgress;
 
@@ -40,9 +35,10 @@ public class ClientDataManager {
 
     private ProgressionLevel playerLevel;
 
+    private boolean setOverlay = true;
 
-    private ClientDataManager() {
-        instance = this;
+
+    ClientDataManager() {
         this.clientData = null;
         this.playerLevel = null;
         this.levelProgress = new HashMap<>();
@@ -56,38 +52,16 @@ public class ClientDataManager {
     }
 
 
-    public static ClientDataManager getInstance() {
-        return instance;
-    }
-
-
-    @SubscribeEvent
-    public static void onClientLogin(final ClientPlayerNetworkEvent.LoggingIn event) {
-        create();
-    }
-
-
-    private static void create() {
-        new ClientDataManager();
-    }
-
-
-    @SubscribeEvent
-    public static void onClientLogout(final ClientPlayerNetworkEvent.LoggingOut event) {
-        reset();
-    }
-
-
-    private static void reset() {
-        instance = null;
-    }
-
-
     public void updateLevelProgress(ResourceLocation activeLevel, Map<ResourceLocation, LevelProgress> levelProgress) {
         this.playerLevel = ModRegistries.LEVELS.get().getValue(activeLevel);
         this.levelProgress.clear();
         CollectionHelper.convertMapKeys(levelProgress, this.levelProgress, id -> ModRegistries.LEVELS.get().getValue(id));
-        ModEvents.onLevelsSynced(this.playerLevel, this.levelProgress);
+        if(setOverlay) {
+            ModClientInstance.getInstance().getModRenderer().setProgressOverlay(GuiFactory.createLevelProgressOverlay(this.playerLevel.getDisplay(), this.getCurrentLevelProgress()));
+            setOverlay = false;
+        }
+        ModClientInstance.getInstance().getModRenderer().updateProgressOverlay(LevelProgressOverlay.class, this.getCurrentLevelProgress());
+        PREventFactory.onLevelsSynced(this.playerLevel, this.levelProgress);
     }
 
 
@@ -126,5 +100,10 @@ public class ClientDataManager {
 
     public ImmutableSet<ProgressionQuest> getActiveQuests() {
         return ImmutableSet.copyOf(this.activeQuests);
+    }
+
+
+    public LevelProgress getCurrentLevelProgress() {
+        return this.levelProgress.get(this.playerLevel);
     }
 }

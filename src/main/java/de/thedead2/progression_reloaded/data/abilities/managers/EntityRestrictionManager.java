@@ -74,7 +74,7 @@ public class EntityRestrictionManager extends RestrictionManager<EntityRestricti
             Player player = pair.getLeft();
             if(entity.distanceTo(player) <= restriction.getDistanceToPlayer() && this.meetsRequirements(entity, player, restriction)) {
                 event.setResult(Event.Result.DENY);
-                ModHelper.LOGGER.debug("Hindered entity {} to spawn at pos {}, {}, {} as it is restricted for player {} in dimension {}", entity.getType(), event.getX(), event.getY(), event.getZ(), player.getDisplayName()
+                ModHelper.LOGGER.debug("Hindered entity {} to spawn at setPoint {}, {}, {} as it is restricted for player {} in dimension {}", entity.getType(), event.getX(), event.getY(), event.getZ(), player.getDisplayName()
                                                                                                                                                                                                             .getString(), entity.level.dimension()
                                                                                                                                                                                                                                       .location());
                 if(restriction.getEntityReplacement() != null) {

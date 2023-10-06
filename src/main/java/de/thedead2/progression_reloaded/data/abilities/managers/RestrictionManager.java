@@ -8,6 +8,7 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncRestrictionsPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
@@ -22,6 +23,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,7 +33,7 @@ public abstract class RestrictionManager<T extends Restriction<R>, R> extends Si
 
     protected final ResourceLocation id;
 
-    private final Map<RestrictionKey<R>, T> restrictions = new HashMap<>();
+    private final Map<RestrictionKey<R>, T> restrictions = new ConcurrentHashMap<>();
 
     private final Map<RestrictionKey<R>, T> orgRestrictions = new HashMap<>();
 
@@ -174,7 +176,11 @@ public abstract class RestrictionManager<T extends Restriction<R>, R> extends Si
 
 
     public boolean doesNotHaveLevel(Player player, T restriction) {
-        ProgressionLevel level = PlayerDataHandler.getActivePlayer(player).getProgressionLevel();
-        return !level.contains(ModRegistries.LEVELS.get().getValue(restriction.getLevel()));
+        PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+        if(playerData != null) {
+            ProgressionLevel level = playerData.getProgressionLevel();
+            return !level.contains(ModRegistries.LEVELS.get().getValue(restriction.getLevel()));
+        }
+        return false;
     }
 }

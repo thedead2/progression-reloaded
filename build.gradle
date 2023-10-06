@@ -87,7 +87,8 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     minecraft 'net.minecraftforge:forge:1.19.3-44.1.0'
-    implementation('com.google.guava:guava:31.1-jre')
+    // https://mvnrepository.com/artifact/com.google.guava/guava
+    implementation group: 'com.google.guava', name: 'guava', version: '32.1.2-jre'
     //implementation 'com.netflix.nebula:nebula-release-plugin:17.2.2'
     implementation group: 'org.ow2.asm', name: 'asm', version: '9.5'
     implementation fg.deobf(group: 'com.blamejared.crafttweaker', name: "CraftTweaker-forge-${minecraft_version}", version: getProperty('crafttweaker_version'))

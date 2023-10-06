@@ -1,395 +1,202 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
-import com.google.common.base.Objects;
-import de.thedead2.progression_reloaded.util.helper.MathHelper;
-import org.joml.Intersectionf;
-import org.joml.Matrix4x3f;
-import org.joml.Vector3f;
-
-
-/**
- * Relative position of an object on a screen.
- * Represents a 4x3 Matrix of coordinates.
- * <p>
- * x    y    z
- * A m00, m01, m02;
- * B m10, m11, m12;
- * C m20, m21, m22;
- * D m30, m31, m32;
- * </p>
- * A    B
- * C    D
- **/
-
 public class Area {
 
-    private final Matrix4x3f vectorMatrix;
+    private final Padding padding;
 
-    private Position position;
+    private float xPos;
+
+    private float yPos;
+
+    private float zPos;
+
+    private float width;
+
+    private float height;
 
 
-    public Area(float xPos, float yPos, AnchorPoint anchorPoint, float width, float height) {
-        this(xPos, yPos, 0, anchorPoint, width, height);
+    public Area(float xPos, float yPos, float zPos, float width, float height) {
+        this(xPos, yPos, zPos, width, height, Padding.NONE);
     }
 
 
-    public Area(float xPos, float yPos, float zPos, AnchorPoint anchorPoint, float width, float height) {
-        this.vectorMatrix = new Matrix4x3f();
-        this.position = new Position(xPos, yPos, zPos, anchorPoint);
-        this.updatePosition(width, height);
+    public Area(float xPos, float yPos, float zPos, float width, float height, Padding padding) {
+        this.xPos = xPos;
+        this.yPos = yPos;
+        this.zPos = zPos;
+        this.width = width;
+        this.height = height;
+        this.padding = padding;
     }
 
 
-    public void updatePosition(float width, float height) {
-        final Vector3f A, B, C, D;
-        float zPos = this.position.anchor.z;
-        switch(this.position.anchorPoint) {
-            case B -> {
-                B = this.position.anchor;
-                A = new Vector3f(B.x - width, B.y, zPos);
-                C = new Vector3f(A.x, A.y + height, zPos);
-                D = new Vector3f(B.x, C.y, zPos);
-            }
-            case C -> {
-                C = this.position.anchor;
-                A = new Vector3f(C.x, C.y - height, zPos);
-                B = new Vector3f(A.x + width, A.y, zPos);
-                D = new Vector3f(B.x, C.y, zPos);
-            }
-            case D -> {
-                D = this.position.anchor;
-                A = new Vector3f(D.x - width, D.y - height, zPos);
-                B = new Vector3f(A.x + width, A.y, zPos);
-                C = new Vector3f(A.x, A.y + height, zPos);
-            }
-            case CENTER -> {
-                Vector3f anchor = this.position.anchor;
-                A = new Vector3f(anchor.x - width / 2, anchor.y - height / 2, zPos);
-                B = new Vector3f(A.x + width, A.y, zPos);
-                C = new Vector3f(A.x, A.y + height, zPos);
-                D = new Vector3f(B.x, C.y, zPos);
-            }
-            default -> {
-                A = this.position.anchor;
-                B = new Vector3f(A.x + width, A.y, zPos);
-                C = new Vector3f(A.x, A.y + height, zPos);
-                D = new Vector3f(A.x + width, A.y + height, zPos);
-            }
-        }
-
-        this.vectorMatrix.set(A, B, C, D);
+    public Area intersect(Area other) {
+        this.xPos = Math.max(this.xPos, other.getX());
+        this.yPos = Math.max(this.yPos, other.getY());
+        this.width = Math.max(0, Math.min(this.getXMax(), other.getXMax()) - this.xPos);
+        this.height = Math.max(0, Math.min(this.getYMax(), other.getYMax()) - this.yPos);
+        return this;
     }
 
 
-    public void changePosition(Position position) {
-        this.position = position;
-        this.updatePosition(this.getWidth(), this.getHeight());
+    public float getX() {
+        return this.xPos;
     }
 
 
-    public float getWidth() {
-        return getAB().length();
+    public float getY() {
+        return this.yPos;
     }
 
 
-    public float getHeight() {
-        return getAC().length();
-    }
-
-
-    public Vector3f getAB() {
-        return getB().sub(getA());
-    }
-
-
-    public Vector3f getAC() {
-        return getC().sub(getA());
-    }
-
-
-    public Vector3f getB() {
-        return this.vectorMatrix.getColumn(1, new Vector3f());
-    }
-
-
-    public Vector3f getA() {
-        return this.vectorMatrix.getColumn(0, new Vector3f());
-    }
-
-
-    public Vector3f getC() {
-        return this.vectorMatrix.getColumn(2, new Vector3f());
-    }
-
-
-    public void setC(Vector3f c) {
-        this.vectorMatrix.setColumn(2, c);
-    }
-
-
-    public void setA(Vector3f a) {
-        this.vectorMatrix.setColumn(0, a);
-    }
-
-
-    public void setB(Vector3f b) {
-        this.vectorMatrix.setColumn(1, b);
-    }
-
-
-    public void setHeight(float height) {
-        Vector3f A = this.getA();
-        Vector3f oldC = this.getC();
-        Vector3f oldD = this.getD();
-        Vector3f newC = new Vector3f(oldC.x, A.y + height, oldC.z);
-        Vector3f newD = new Vector3f(oldD.x, A.y + height, oldD.z);
-
-        this.setC(newC);
-        this.setD(newD);
-    }
-
-
-    public void setWidth(float width) {
-        Vector3f A = this.getA();
-        Vector3f oldB = this.getB();
-        Vector3f oldD = this.getD();
-        Vector3f newB = new Vector3f(A.x + width, oldB.y, oldB.z);
-        Vector3f newD = new Vector3f(newB.x, oldD.y, oldD.z);
-
-        this.setB(newB);
-        this.setD(newD);
-    }
-
-
-    public Vector3f getCenter() {
-        return MathHelper.getIntersectionPoint(getA(), getAD(), getB(), getBC());
-    }
-
-
-    public Vector3f getAD() {
-        return getD().sub(getA());
-    }
-
-
-    public Vector3f getBC() {
-        return getC().sub(getB());
-    }
-
-
-    public Vector3f getD() {
-        return this.vectorMatrix.getColumn(3, new Vector3f());
-    }
-
-
-    public void setD(Vector3f d) {
-        this.vectorMatrix.setColumn(3, d);
-    }
-
-
-    public boolean isInArea(float x, float y) {
-        return getXMin() <= x && x <= getXMax() && getYMin() <= y && y <= getYMax();
-    }
-
-
-    public float getXMin() {
-        float f = Math.min(this.vectorMatrix.m00(), this.vectorMatrix.m10());
-        f = Math.min(f, this.vectorMatrix.m20());
-        f = Math.min(f, this.vectorMatrix.m30());
-        return f;
+    public void setY(float yPos) {
+        this.yPos = yPos;
     }
 
 
     public float getXMax() {
-        float f = Math.max(this.vectorMatrix.m00(), this.vectorMatrix.m10());
-        f = Math.max(f, this.vectorMatrix.m20());
-        f = Math.max(f, this.vectorMatrix.m30());
-        return f;
-    }
-
-
-    public float getYMin() {
-        float f = Math.min(this.vectorMatrix.m01(), this.vectorMatrix.m11());
-        f = Math.min(f, this.vectorMatrix.m21());
-        f = Math.min(f, this.vectorMatrix.m31());
-        return f;
+        return this.xPos + this.width;
     }
 
 
     public float getYMax() {
-        float f = Math.max(this.vectorMatrix.m01(), this.vectorMatrix.m11());
-        f = Math.max(f, this.vectorMatrix.m21());
-        f = Math.max(f, this.vectorMatrix.m31());
-        return f;
+        return this.yPos + this.height;
     }
 
 
-    public Vector3f getBD() {
-        return getD().sub(getB());
+    public void setX(float xPos) {
+        this.xPos = xPos;
     }
 
 
-    public Vector3f getCD() {
-        return getD().sub(getC());
+    public float getZ() {
+        return zPos;
     }
 
 
-    public float getZMin() {
-        float f = Math.min(this.vectorMatrix.m02(), this.vectorMatrix.m12());
-        f = Math.min(f, this.vectorMatrix.m22());
-        f = Math.min(f, this.vectorMatrix.m32());
-        return f;
+    public void setZ(float zPos) {
+        this.zPos = zPos;
     }
 
 
-    public float getZMax() {
-        float f = Math.max(this.vectorMatrix.m02(), this.vectorMatrix.m12());
-        f = Math.max(f, this.vectorMatrix.m22());
-        f = Math.max(f, this.vectorMatrix.m32());
-        return f;
+    public float getCenterX() {
+        return this.xPos + this.width / 2;
     }
 
 
-    public boolean clashesWith(Area other) {
-        return Intersectionf.testAabAab(this.getA(), other.getA(), this.getD(), other.getD());
+    public float getCenterY() {
+        return this.yPos + this.height / 2;
     }
 
 
-    public void set(Vector3f a, Vector3f b, Vector3f c, Vector3f d) {
-        this.vectorMatrix.set(a, b, c, d);
+    public float getWidth() {
+        return this.width;
     }
 
 
-    public float getAx() {
-        return this.vectorMatrix.m00();
+    public void setWidth(float width) {
+        this.width = width;
     }
 
 
-    public float getAy() {
-        return this.vectorMatrix.m01();
+    public float getHeight() {
+        return this.height;
     }
 
 
-    public float getAz() {
-        return this.vectorMatrix.m02();
+    public void setHeight(float height) {
+        this.height = height;
     }
 
 
-    public float getBx() {
-        return this.vectorMatrix.m10();
+    public void setPosition(float xPos, float yPos, float zPos) {
+        this.xPos = xPos;
+        this.yPos = yPos;
+        this.zPos = zPos;
     }
 
 
-    public float getBy() {
-        return this.vectorMatrix.m11();
+    public boolean contains(float pX, float pY) {
+        return pX >= this.xPos && pX <= this.xPos + this.width && pY >= this.yPos && pY <= this.yPos + this.height;
     }
 
 
-    public float getBz() {
-        return this.vectorMatrix.m12();
+    public void moveX(float amount) {
+        this.setX(this.xPos + amount);
     }
 
 
-    public float getCx() {
-        return this.vectorMatrix.m20();
+    public void moveY(float amount) {
+        this.setY(this.yPos + amount);
     }
 
 
-    public float getCy() {
-        return this.vectorMatrix.m21();
+    public void moveZ(float amount) {
+        this.setZ(this.zPos + amount);
     }
 
 
-    public float getCz() {
-        return this.vectorMatrix.m22();
+    public void growX(float amount) {
+        this.setWidth(this.width + amount);
     }
 
 
-    public float getDx() {
-        return this.vectorMatrix.m30();
+    public void growY(float amount) {
+        this.setHeight(this.height + amount);
     }
 
 
-    public float getDy() {
-        return this.vectorMatrix.m31();
+    public void scaleX(float amount) {
+        this.setWidth(this.width * amount);
     }
 
 
-    public float getDz() {
-        return this.vectorMatrix.m32();
+    public void scaleY(float amount) {
+        this.setHeight(this.height * amount);
     }
 
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(vectorMatrix, position);
+    public float getInnerXMax() {
+        return this.getInnerX() + this.getInnerWidth();
     }
 
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) {
-            return true;
-        }
-        if(o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Area area = (Area) o;
-        return Objects.equal(vectorMatrix, area.vectorMatrix) && Objects.equal(position, area.position);
+    public float getInnerX() {
+        return this.xPos + this.padding.getLeft();
     }
 
 
-    public enum AnchorPoint {
-        A,
-        B,
-        C,
-        D,
-        CENTER
+    public float getInnerWidth() {
+        return this.width - this.padding.getLeft() - this.padding.getRight();
     }
 
-    public static class Position {
 
-        private final Vector3f anchor;
-
-        private final AnchorPoint anchorPoint;
-
-
-        public Position(float x, float y, float z, AnchorPoint anchorPoint) {
-            this(new Vector3f(x, y, z), anchorPoint);
-        }
+    public void setInnerWidth(float width) {
+        this.setWidth(width + this.padding.getLeft() + this.padding.getRight());
+    }
 
 
-        public Position(Vector3f anchor, AnchorPoint anchorPoint) {
-            this.anchor = anchor;
-            this.anchorPoint = anchorPoint;
-        }
+    public float getInnerYMax() {
+        return this.getInnerY() + this.getInnerHeight();
+    }
 
 
-        public Vector3f getAnchor() {
-            return anchor;
-        }
+    public float getInnerY() {
+        return this.yPos + this.padding.getTop();
+    }
 
 
-        public AnchorPoint getAnchorPoint() {
-            return anchorPoint;
-        }
+    public float getInnerHeight() {
+        return this.height - this.padding.getTop() - this.padding.getBottom();
+    }
 
 
-        @Override
-        public int hashCode() {
-            return Objects.hashCode(anchor, anchorPoint);
-        }
+    public void setInnerHeight(float height) {
+        this.setHeight(height + this.padding.getTop() + this.padding.getBottom());
+    }
 
 
-        @Override
-        public boolean equals(Object o) {
-            if(this == o) {
-                return true;
-            }
-            if(o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Position position = (Position) o;
-            return Objects.equal(anchor, position.anchor) && anchorPoint == position.anchorPoint;
-        }
+    public Area copy() {
+        return new Area(this.xPos, this.yPos, this.zPos, this.width, this.height, this.padding);
     }
 }

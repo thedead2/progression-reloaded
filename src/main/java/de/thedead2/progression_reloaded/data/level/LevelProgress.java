@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.data.level;
 
-import de.thedead2.progression_reloaded.api.progress.IProgressInfo;
+import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;

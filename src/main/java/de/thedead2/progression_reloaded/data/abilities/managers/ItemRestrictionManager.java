@@ -79,8 +79,11 @@ public class ItemRestrictionManager extends RestrictionManager<ItemRestriction, 
     }
 
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SubscribeEvent(priority = EventPriority.HIGHEST) //TODO: tick only on server!
     public void onInventoryTick(final TickEvent.PlayerTickEvent event) {
+        if(event.side.isClient()) {
+            return;
+        }
         Player player = event.player;
         final Inventory inventory = player.getInventory();
 

@@ -2,13 +2,8 @@ package de.thedead2.progression_reloaded.data;
 
 import de.thedead2.progression_reloaded.data.abilities.managers.RestrictionManager;
 import de.thedead2.progression_reloaded.data.abilities.restrictions.Restriction;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -24,7 +19,7 @@ public abstract class AbilityManager { //TODO: implement abilities
     private static boolean registered = false;
 
 
-    public static <T extends RestrictionManager<R, V>, R extends Restriction<V>, V> void registerManager(ResourceLocation managerId, T manager) {
+    public static <T extends RestrictionManager<R, V>, R extends Restriction<V>, V> T registerManager(ResourceLocation managerId, T manager) {
         if(registered) {
             throw new IllegalStateException("RestrictionManagers have already been registered to event bus!"
                                                     + "\nTry registering your RestrictionManager before AddReloadListenerEvent is fired!");
@@ -35,6 +30,7 @@ public abstract class AbilityManager { //TODO: implement abilities
         else {
             restrictionManagers.put(managerId, manager);
             MinecraftForge.EVENT_BUS.register(manager);
+            return manager;
         }
     }
 

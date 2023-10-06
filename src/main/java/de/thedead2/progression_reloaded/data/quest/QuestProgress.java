@@ -2,7 +2,7 @@ package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import de.thedead2.progression_reloaded.api.progress.IProgressInfo;
+import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import net.minecraft.nbt.CompoundTag;

@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
-import de.thedead2.progression_reloaded.client.ClientDataManager;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
@@ -40,7 +40,9 @@ public class ClientSyncLevelsPacket implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
-                ClientDataManager.getInstance().updateLevelProgress(ClientSyncLevelsPacket.this.currentLevel, ClientSyncLevelsPacket.this.progress);
+                var client = ModClientInstance.getInstance();
+                var clientDataManager = client.getClientDataManager();
+                clientDataManager.updateLevelProgress(ClientSyncLevelsPacket.this.currentLevel, ClientSyncLevelsPacket.this.progress);
             }
         };
     }

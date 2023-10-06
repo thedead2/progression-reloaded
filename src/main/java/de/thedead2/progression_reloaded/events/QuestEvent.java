@@ -11,7 +11,7 @@ import net.minecraftforge.eventbus.api.Cancelable;
 import java.util.Set;
 
 
-public abstract class QuestEvent extends ModEvents.ProgressionEvent {
+public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
 
     private final ProgressionQuest quest;
 
@@ -92,7 +92,7 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
         }
     }
 
-    public static class UpdateQuestStatusEvent extends ModEvents.ProgressionEvent {
+    public static class UpdateQuestStatusEvent extends PREventFactory.ProgressionEvent {
 
         private final KnownPlayer player;
 
@@ -116,7 +116,7 @@ public abstract class QuestEvent extends ModEvents.ProgressionEvent {
     }
 
     @Cancelable
-    public static class TriggerEvent extends ModEvents.ProgressionEvent {
+    public static class TriggerEvent extends PREventFactory.ProgressionEvent {
 
         private final SimpleTrigger<?> trigger;
 

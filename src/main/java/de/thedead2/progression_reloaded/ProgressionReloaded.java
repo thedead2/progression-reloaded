@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded;
 
-import de.thedead2.progression_reloaded.client.gui.themes.ThemeType;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.commands.ModCommand;
 import de.thedead2.progression_reloaded.data.AbilityManager;
 import de.thedead2.progression_reloaded.data.LevelManager;
@@ -10,6 +10,7 @@ import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.events.RegisterEvent;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
 import de.thedead2.progression_reloaded.loot.ModLootModifiers;
@@ -94,15 +95,15 @@ public class ProgressionReloaded {
             ModRegistries.register(TestQuests.TEST3);
             ModRegistries.register(TestQuests.TEST4);
             ModRegistries.register(TestQuests.TEST5);
+            ModRegistries.register(TestQuests.TEST6);
+            ModRegistries.register(TestQuests.TEST7);
+            ModRegistries.register(TestQuests.TEST8);
 
-            ModRegistries.register(TestLevels.TEST2);
-            ModRegistries.register(TestLevels.TEST5);
             ModRegistries.register(TestLevels.TEST1);
-            ModRegistries.register(TestLevels.TEST4);
-            ModRegistries.register(TestLevels.TEST3);
+            ModRegistries.register(TestLevels.TEST2);
         }
 
-        ModRegistries.register(TestLevels.CREATIVE);
+        ModRegistries.register(LevelManager.CREATIVE);
 
         ModRegistries.register(modEventBus);
         ModLootModifiers.register(modEventBus);
@@ -117,6 +118,10 @@ public class ProgressionReloaded {
 
         forgeEventBus.register(this);
         forgeEventBus.register(AbilityManager.class);
+        if(FMLEnvironment.dist.isClient()) {
+            forgeEventBus.register(ModClientInstance.getInstance());
+        }
+
         registerLoggerFilter();
         VersionManager.register(modEventBus, forgeEventBus);
         //CrashHandler.getInstance().registerCrashListener(ModRegistries::saveRegistries);
@@ -129,6 +134,8 @@ public class ProgressionReloaded {
     }
 
 
+    private void onTheme(final RegisterEvent.RegisterThemesEvent event) {
+    }
 
 
 
@@ -146,9 +153,6 @@ public class ProgressionReloaded {
         LOGGER.info("Starting {}, Version: {}", MOD_NAME, MOD_VERSION);
         FileHandler.checkForMainDirectories();
         ModNetworkHandler.registerPackets();
-        if(FMLEnvironment.dist.isClient()) {
-            ThemeType.registerBookThemeTextures();
-        }
     }
 
 
@@ -160,6 +164,7 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onServerStarting(final ServerStartingEvent event) {
+        GAME_STATE = GameState.ABOUT_TO_START;
         PlayerDataHandler.loadData(event.getServer().overworld());
         LevelManager.create(event.getServer().overworld());
     }
@@ -167,6 +172,7 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onServerStopping(final ServerStoppingEvent event) {
+        GAME_STATE = GameState.ABOUT_TO_STOP;
         LevelManager.getInstance().saveData();
         LevelManager.getInstance().getQuestManager().stopListening();
     }
@@ -175,6 +181,7 @@ public class ProgressionReloaded {
     @SubscribeEvent
     public void onServerStopped(final ServerStoppedEvent event) {
         LevelManager.getInstance().reset();
+        GAME_STATE = GameState.INACTIVE;
     }
 
 
@@ -191,7 +198,7 @@ public class ProgressionReloaded {
         PlayerData data = PlayerDataHandler.getActivePlayer(event.getEntity());
         ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(data), data.getServerPlayer());
 
-        if(GAME_STATE == GameState.ABOUT_TO_STOP) {
+        if(GAME_STATE == GameState.PLAYER_LOGGED_OUT) {
             Player player = event.getEntity();
             PlayerDataHandler.removeActivePlayer(player);
             if(player instanceof ServerPlayer serverPlayer) {
@@ -215,6 +222,7 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
+        GAME_STATE = GameState.PLAYER_LOGGED_IN;
         Player player = event.getEntity();
         PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
         LevelManager.getInstance().checkForCreativeMode(playerData);
@@ -224,7 +232,7 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onPlayerLoggedOut(final PlayerEvent.PlayerLoggedOutEvent event) {
-        GAME_STATE = GameState.ABOUT_TO_STOP;
+        GAME_STATE = GameState.PLAYER_LOGGED_OUT;
     }
 
 

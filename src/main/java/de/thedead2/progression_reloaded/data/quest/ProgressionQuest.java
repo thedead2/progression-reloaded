@@ -2,16 +2,17 @@ package de.thedead2.progression_reloaded.data.quest;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.api.IProgressable;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
-import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 
 
-public class ProgressionQuest implements ModRegistriesDynamicSerializer, Comparable<ProgressionQuest> {
+public class ProgressionQuest implements IProgressable, Comparable<ProgressionQuest> {
 
     private final QuestDisplayInfo displayInfo;
 
@@ -56,8 +57,8 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    public ResourceLocation getId() {
-        return this.displayInfo.getId();
+    public boolean isMainQuest() {
+        return this.displayInfo.mainQuest();
     }
 
 
@@ -66,13 +67,39 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    public boolean isMainQuest() {
-        return this.displayInfo.isMainQuest();
+    public boolean hasDirectParent() {
+        return this.displayInfo.parentQuest() != null;
     }
 
 
-    public ResourceLocation getParentQuest() {
-        return this.displayInfo.getParentQuest();
+    @Override
+    public int compareTo(@NotNull ProgressionQuest other) {
+        ResourceLocation thisId = this.getId();
+        ResourceLocation otherId = other.getId();
+
+        ResourceLocation thisPrevious = this.getParentQuest();
+        ResourceLocation otherPrevious = other.getParentQuest();
+
+        ProgressionLevel thisLevel = LevelManager.getInstance().getLevelForQuest(this);
+        ProgressionLevel otherLevel = LevelManager.getInstance().getLevelForQuest(other);
+
+        if(thisLevel.equals(otherLevel)) {
+            if(thisId.equals(otherId)) { // same quests
+                return 0;
+            }
+            else if(thisPrevious != null && thisPrevious.equals(otherId)) {
+                return 1; // this is greater
+            }
+            else if(otherPrevious != null && otherPrevious.equals(thisId)) {
+                return -1; // this is less
+            }
+            else {
+                throw new IllegalArgumentException("Can't compare quest " + thisId + " with quest " + otherId + " as they are not related to each other!");
+            }
+        }
+        else {
+            return thisLevel.compareTo(otherLevel);
+        }
     }
 
 
@@ -96,8 +123,8 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    public boolean hasDirectParent() {
-        return this.displayInfo.getParentQuest() != null;
+    public ResourceLocation getId() {
+        return this.displayInfo.id();
     }
 
 
@@ -134,22 +161,7 @@ public class ProgressionQuest implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    @Override
-    public int compareTo(@NotNull ProgressionQuest o) {
-        ResourceLocation thisId = this.getId();
-        ResourceLocation otherId = o.getId();
-
-        ResourceLocation thisPrevious = this.getParentQuest();
-        ResourceLocation otherPrevious = o.getParentQuest();
-
-        if(otherId.equals(thisId) || (otherPrevious == null && thisPrevious == null)) {
-            return 0;
-        }
-        else if(otherPrevious != null && otherPrevious.equals(thisId)) {
-            return -1;
-        }
-        else {
-            return 1;
-        }
+    public ResourceLocation getParentQuest() {
+        return this.displayInfo.parentQuest();
     }
 }

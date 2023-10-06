@@ -2,11 +2,11 @@ package de.thedead2.progression_reloaded.data.trigger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.api.annotation.ExcludeFromEventBus;
 import de.thedead2.progression_reloaded.data.predicates.ItemPredicate;
 import de.thedead2.progression_reloaded.data.predicates.MinMax;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
-import de.thedead2.progression_reloaded.util.annotation.ExcludeFromEventBus;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;

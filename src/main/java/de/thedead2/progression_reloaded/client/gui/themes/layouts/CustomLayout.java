@@ -1,8 +1,8 @@
 package de.thedead2.progression_reloaded.client.gui.themes.layouts;
 
-public class CustomLayout {
+/*public class CustomLayout extends ProgressionLayout {
 
-    public CustomLayout() {
-        //super(triggerArea, rewardsArea, descriptionArea, titleArea, iconArea, questsArea, levelsArea, toastArea);
-    }
-}
+    public CustomLayout(int toastX, int toastY) {
+        super(toastX, toastY, levelProgressBarOL);
+    }*/
+//}

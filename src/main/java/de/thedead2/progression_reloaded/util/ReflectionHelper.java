@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.util;
 
 import com.google.common.reflect.ClassPath;
-import de.thedead2.progression_reloaded.util.annotation.ExcludeFromEventBus;
+import de.thedead2.progression_reloaded.api.annotation.ExcludeFromEventBus;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.MethodsReturnNonnullByDefault;
 import net.minecraftforge.eventbus.api.IEventBus;

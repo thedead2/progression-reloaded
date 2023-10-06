@@ -1,7 +1,6 @@
 package de.thedead2.progression_reloaded.util;
 
-import de.thedead2.progression_reloaded.client.gui.themes.ThemeType;
-import de.thedead2.progression_reloaded.data.level.TestLevels;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 
@@ -21,8 +20,6 @@ public abstract class ConfigManager {
     public static final ForgeConfigSpec.ConfigValue<String> DEFAULT_STARTING_LEVEL;
 
     public static final ForgeConfigSpec.ConfigValue<Integer> MAX_EXTRA_LIVES;
-
-    public static final ForgeConfigSpec.ConfigValue<ThemeType> THEME;
 
     public static final ForgeConfigSpec.BooleanValue SHOULD_RENDER_OVERLAY;
 
@@ -50,13 +47,10 @@ public abstract class ConfigManager {
                 true
         );
 
-        DEFAULT_STARTING_LEVEL = CONFIG_BUILDER.comment("The default level a player gets assigned when starting a new world or logging into a server for the first time.\ndefault = " + TestLevels.CREATIVE.getId().toString())
-                                               .define("defaultLevel", TestLevels.CREATIVE.getId().toString());
+        DEFAULT_STARTING_LEVEL = CONFIG_BUILDER.comment("The default level a player gets assigned when starting a new world or logging into a server for the first time.\ndefault = " + LevelManager.CREATIVE.getId().toString())
+                                               .define("defaultLevel", LevelManager.CREATIVE.getId().toString());
 
         MAX_EXTRA_LIVES = CONFIG_BUILDER.comment("The max amount of extra lives a player can have. \ndefault = " + 3).define("maxExtraLives", 3);
-
-        THEME = CONFIG_BUILDER.comment("The Theme the Progression Book uses. \ndefault = " + ThemeType.DEFAULT)
-                              .defineEnum("progressionBookTheme", ThemeType.DEFAULT);
 
         SHOULD_RENDER_OVERLAY = newBoolean("Should render level/ quest overlay", "shouldRenderOverlay", true);
 

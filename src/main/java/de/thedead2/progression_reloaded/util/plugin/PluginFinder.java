@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.util.plugin;
 
-import de.thedead2.progression_reloaded.util.annotation.ProgressionPlugin;
+import de.thedead2.progression_reloaded.api.plugin.IProgressionPlugin;
+import de.thedead2.progression_reloaded.api.plugin.ProgressionPlugin;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.ModFileScanData;
 import org.apache.logging.log4j.LogManager;

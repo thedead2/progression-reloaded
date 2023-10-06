@@ -3,7 +3,9 @@ package de.thedead2.progression_reloaded.util.helper;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 public abstract class CollectionHelper {
@@ -58,5 +60,16 @@ public abstract class CollectionHelper {
             newCollection.add(v);
         });
         return newCollection;
+    }
+
+
+    public static <T> Optional<T> findObjectWithHighestCount(Collection<T> collection) {
+        Map<T, Long> objectGroups = collection.stream().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return objectGroups.entrySet()
+                           .stream()
+                           .sorted(Map.Entry.<T, Long>comparingByValue().reversed())
+                           .limit(1)
+                           .map(Map.Entry::getKey)
+                           .findFirst();
     }
 }

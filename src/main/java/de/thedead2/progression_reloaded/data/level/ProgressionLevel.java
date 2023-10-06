@@ -3,12 +3,13 @@ package de.thedead2.progression_reloaded.data.level;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.api.IProgressable;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
-import de.thedead2.progression_reloaded.util.registries.ModRegistriesDynamicSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -19,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-public class ProgressionLevel implements ModRegistriesDynamicSerializer, Comparable<ProgressionLevel> {
+public class ProgressionLevel implements IProgressable, Comparable<ProgressionLevel> {
 
     private final LevelDisplayInfo displayInfo;
 
@@ -68,13 +69,8 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    public ResourceLocation getId() {
-        return this.displayInfo.getId();
-    }
-
-
     public boolean contains(ProgressionLevel other) {
-        if(this.equals(TestLevels.CREATIVE)) {
+        if(this.equals(LevelManager.CREATIVE)) {
             return true;
         }
 
@@ -91,14 +87,42 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer, Compara
     }
 
 
+    @Override
+    public int compareTo(@NotNull ProgressionLevel other) {
+        //Cases:
+        // 1.) other parent of this --> done
+        // 2.) this parent of other --> done
+        // 3.) this equals other --> done
+        // 4.) neither of the above --> we can't compare them!
+        ResourceLocation thisId = this.getId();
+        ResourceLocation otherId = other.getId();
+
+        ResourceLocation thisPrevious = this.getPreviousLevel();
+        ResourceLocation otherPrevious = other.getPreviousLevel();
+
+        if(thisId.equals(otherId)) { // same levels
+            return 0;
+        }
+        else if(thisPrevious != null && thisPrevious.equals(otherId)) {
+            return 1; // this is greater
+        }
+        else if(otherPrevious != null && otherPrevious.equals(thisId)) {
+            return -1; // this is less
+        }
+        else {
+            throw new IllegalArgumentException("Can't compare level " + thisId + " with level " + otherId + " as they are not related to each other!");
+        }
+    }
+
+
     public boolean contains(ProgressionQuest quest) {
         ProgressionLevel previousLevel = this.getPreviousLevel() != null ? ModRegistries.LEVELS.get().getValue(this.getPreviousLevel()) : null;
         return this.quests.contains(quest.getId()) || (previousLevel != null && previousLevel.contains(quest));
     }
 
 
-    public @Nullable ResourceLocation getPreviousLevel() {
-        return this.displayInfo.getPreviousLevel();
+    public ResourceLocation getId() {
+        return this.displayInfo.id();
     }
 
 
@@ -127,22 +151,7 @@ public class ProgressionLevel implements ModRegistriesDynamicSerializer, Compara
     }
 
 
-    @Override
-    public int compareTo(@NotNull ProgressionLevel o) {
-        ResourceLocation thisId = this.getId();
-        ResourceLocation otherId = o.getId();
-
-        ResourceLocation thisPrevious = this.getPreviousLevel();
-        ResourceLocation otherPrevious = o.getPreviousLevel();
-
-        if(otherId.equals(thisId) || (otherPrevious == null && thisPrevious == null)) {
-            return 0;
-        }
-        else if(otherPrevious != null && otherPrevious.equals(thisId)) {
-            return -1;
-        }
-        else {
-            return 1;
-        }
+    public @Nullable ResourceLocation getPreviousLevel() {
+        return this.displayInfo.previousLevel();
     }
 }

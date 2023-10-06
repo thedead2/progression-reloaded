@@ -208,4 +208,97 @@ public class TestQuests {
                                  .build()
 
     );
+
+    public static final ProgressionQuest TEST6 = new ProgressionQuest(
+            QuestDisplayInfo.Builder.builder()
+                                    .withId("quest_test6")
+                                    .withName("Test Quest6")
+                                    .withDescription("This is a test quest6!")
+                                    .withParent("quest_test5")
+                                    .isMainQuest()
+                                    .build(),
+            Rewards.Builder.builder()
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HEAL, 50)))
+                           .build(),
+            QuestCriteria.Builder.builder()
+                                 .withCriterion(
+                                         "test35",
+                                         new PlayerInventoryChangedTrigger(
+                                                 PlayerPredicate.ANY,
+                                                 new ItemPredicate(
+                                                         Items.ACACIA_BUTTON,
+                                                         MinMax.Ints.ANY,
+                                                         MinMax.Ints.ANY,
+                                                         Collections.emptySet(),
+                                                         Collections.emptySet(),
+                                                         NbtPredicate.ANY,
+                                                         null
+                                                 )
+                                         )
+                                 )
+                                 .build()
+
+    );
+
+    public static final ProgressionQuest TEST7 = new ProgressionQuest(
+            QuestDisplayInfo.Builder.builder()
+                                    .withId("quest_test7")
+                                    .withName("Test Quest7")
+                                    .withDescription("This is a test quest7!")
+                                    .withParent("quest_test6")
+                                    .isMainQuest()
+                                    .build(),
+            Rewards.Builder.builder()
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.WATER_BREATHING, 50)))
+                           .build(),
+            QuestCriteria.Builder.builder()
+                                 .withCriterion(
+                                         "test36",
+                                         new PlayerInventoryChangedTrigger(
+                                                 PlayerPredicate.ANY,
+                                                 new ItemPredicate(
+                                                         Items.STONE,
+                                                         MinMax.Ints.ANY,
+                                                         MinMax.Ints.ANY,
+                                                         Collections.emptySet(),
+                                                         Collections.emptySet(),
+                                                         NbtPredicate.ANY,
+                                                         null
+                                                 )
+                                         )
+                                 )
+                                 .build()
+
+    );
+
+    public static final ProgressionQuest TEST8 = new ProgressionQuest(
+            QuestDisplayInfo.Builder.builder()
+                                    .withId("quest_test8")
+                                    .withName("Test Quest8")
+                                    .withDescription("This is a test quest8!")
+                                    .withParent("quest_test7")
+                                    .isMainQuest()
+                                    .build(),
+            Rewards.Builder.builder()
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 50)))
+                           .build(),
+            QuestCriteria.Builder.builder()
+                                 .withCriterion(
+                                         "test37",
+                                         new PlayerInventoryChangedTrigger(
+                                                 PlayerPredicate.ANY,
+                                                 new ItemPredicate(
+                                                         Items.PACKED_ICE,
+                                                         MinMax.Ints.ANY,
+                                                         MinMax.Ints.ANY,
+                                                         Collections.emptySet(),
+                                                         Collections.emptySet(),
+                                                         NbtPredicate.ANY,
+                                                         null
+                                                 )
+                                         )
+                                 )
+                                 .build()
+
+    );
 }

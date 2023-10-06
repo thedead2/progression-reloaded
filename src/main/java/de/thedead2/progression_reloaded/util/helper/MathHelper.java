@@ -86,12 +86,27 @@ public abstract class MathHelper {
     }
 
 
-    public static int ticksToSeconds(int ticks) {
+    public static long ticksToSeconds(long ticks) {
         return ticks / 20;
+    }
+
+
+    public static int millisToTicks(long millis) {
+        return secondsToTicks(Math.toIntExact(millisToSeconds(millis)));
     }
 
 
     public static long secondsToMillis(long seconds) {
         return seconds * 1000L;
+    }
+
+
+    public static long millisToSeconds(long millis) {
+        return millis / 1000L;
+    }
+
+
+    public static int sectionsPosToBlockPos(int sectionsCoord) {
+        return sectionsCoord << 4;
     }
 }

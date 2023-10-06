@@ -1,8 +1,8 @@
 package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.base.Objects;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
 import de.thedead2.progression_reloaded.util.ConfigManager;
@@ -45,8 +45,8 @@ public class PlayerData {
 
 
     public PlayerData(Player player, ResourceLocation id) {
-        this(null, player, id, player instanceof ServerPlayer serverPlayer ? serverPlayer.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? TestLevels.CREATIVE.getId() :
-                ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), TestLevels.CREATIVE.getId()) : TestLevels.CREATIVE.getId(), 0);
+        this(null, player, id, player instanceof ServerPlayer serverPlayer ? serverPlayer.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? LevelManager.CREATIVE.getId() :
+                ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), LevelManager.CREATIVE.getId()) : LevelManager.CREATIVE.getId(), 0);
     }
 
 

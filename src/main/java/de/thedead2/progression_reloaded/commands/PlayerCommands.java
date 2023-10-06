@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.commands;
 
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.PlayerDataHandler;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
@@ -40,7 +41,7 @@ public class PlayerCommands {
             }
             return ModCommand.COMMAND_SUCCESS;
         });
-        ModCommand.Builder.newModCommand("players/award/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST),
+        ModCommand.Builder.newModCommand("award/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST),
                                          context -> {
                                              ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
                                              LevelManager.getInstance().getQuestManager().award(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
@@ -48,7 +49,7 @@ public class PlayerCommands {
                                              return ModCommand.COMMAND_SUCCESS;
                                          }
         );
-        ModCommand.Builder.newModCommand("players/revoke/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST),
+        ModCommand.Builder.newModCommand("revoke/quest/[quest]", Map.of("[quest]", ResourceLocationArgument.id()), Map.of("[quest]", SUGGEST_QUEST),
                                          context -> {
                                              ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
                                              LevelManager.getInstance().getQuestManager().revoke(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
@@ -62,20 +63,36 @@ public class PlayerCommands {
             return ModCommand.COMMAND_SUCCESS;
         });
 
-        ModCommand.Builder.newModCommand("players/award/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL),
+        ModCommand.Builder.newModCommand("award/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL),
                                          context -> {
                                              PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-                                             LevelManager.getInstance().award(player, ResourceLocationArgument.getId(context, "level"));
-                                             context.getSource().sendSuccess(Component.literal("Completed level !"), false);
-                                             return ModCommand.COMMAND_SUCCESS;
+                                             ResourceLocation levelId = ResourceLocationArgument.getId(context, "level");
+                                             ProgressionLevel level = ModRegistries.LEVELS.get().getValue(levelId);
+                                             if(level != null) {
+                                                 LevelManager.getInstance().award(player, level);
+                                                 context.getSource().sendSuccess(Component.literal("Completed level !"), false);
+                                                 return ModCommand.COMMAND_SUCCESS;
+                                             }
+                                             else {
+                                                 context.getSource().sendFailure(Component.literal("Unknown level !"));
+                                                 return ModCommand.COMMAND_FAILURE;
+                                             }
                                          }
         );
-        ModCommand.Builder.newModCommand("players/revoke/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL),
+        ModCommand.Builder.newModCommand("revoke/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL),
                                          context -> {
                                              PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-                                             LevelManager.getInstance().revoke(player, ResourceLocationArgument.getId(context, "level"));
-                                             context.getSource().sendSuccess(Component.literal("Revoked level!"), false);
-                                             return ModCommand.COMMAND_SUCCESS;
+                                             ResourceLocation levelId = ResourceLocationArgument.getId(context, "level");
+                                             ProgressionLevel level = ModRegistries.LEVELS.get().getValue(levelId);
+                                             if(level != null) {
+                                                 LevelManager.getInstance().revoke(player, level);
+                                                 context.getSource().sendSuccess(Component.literal("Revoked level !"), false);
+                                                 return ModCommand.COMMAND_SUCCESS;
+                                             }
+                                             else {
+                                                 context.getSource().sendFailure(Component.literal("Unknown level !"));
+                                                 return ModCommand.COMMAND_FAILURE;
+                                             }
                                          }
         );
         ModCommand.Builder.newModCommand("players/change/level/[level]", Map.of("[level]", ResourceLocationArgument.id()), Map.of("[level]", SUGGEST_LEVEL),

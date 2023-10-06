@@ -2,7 +2,7 @@ package de.thedead2.progression_reloaded.network.packets;
 
 import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
-import de.thedead2.progression_reloaded.client.ClientDataManager;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
@@ -43,7 +43,7 @@ public class ClientSyncQuestsPacket implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
-                ClientDataManager.getInstance().updateQuestProgress(ClientSyncQuestsPacket.this.playerQuests, ClientSyncQuestsPacket.this.questProgress);
+                ModClientInstance.getInstance().getClientDataManager().updateQuestProgress(ClientSyncQuestsPacket.this.playerQuests, ClientSyncQuestsPacket.this.questProgress);
             }
         };
     }

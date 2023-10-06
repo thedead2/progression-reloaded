@@ -1,8 +1,5 @@
 package de.thedead2.progression_reloaded.plugins.jei;
 
-import com.ibm.icu.text.DecimalFormat;
-import de.thedead2.progression_reloaded.data.AbilityManager;
-import de.thedead2.progression_reloaded.data.abilities.managers.ItemRestrictionManager;
 import de.thedead2.progression_reloaded.data.abilities.restrictions.ItemRestriction;
 import de.thedead2.progression_reloaded.events.LevelEvent;
 import mezz.jei.api.IModPlugin;
@@ -24,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+import static de.thedead2.progression_reloaded.data.abilities.ModRestrictionManagers.ITEM_RESTRICTION_MANAGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
 
@@ -31,9 +29,6 @@ import static de.thedead2.progression_reloaded.util.ModHelper.*;
 @OnlyIn(Dist.CLIENT)
 @SuppressWarnings("unused")
 public class ItemRestrictionJEIPlugin implements IModPlugin {
-
-    private static final DecimalFormat FORMAT = new DecimalFormat("#.##");
-
     private final List<ItemStack> hiddenItems = new ArrayList<>();
 
     private IJeiRuntime runtime;
@@ -62,7 +57,7 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
                 this.collectRestrictedItems(ingredients);
                 this.hideRestrictedItems(ingredients);
 
-                LOGGER.debug("JEI sync complete. Took {}ms.", FORMAT.format((System.nanoTime() - syncStart) / 1000000));
+                LOGGER.debug("JEI sync complete. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - syncStart) / 1000000));
             }
         });
     }
@@ -77,7 +72,7 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
             this.hiddenItems.clear();
         }
 
-        LOGGER.debug("Items list restored. Took {}ms.", FORMAT.format((System.nanoTime() - restoreStart) / 1000000));
+        LOGGER.debug("Items list restored. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - restoreStart) / 1000000));
     }
 
 
@@ -85,19 +80,17 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
         final long hideCalcStart = System.nanoTime();
         for(final ItemStack item : ingredients.getAllIngredients(VanillaTypes.ITEM_STACK)) {
 
-            ItemRestrictionManager itemRestrictionManager = AbilityManager.getManagerForId(new ResourceLocation(MOD_ID, "item_restriction_manager"));
-
-            final Pair<Boolean, ItemRestriction> pair = itemRestrictionManager.isRestricted(item.getItem());
+            final Pair<Boolean, ItemRestriction> pair = ITEM_RESTRICTION_MANAGER.isRestricted(item.getItem());
 
             if(pair.getLeft()) {
                 ItemRestriction restriction = pair.getRight();
-                if(itemRestrictionManager.doesNotHaveLevel(Minecraft.getInstance().player, restriction) && restriction.shouldHideInJEI()) {
+                if(ITEM_RESTRICTION_MANAGER.doesNotHaveLevel(Minecraft.getInstance().player, restriction) && restriction.shouldHideInJEI()) {
                     this.hiddenItems.add(item);
                 }
             }
         }
 
-        LOGGER.debug("Marked {} entries for hiding. Took {}ms.", this.hiddenItems.size(), FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
+        LOGGER.debug("Marked {} entries for hiding. Took {}ms.", this.hiddenItems.size(), DECIMAL_FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
     }
 
 
@@ -109,7 +102,7 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
             ingredients.removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, this.hiddenItems);
         }
 
-        LOGGER.debug("All entries hidden. Took {}ms.", FORMAT.format((System.nanoTime() - hideStart) / 1000000));
+        LOGGER.debug("All entries hidden. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - hideStart) / 1000000));
     }
 
 

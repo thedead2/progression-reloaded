@@ -34,10 +34,18 @@ public interface ModNetworkPacket {
         }
     }
 
+    /**
+     * The action to execute on the {@link net.minecraftforge.api.distmarker.Dist#CLIENT}
+     * in form of a {@link net.minecraftforge.fml.DistExecutor.SafeRunnable} as an inner class
+     **/
     default DistExecutor.SafeRunnable onClient(Supplier<NetworkEvent.Context> ctx) {
         return EMPTY_SAFE_RUNNABLE;
     }
 
+    /**
+     * The action to execute on the {@link net.minecraftforge.api.distmarker.Dist#DEDICATED_SERVER}
+     * in form of a {@link net.minecraftforge.fml.DistExecutor.SafeRunnable} as an inner class
+     **/
     default DistExecutor.SafeRunnable onServer(Supplier<NetworkEvent.Context> ctx) {
         return EMPTY_SAFE_RUNNABLE;
     }

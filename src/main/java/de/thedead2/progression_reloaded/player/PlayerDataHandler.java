@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.player;
 
 import com.google.common.collect.ImmutableCollection;
-import de.thedead2.progression_reloaded.client.ClientDataManager;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.player.data.PlayerSaveData;
 import de.thedead2.progression_reloaded.player.data.TeamSaveData;
 import de.thedead2.progression_reloaded.player.types.KnownPlayer;
@@ -30,7 +30,6 @@ public abstract class PlayerDataHandler {
      * Use the Getters instead!
      **/
     @Deprecated
-    @SuppressWarnings("")
     private static TeamSaveData teamSaveData = null;
 
     @Deprecated
@@ -65,12 +64,18 @@ public abstract class PlayerDataHandler {
     }
 
 
+    //TODO: When accessing from render/ client thread no online players are available?!
     public static PlayerData getActivePlayer(ResourceLocation player) {
-        if(!ModHelper.isRunningOnServerThread()) {
-            return ClientDataManager.getInstance().getClientData();
-        }
-        else {
+        if(ModHelper.isRunningOnServerThread())
             return getPlayerSaveData().orElseThrow().getActivePlayer(player);
+        else {
+            PlayerData clientData = ModClientInstance.getInstance().getClientDataManager().getClientData();
+            if(clientData.getId().equals(player)) {
+                return clientData;
+            }
+            else {
+                throw new IllegalArgumentException("Tried to access clientData for other local player!");
+            }
         }
     }
 

@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
-import de.thedead2.progression_reloaded.client.gui.util.ModRenderer;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.FriendlyByteBuf;
@@ -42,7 +42,7 @@ public class ClientUsedExtraLifePacket implements ModNetworkPacket {
                 Entity entity = level.getEntity(entityId);
                 minecraft.particleEngine.createTrackingEmitter(entity, ParticleTypes.TOTEM_OF_UNDYING, 30);
                 level.playLocalSound(entity.getX(), entity.getY(), entity.getZ(), SoundEvents.TOTEM_USE, entity.getSoundSource(), 1.0F, 1.0F, false);
-                ModRenderer.displayExtraLifeAnimation();
+                ModClientInstance.getInstance().getModRenderer().displayExtraLifeAnimation();
             }
         };
     }
