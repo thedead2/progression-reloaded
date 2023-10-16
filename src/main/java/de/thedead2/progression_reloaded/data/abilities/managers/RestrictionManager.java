@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public abstract class RestrictionManager<T extends Restriction<R>, R> extends SimpleJsonReloadListener {
+public abstract class RestrictionManager<T extends Restriction<? extends R>, R> extends SimpleJsonReloadListener {
 
     protected final ResourceLocation id;
 

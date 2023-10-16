@@ -25,61 +25,61 @@ public class Alignment {
     }
 
 
-    public float getXPos(float screenWidth, float width) {
-        return x.getXPos(screenWidth, width);
+    public float getXPos(float origin, float screenWidth, float width, float offset) {
+        return x.getXPos(origin, screenWidth, width) + offset;
     }
 
 
-    public float getYPos(float screenHeight, float height) {
-        return y.getYPos(screenHeight, height);
+    public float getYPos(float origin, float screenHeight, float height, float offset) {
+        return y.getYPos(origin, screenHeight, height) + offset;
     }
 
 
     public enum X {
         LEFT {
             @Override
-            public float getXPos(float screenWidth, float width) {
-                return 0;
+            public float getXPos(float origin, float screenWidth, float width) {
+                return origin;
             }
         },
         RIGHT {
             @Override
-            public float getXPos(float screenWidth, float width) {
-                return screenWidth - width;
+            public float getXPos(float origin, float screenWidth, float width) {
+                return origin + (screenWidth - width);
             }
         },
         CENTER {
             @Override
-            public float getXPos(float screenWidth, float width) {
-                return (screenWidth - width) / 2;
+            public float getXPos(float origin, float screenWidth, float width) {
+                return origin + ((screenWidth - width) / 2);
             }
         };
 
 
-        protected abstract float getXPos(float screenWidth, float width);
+        protected abstract float getXPos(float origin, float screenWidth, float width);
     }
 
     public enum Y {
         TOP {
             @Override
-            public float getYPos(float screenHeight, float height) {
-                return 0;
+            public float getYPos(float origin, float screenHeight, float height) {
+                return origin;
             }
         },
         BOTTOM {
             @Override
-            public float getYPos(float screenHeight, float height) {
-                return screenHeight - height;
+            public float getYPos(float origin, float screenHeight, float height) {
+                return origin + (screenHeight - height);
             }
         },
         CENTER {
             @Override
-            public float getYPos(float screenHeight, float height) {
-                return (screenHeight - height) / 2;
+            public float getYPos(float origin, float screenHeight, float height) {
+                return origin + ((screenHeight - height) / 2);
             }
         };
 
 
-        protected abstract float getYPos(float screenHeight, float height);
+        protected abstract float getYPos(float origin, float screenHeight, float height);
     }
 }

@@ -13,7 +13,7 @@ public class EffectReward implements IReward {
 
     private final MobEffectInstance effect;
 
-
+    //TODO: Check effect to be longer that 2 seconds otherwise it is endless --> minecraft bug?!
     public EffectReward(MobEffectInstance effect) {
         this.effect = effect;
     }
@@ -26,7 +26,7 @@ public class EffectReward implements IReward {
 
     @Override
     public void rewardPlayer(ServerPlayer player) {
-        player.addEffect(effect); //TODO: Given Effects duration is endless --> why?
+        player.addEffect(effect);
     }
 
 

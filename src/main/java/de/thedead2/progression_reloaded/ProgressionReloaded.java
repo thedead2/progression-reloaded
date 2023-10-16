@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded;
 
 import de.thedead2.progression_reloaded.client.ModClientInstance;
-import de.thedead2.progression_reloaded.commands.ModCommand;
+import de.thedead2.progression_reloaded.commands.ModCommands;
 import de.thedead2.progression_reloaded.data.AbilityManager;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.abilities.ModRestrictionManagers;
@@ -27,6 +27,7 @@ import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.handler.FileHandler;
 import de.thedead2.progression_reloaded.util.logger.MissingAdvancementFilter;
 import de.thedead2.progression_reloaded.util.logger.UnknownAdvancementFilter;
+import de.thedead2.progression_reloaded.util.logger.UnknownFontTypeFilter;
 import de.thedead2.progression_reloaded.util.logger.UnknownRecipeCategoryFilter;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
@@ -134,11 +135,6 @@ public class ProgressionReloaded {
     }
 
 
-    private void onTheme(final RegisterEvent.RegisterThemesEvent event) {
-    }
-
-
-
     private void registerRewards() {
         TypeRegistries.registerClasses(IReward.class, TypeRegistries.PROGRESSION_REWARDS);
     }
@@ -158,7 +154,7 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onCommandsRegistration(final RegisterCommandsEvent event) {
-        ModCommand.registerCommands(event.getDispatcher());
+        ModCommands.registerCommands(event.getDispatcher());
     }
 
 
@@ -275,6 +271,7 @@ public class ProgressionReloaded {
             logger.addFilter(new MissingAdvancementFilter());
             logger.addFilter(new UnknownRecipeCategoryFilter());
             logger.addFilter(new UnknownAdvancementFilter());
+            logger.addFilter(new UnknownFontTypeFilter());
         }
         else {
             LOGGER.error("Unable to register filter for Logger with unexpected class: {}", rootLogger.getClass().getName());

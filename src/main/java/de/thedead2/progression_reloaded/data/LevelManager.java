@@ -231,6 +231,9 @@ public class LevelManager {
                 this.updateLevel(playerData, nextLevel);
             }
             else {
+                if(!progress.isDone() && progress.hasBeenRewarded()) {
+                    progress.setRewarded(false);
+                }
                 this.syncLevelsToClient(player, level);
                 PREventFactory.onLevelStatusUpdate(level, playerData, progress);
                 questManager.updateStatus(player, true);

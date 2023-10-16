@@ -81,8 +81,8 @@ public abstract class MathHelper {
     }
 
 
-    public static int secondsToTicks(int seconds) {
-        return seconds * 20;
+    public static int secondsToTicks(float seconds) {
+        return Math.round(seconds * 20);
     }
 
 

@@ -49,26 +49,14 @@ public class KeyframeAnimation implements IAnimation {
 
 
     @Override
-    public void animate(float from, float to, FloatConsumer consumer) {
-        this.timer.updateTime();
-        float f;
-        if(!this.isStarted()) {
-            f = this.timer.isInverted() ? to : from;
-        }
-        else if(this.isFinished()) {
-            f = this.timer.isInverted() ? from : to;
-        }
-        else {
-            int currentIndex = Mth.binarySearch(0, keyframes.length, (i) -> this.timer.getTimePassed() <= keyframes[i].timeStamp()) - 1;
-            int nextIndex = currentIndex + 1;
-            Keyframe currentKeyframe = currentIndex >= 0 ? keyframes[currentIndex] : new Keyframe(from, this.timer.getStartTime(), this.animationType, this.interpolationType);
-            Keyframe nextKeyframe = nextIndex <= keyframes.length - 1 ? keyframes[nextIndex] : new Keyframe(to, this.timer.getDuration(), this.animationType, this.interpolationType);
-            float timeSinceTimeStamp = this.timer.getTimePassed() - currentKeyframe.timeStamp();
-            float timeBetweenKeyframes = nextKeyframe.timeStamp() - currentKeyframe.timeStamp();
-            float timeLeftBetweenKeyframes = timeBetweenKeyframes - timeSinceTimeStamp;
-            f = currentKeyframe.animationType().transform(currentKeyframe.setPoint(), nextKeyframe.setPoint(), timeBetweenKeyframes, timeLeftBetweenKeyframes, currentKeyframe.interpolationType());
-        }
-        consumer.accept(f);
+    public KeyframeAnimation animate(float from, float to, FloatConsumer consumer) {
+        return this.animateWithKeyframes(from, to, consumer, this.keyframes);
+    }
+
+
+    public KeyframeAnimation animateWithKeyframes(float from, float to, FloatConsumer consumer, Keyframe... keyframes) {
+        IAnimation.animateWithKeyframes(this.timer, this.animationType, this.interpolationType, from, to, consumer, keyframes);
+        return this;
     }
 
 
@@ -95,12 +83,9 @@ public class KeyframeAnimation implements IAnimation {
         return this.timer.isLooping();
     }
 
-
-    /**
-     * Resets the animation to start again.
-     **/
     @Override
-    public void reset() {
+    public KeyframeAnimation reset() {
         this.timer.reset();
+        return this;
     }
 }

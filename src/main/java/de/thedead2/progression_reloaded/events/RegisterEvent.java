@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.events;
 
+import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import net.minecraft.resources.ResourceLocation;
@@ -25,12 +26,8 @@ public abstract class RegisterEvent<T> extends PREventFactory.ProgressionEvent {
         return this.objects;
     }
 
+    public static class RegisterThemesEvent extends RegisterEvent<ProgressionTheme> {}
+    public static class RegisterLayoutsEvent extends RegisterEvent<ProgressionLayout> {}
+    public static class RegisterFontTypesEvent extends RegisterEvent<IFontReader<?>> {}
 
-    public static class RegisterThemesEvent extends RegisterEvent<ProgressionTheme> {
-
-    }
-
-    public static class RegisterLayoutsEvent extends RegisterEvent<ProgressionLayout> {
-
-    }
 }

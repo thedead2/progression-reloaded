@@ -1,0 +1,10 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "progression_reloaded:expansiva-bold.ttf",
+      "shift": [0, 1.5],
+      "oversample": 7
+    }
+  ]
+}

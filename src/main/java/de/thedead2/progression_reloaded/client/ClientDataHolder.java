@@ -23,7 +23,7 @@ import java.util.Set;
 
 
 
-public class ClientDataManager {
+public class ClientDataHolder {
 
     private final Map<ProgressionLevel, LevelProgress> levelProgress;
 
@@ -38,7 +38,7 @@ public class ClientDataManager {
     private boolean setOverlay = true;
 
 
-    ClientDataManager() {
+    ClientDataHolder() {
         this.clientData = null;
         this.playerLevel = null;
         this.levelProgress = new HashMap<>();
@@ -57,7 +57,7 @@ public class ClientDataManager {
         this.levelProgress.clear();
         CollectionHelper.convertMapKeys(levelProgress, this.levelProgress, id -> ModRegistries.LEVELS.get().getValue(id));
         if(setOverlay) {
-            ModClientInstance.getInstance().getModRenderer().setProgressOverlay(GuiFactory.createLevelProgressOverlay(this.playerLevel.getDisplay(), this.getCurrentLevelProgress()));
+            ModClientInstance.getInstance().getModRenderer().setProgressOverlay(GuiFactory.createLevelOverlay(this.playerLevel.getDisplay(), this.getCurrentLevelProgress()));
             setOverlay = false;
         }
         ModClientInstance.getInstance().getModRenderer().updateProgressOverlay(LevelProgressOverlay.class, this.getCurrentLevelProgress());

@@ -5,12 +5,16 @@ import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
+import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
@@ -42,6 +46,52 @@ public class RenderUtil {
 
     public static int getColor(float red, float green, float blue) {
         return Mth.color(red, green, blue);
+    }
+
+    private static void testColorValueRange(int red, int green, int blue, int alpha) {
+        boolean rangeError = false;
+        String badComponentString = "";
+
+        if ( alpha < 0 || alpha > 255) {
+            rangeError = true;
+            badComponentString = badComponentString + " Alpha";
+        }
+        if ( red < 0 || red > 255) {
+            rangeError = true;
+            badComponentString = badComponentString + " Red";
+        }
+        if ( green < 0 || green > 255) {
+            rangeError = true;
+            badComponentString = badComponentString + " Green";
+        }
+        if ( blue < 0 || blue > 255) {
+            rangeError = true;
+            badComponentString = badComponentString + " Blue";
+        }
+        if (rangeError) {
+            throw new IllegalArgumentException("Color parameter outside of expected range:"
+                                                       + badComponentString);
+        }
+    }
+
+    public static void storeColorComponents(int[] colorHolder, int color) {
+        int red = (color >> 16 & 255);
+        int green = (color >> 8 & 255);
+        int blue = (color & 255);
+        int alpha = (color >> 24 & 255);
+        testColorValueRange(red, green, blue, alpha);
+
+        colorHolder[0] = red;
+        colorHolder[1] = green;
+        colorHolder[2] = blue;
+        colorHolder[3] = alpha;
+    }
+
+    public static int convertColor(int[] colorHolder) {
+        return ((colorHolder[3] & 255) << 24) |
+                ((colorHolder[0] & 255) << 16) |
+                ((colorHolder[1] & 255) << 8)  |
+                ((colorHolder[2] & 255));
     }
 
 
@@ -99,6 +149,24 @@ public class RenderUtil {
         return rotation;
     }
 
+    public static int changeAlpha(int color, float alphaPercent) {
+        return Math.max(Math.round(alphaPercent * 255), 4) << 24 | color & 0xFFFFFF; //TODO: Find out why the alpha of the color stays by one when under 4???
+    }
+
+    public static Vector2f centerObject(float xPos, float yPos, float areaWidth, float areaHeight, float objectWidth, float objectHeight) {
+        float xStart = xPos + (areaWidth / 2 - objectWidth / 2);
+        float yStart = yPos + (areaHeight / 2 - objectHeight / 2);
+
+        return new Vector2f(xStart, yStart);
+    }
+
+    public static void drawCenteredText(PoseStack poseStack, Component text, Font font, float xMin, float yMin, float width, float height, boolean withShadow, int color) {
+        Vector2f startPos = centerObject(xMin, yMin, width, height, font.width(text), font.lineHeight);
+        if(withShadow) {
+            font.drawShadow(poseStack, text, startPos.x, startPos.y, color);
+        }
+        else font.draw(poseStack, text, startPos.x, startPos.y, color);
+    }
 
     public static void renderItem(PoseStack poseStack, float xPos, float yPos, float scale, ItemStack icon) {
         renderItem(poseStack, xPos, yPos, scale, 0, 0, icon);
@@ -109,7 +177,7 @@ public class RenderUtil {
         poseStack.pushPose();
 
         poseStack.translate(xPos, yPos, 0);
-        poseStack.scale(scale, scale, 1);
+        poseStack.scale(scale, -scale, 1);
         poseStack.mulPose(Axis.XP.rotationDegrees(xRot));
         poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
 
@@ -187,21 +255,37 @@ public class RenderUtil {
     }
 
 
-    /*public static void renderObjectOutline(PoseStack poseStack, RenderObject renderObject) {
+    public static void renderObjectOutline(PoseStack poseStack, ScreenComponent renderObject) {
         poseStack.pushPose();
-        renderObject.getPoseStackTransformation(poseStack);
+        RenderSystem.setShaderColor(1, 1, 1, 1);
+        Area area = renderObject.getArea();
 
-        renderArea(poseStack, renderObject.getObjectArea(), Color.MAGENTA.getRGB());
-        renderArea(poseStack, renderObject.getRenderArea(), Color.ORANGE.getRGB());
+        renderArea(poseStack, area, Color.RED.getRGB(), Color.GREEN.getRGB());
 
-        renderCross(poseStack, 0, 0, 8, Color.RED.getRGB());
+        renderCross(poseStack, area.getCenterX(), area.getCenterY(), 6, Color.ORANGE.getRGB());
 
         poseStack.popPose();
-    }*/
+    }
+    public static void renderObjectOutlineDebug(PoseStack poseStack, ScreenComponent renderObject) {
+        poseStack.pushPose();
+        RenderSystem.setShaderColor(1, 1, 1, 1);
+        Area area = renderObject.getArea();
+
+        renderAreaDebug(poseStack, area, Color.RED.getRGB(), Color.GREEN.getRGB());
+
+        renderCross(poseStack, area.getCenterX(), area.getCenterY(), 6, Color.ORANGE.getRGB());
+
+        poseStack.popPose();
+    }
 
 
-    public static void renderArea(PoseStack poseStack, Area area, int color) {
-        renderSquareOutline(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), color);
+    public static void renderArea(PoseStack poseStack, Area area, int outerColor, int innerColor) {
+        renderSquareOutline(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), outerColor);
+        renderSquareOutline(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), innerColor);
+    }
+    public static void renderAreaDebug(PoseStack poseStack, Area area, int outerColor, int innerColor) {
+        renderSquareOutlineDebug(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), outerColor);
+        renderSquareOutlineDebug(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), innerColor);
     }
 
 
@@ -211,6 +295,17 @@ public class RenderUtil {
     }
 
 
+    public static void renderSquareOutlineDebug(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, 2, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, 2, color);
+        verticalLine(poseStack, xMin, yMin, yMax, 2, color);
+        verticalLine(poseStack, xMax, yMin, yMax, 2, color);
+        float height = yMax - yMin;
+        float width = xMax - xMin;
+        Font font = Minecraft.getInstance().font;
+        font.draw(poseStack, width + " px", xMin + ((width / 2) - ((float) font.width(width + " px") / 2)), yMin - font.lineHeight - 1, color);
+        font.draw(poseStack, height + " px", xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
+    }
     public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
         horizontalLine(poseStack, xMin, xMax, yMin, 2, color);
         horizontalLine(poseStack, xMin, xMax, yMax, 2, color);

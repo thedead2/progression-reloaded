@@ -7,16 +7,22 @@ import de.thedead2.progression_reloaded.client.gui.animation.AnimationTypes;
 import de.thedead2.progression_reloaded.client.gui.animation.InterpolationTypes;
 import de.thedead2.progression_reloaded.client.gui.animation.LoopTypes;
 import de.thedead2.progression_reloaded.client.gui.animation.SimpleAnimation;
+import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
+import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FormattedText;
 import de.thedead2.progression_reloaded.client.gui.textures.DrawableTexture;
 import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
+import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.client.gui.Font;
-import net.minecraft.util.Mth;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
+import java.util.List;
 
 
 public class ProgressCompleteToast extends ScreenComponent {
@@ -24,43 +30,47 @@ public class ProgressCompleteToast extends ScreenComponent {
     private final IDisplayInfo displayInfo;
 
     private final DrawableTexture toastTexture;
+    private final Component title;
+    private final Alignment toastAlignment = Alignment.CENTERED;
 
-    private final IAnimation animation = new SimpleAnimation(0, MathHelper.secondsToTicks(5), LoopTypes.LOOP_TIMES_INVERSE(2), AnimationTypes.EASE_IN_OUT, InterpolationTypes.EXPONENTIAL);/*new KeyframeAnimation(0, MathHelper.secondsToTicks(10),
-    LoopTypes
-    .NO_LOOP, AnimationTypes
-    .EASE_IN_OUT,
-    InterpolationTypes.SINUS,
-                                                               new Keyframe(1f, MathHelper.secondsToTicks(3), AnimationTypes.LINEAR, InterpolationTypes.LINEAR),
-                                                               new Keyframe(1f, MathHelper.secondsToTicks(7), AnimationTypes.EASE_IN_OUT, InterpolationTypes.SINUS)
-                                                               );*/
-
-    private final Font font;
-
-
-    public ProgressCompleteToast(Area area, IDisplayInfo displayInfo, TextureInfo toastTexture, Font font) {
+    private final IAnimation animation;
+    private final TextBox textBox;
+    
+    public ProgressCompleteToast(Area area, IDisplayInfo displayInfo, Component title, TextureInfo toastTexture, ResourceLocation font) {
         super(area);
         this.displayInfo = displayInfo;
+        this.title = title;
         this.toastTexture = new DrawableTexture(toastTexture, this.area);
-        this.font = font;
+        this.animation = new SimpleAnimation(0, MathHelper.secondsToTicks(4), LoopTypes.LOOP_TIMES_INVERSE(1), AnimationTypes.EASE_IN_OUT, InterpolationTypes.EXPONENTIAL).pause(true);
+
+        this.textBox = new TextBox(this.area, List.of(new FormattedText(title, font, new FontFormatting().setLineHeight(4), true),
+                                                      new FormattedText(displayInfo.getTitle(), font, new FontFormatting().setLineHeight(10).setLetterSpacing(2).setTextAlignment(Alignment.TOP_CENTERED), true)
+        ));
     }
 
 
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+        super.render(poseStack, mouseX, mouseY, partialTick);
         poseStack.pushPose();
-        this.animation.animate(0, 1, t -> {
-            this.toastTexture.setAlpha(t);
-            this.toastTexture.draw(poseStack);
-            //RenderSystem.setShaderColor(1, 1, 1, t);
-            RenderUtil.renderItem(poseStack, this.area.getInnerX(), this.area.getInnerY(), 1, this.displayInfo.getIcon());
-            this.font.draw(poseStack, this.displayInfo.getTitle(), this.area.getInnerX() + 16 + 5, this.area.getInnerY(), Color.WHITE.getRGB() | Mth.ceil(t * 255.0F) << 24);
-
-        });
+        this.area.setPosition(this.toastAlignment.getXPos(0, RenderUtil.getScreenWidth(), this.area.getWidth(), 0), this.toastAlignment.getYPos(0, RenderUtil.getScreenHeight(), this.area.getHeight(), -60), -500);
+        this.animation.pause(false).animate(0, 1, this::setAlpha);
+        this.toastTexture.draw(poseStack);
+        this.textBox.render(poseStack, mouseX, mouseY, partialTick);
         poseStack.popPose();
     }
 
 
     public boolean shouldRender() {
-        return !this.animation.isFinished() || this.animation.isLooping();
+        return !this.animation.isFinishedAndNotLooping();
+    }
+
+
+    @Override
+    public ProgressCompleteToast setAlpha(float alpha) {
+        this.toastTexture.setAlpha(alpha);
+        this.textBox.setAlpha(alpha);
+        this.alpha = alpha;
+        return this;
     }
 }

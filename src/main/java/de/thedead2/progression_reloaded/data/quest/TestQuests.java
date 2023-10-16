@@ -9,6 +9,7 @@ import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
+import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -187,7 +188,7 @@ public class TestQuests {
                                     .isMainQuest()
                                     .build(),
             Rewards.Builder.builder()
-                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.LEVITATION, 50)))
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.LEVITATION, MathHelper.secondsToTicks(10))))
                            .build(),
             QuestCriteria.Builder.builder()
                                  .withCriterion(
@@ -218,7 +219,7 @@ public class TestQuests {
                                     .isMainQuest()
                                     .build(),
             Rewards.Builder.builder()
-                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HEAL, 50)))
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HEAL, MathHelper.secondsToTicks(10))))
                            .build(),
             QuestCriteria.Builder.builder()
                                  .withCriterion(
@@ -249,7 +250,7 @@ public class TestQuests {
                                     .isMainQuest()
                                     .build(),
             Rewards.Builder.builder()
-                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.WATER_BREATHING, 50)))
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.WATER_BREATHING, MathHelper.secondsToTicks(10))))
                            .build(),
             QuestCriteria.Builder.builder()
                                  .withCriterion(
@@ -277,10 +278,11 @@ public class TestQuests {
                                     .withName("Test Quest8")
                                     .withDescription("This is a test quest8!")
                                     .withParent("quest_test7")
+                                    .withIcon(Items.DIAMOND)
                                     .isMainQuest()
                                     .build(),
             Rewards.Builder.builder()
-                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, 50)))
+                           .withReward(new EffectReward(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, MathHelper.secondsToTicks(10))))
                            .build(),
             QuestCriteria.Builder.builder()
                                  .withCriterion(

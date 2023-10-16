@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.events;
 
+import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
@@ -80,6 +81,14 @@ public abstract class PREventFactory {
         EVENT_BUS.post(event);
         return event.getObjects();
     }
+
+
+    public static Map<ResourceLocation, IFontReader<?>> onFontTypeRegistration() {
+        RegisterEvent.RegisterFontTypesEvent event = new RegisterEvent.RegisterFontTypesEvent();
+        EVENT_BUS.post(event);
+        return event.getObjects();
+    }
+
 
     public static class ProgressionEvent extends Event {
 

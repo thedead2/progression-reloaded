@@ -8,7 +8,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.resources.ResourceLocation;
 
 
-public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast, TextureInfo progressBarEmpty, TextureInfo progressBarFilled, TextureInfo backgroundFrame, Font font, ResourceLocation layout) {
+public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast, TextureInfo progressBarEmpty, TextureInfo progressBarFilled, TextureInfo backgroundFrame, ResourceLocation font, ResourceLocation layout) {
 
     public static class Builder {
 
@@ -20,7 +20,7 @@ public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast,
 
         private TextureInfo logo, toast, progressBarEmpty, progressBarFilled, backgroundFrame;
 
-        private Font font = Minecraft.getInstance().font;
+        private ResourceLocation font = new ResourceLocation("default");
 
 
         private Builder(String locationsPath) {
@@ -68,7 +68,7 @@ public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast,
         }
 
 
-        public Builder withFont(Font font) {
+        public Builder withFont(ResourceLocation font) {
             this.font = font;
             return this;
         }

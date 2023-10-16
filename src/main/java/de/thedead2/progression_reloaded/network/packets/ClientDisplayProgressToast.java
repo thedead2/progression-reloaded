@@ -5,7 +5,9 @@ import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
 import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.GuiFactory;
+import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
@@ -17,7 +19,6 @@ import java.util.function.Supplier;
 public class ClientDisplayProgressToast implements ModNetworkPacket {
 
     private final IDisplayInfo displayInfo;
-
     @Nullable
     private final ResourceLocation levelId;
 
@@ -41,12 +42,17 @@ public class ClientDisplayProgressToast implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
+                Component title = Component.literal("Quest complete!");
                 ModRenderer modRenderer = ModClientInstance.getInstance().getModRenderer();
                 if(ClientDisplayProgressToast.this.levelId != null) {
                     modRenderer.displayNewLevelInfoScreen(ClientDisplayProgressToast.this.levelId);
                 }
 
-                modRenderer.addProgressCompleteToast(GuiFactory.createPRToast(ClientDisplayProgressToast.this.displayInfo));
+                if(ClientDisplayProgressToast.this.displayInfo instanceof LevelDisplayInfo) {
+                    title = Component.literal("Level complete!");
+                }
+
+                modRenderer.addProgressCompleteToast(GuiFactory.createPRToast(ClientDisplayProgressToast.this.displayInfo, title));
             }
         };
     }

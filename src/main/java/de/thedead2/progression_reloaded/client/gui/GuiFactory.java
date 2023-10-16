@@ -11,6 +11,7 @@ import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
+import net.minecraft.network.chat.Component;
 
 import java.util.function.Supplier;
 
@@ -26,23 +27,23 @@ public abstract class GuiFactory {
     private static final Supplier<ProgressionLayout> activeLayout = ModClientInstance.getInstance().getModRenderer().getThemeManager().getActiveLayout();
 
 
-    public static ProgressCompleteToast createPRToast(IDisplayInfo displayInfo) {
+    public static ProgressCompleteToast createPRToast(IDisplayInfo displayInfo, Component title) {
         var layout = activeLayout.get();
         var theme = activeTheme.get();
-        return new ProgressCompleteToast(layout.toast(), displayInfo, theme.toast(), theme.font());
+        return new ProgressCompleteToast(layout.toast(), displayInfo, title, theme.toast(), theme.font());
     }
 
 
-    public static LevelProgressOverlay createLevelProgressOverlay(LevelDisplayInfo levelDisplayInfo, LevelProgress levelProgress) {
+    public static LevelProgressOverlay createLevelOverlay(LevelDisplayInfo levelDisplayInfo, LevelProgress levelProgress) {
         var layout = activeLayout.get();
         var theme = activeTheme.get();
-        return new LevelProgressOverlay(layout.levelProgressOL(), levelDisplayInfo, createLevelProgressBar(levelProgress), theme.backgroundFrame(), theme.font());
+        return new LevelProgressOverlay(layout.levelProgressOL(), levelDisplayInfo, createLevelOverlayProgressBar(levelProgress), theme.backgroundFrame(), theme.font());
     }
 
 
-    public static ProgressBar createLevelProgressBar(LevelProgress progress) {
+    public static ProgressBar createLevelOverlayProgressBar(LevelProgress progress) {
         var layout = activeLayout.get();
         var theme = activeTheme.get();
-        return new ProgressBar(layout.levelProgressOL(), theme.progressBarEmpty(), theme.progressBarFilled(), progress, true, theme.font());
+        return new ProgressBar(layout.levelProgressOL(), theme.progressBarEmpty(), theme.progressBarFilled(), progress, false, theme.font());
     }
 }

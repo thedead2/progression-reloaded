@@ -55,10 +55,11 @@ public class DrawableTexture implements IDrawableResource {
         this.colorShift[1] = green;
     }
 
-
     public void setBlue(float blue) {
         this.colorShift[2] = blue;
-    }    @Override
+    }
+
+    @Override
     public void draw(PoseStack poseStack) {
         RenderSystem.enableBlend();
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
@@ -87,12 +88,12 @@ public class DrawableTexture implements IDrawableResource {
 
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX); //TODO: Use POSITION_TEX_COLOR with .color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])
         Matrix4f matrix = poseStack.last().pose();
-        bufferbuilder.vertex(matrix, x, y + height, z).uv(u * f, (v + height) * f1).endVertex();
-        bufferbuilder.vertex(matrix, x + width, y + height, z).uv((u + width) * f, (v + height) * f1).endVertex();
-        bufferbuilder.vertex(matrix, x + width, y, z).uv((u + width) * f, v * f1).endVertex();
-        bufferbuilder.vertex(matrix, x, y, z).uv(u * f, v * f1).endVertex();
+        bufferbuilder.vertex(matrix, x, y + height, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv(u * f, (v + height) * f1).endVertex();
+        bufferbuilder.vertex(matrix, x + width, y + height, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv((u + width) * f, (v + height) * f1).endVertex();
+        bufferbuilder.vertex(matrix, x + width, y, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv((u + width) * f, v * f1).endVertex();
+        bufferbuilder.vertex(matrix, x, y, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv(u * f, v * f1).endVertex();
         tessellator.end();
         RenderSystem.disableBlend();
     }

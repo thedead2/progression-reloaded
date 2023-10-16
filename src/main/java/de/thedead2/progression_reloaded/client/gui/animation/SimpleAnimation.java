@@ -1,10 +1,14 @@
 package de.thedead2.progression_reloaded.client.gui.animation;
 
+import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
 import de.thedead2.progression_reloaded.api.gui.animation.IAnimationType;
 import de.thedead2.progression_reloaded.api.gui.animation.IInterpolationType;
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 
 public class SimpleAnimation implements IAnimation {
@@ -45,7 +49,7 @@ public class SimpleAnimation implements IAnimation {
 
 
     @Override
-    public void animate(float from, float to, FloatConsumer consumer) {
+    public SimpleAnimation animate(float from, float to, FloatConsumer consumer) {
         this.timer.updateTime();
         float f;
         if(!this.isStarted()) {
@@ -58,6 +62,14 @@ public class SimpleAnimation implements IAnimation {
             f = this.animationType.transform(from, to, this.timer.getDuration(), this.timer.getTimeLeft(), this.interpolationType);
         }
         consumer.accept(f);
+        return this;
+    }
+
+
+    @Override
+    public SimpleAnimation animateWithKeyframes(float from, float to, FloatConsumer consumer, Keyframe... keyframes) {
+        IAnimation.animateWithKeyframes(this.timer, this.animationType, this.interpolationType, from, to, consumer, keyframes);
+        return this;
     }
 
 
@@ -69,7 +81,7 @@ public class SimpleAnimation implements IAnimation {
 
     @Override
     public boolean isFinished() {
-        return this.timer.isFinished(); //TODO: Check for loops!
+        return this.timer.isFinished();
     }
 
 
@@ -86,7 +98,8 @@ public class SimpleAnimation implements IAnimation {
 
 
     @Override
-    public void reset() {
+    public SimpleAnimation reset() {
         this.timer.reset();
+        return this;
     }
 }

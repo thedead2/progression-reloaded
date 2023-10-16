@@ -1,6 +1,6 @@
 {
     "pack": {
-        "description": "ProgressionReloaded Resources",
+        "description": "${mod_name} Resources",
         "pack_format": 12,
         "forge:resource_pack_format": 12,
         "forge:data_pack_format": 10

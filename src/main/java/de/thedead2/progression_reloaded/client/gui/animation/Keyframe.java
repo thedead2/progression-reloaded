@@ -5,5 +5,5 @@ import de.thedead2.progression_reloaded.api.gui.animation.IAnimationType;
 import de.thedead2.progression_reloaded.api.gui.animation.IInterpolationType;
 
 
-public record Keyframe(float setPoint, float timeStamp, IAnimationType animationType, IInterpolationType interpolationType) {
+public record Keyframe(float timeStamp, IAnimationType animationType, IInterpolationType interpolationType, float setPoint) {
 }

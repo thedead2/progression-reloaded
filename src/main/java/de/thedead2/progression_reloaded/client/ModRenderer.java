@@ -6,9 +6,11 @@ import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.api.gui.IProgressOverlay;
 import de.thedead2.progression_reloaded.client.gui.components.ProgressCompleteToast;
+import de.thedead2.progression_reloaded.client.gui.fonts.FontManager;
 import de.thedead2.progression_reloaded.client.gui.themes.ThemeManager;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ConfigManager;
+import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
@@ -48,10 +50,21 @@ public class ModRenderer {
 
     private float randomActivationOffsetY = 0;
 
+    private static boolean guiDebug = false;
 
     ModRenderer() {
         this.minecraft = Minecraft.getInstance();
         this.themeManager = new ThemeManager();
+    }
+
+
+    public static boolean guiDebug() {
+        guiDebug = !guiDebug;
+        return guiDebug;
+    }
+
+    public static boolean isGuiDebug() {
+        return guiDebug;
     }
 
     @SubscribeEvent

@@ -19,13 +19,13 @@ public class ThemeManager {
 
     private final Supplier<ProgressionLayout> activeLayout = () -> ProgressionLayout.Builder.builder()
                                                                                             .withToast(200, 100, 0, 150, 50, Padding.NONE)
-                                                                                            .withLevelProgressOL(0, 0, 0, 100, 15, new Padding(5))
+                                                                                            .withLevelProgressOL(0, 0, 0, 100, 13, new Padding(5))
                                                                                             .build();
 
     private final Supplier<ProgressionTheme> activeTheme = () -> ProgressionTheme.Builder.builder("textures/gui/themes/futuristic/")
                                                                                          .withOrdinal(0)
                                                                                          .withToast("futuristic_toast.png", 0, 0, 3072, 382)
-                                                                                         .withFont(Minecraft.getInstance().font)
+                                                                                         .withFont(new ResourceLocation(ModHelper.MOD_ID, "expansiva"))
                                                                                          .withLogo("pr_logo_futuristic_no_bg.png", 0, 0, 3072, 2069)
                                                                                          .withBackgroundFrame("bg_frame.png", 0, 0, 3072, 1381)
                                                                                          .withProgressBarEmpty("progress_bar_empty.png", 0, 0, 3072, 105)

@@ -6,12 +6,13 @@ import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import net.minecraft.client.gui.Font;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 
 public class QuestProgressOverlay extends ProgressOverlay {
 
-    public QuestProgressOverlay(Area area, QuestDisplayInfo displayInfo, ProgressBar questProgressBar, TextureInfo backgroundFrame, Font font) {
+    public QuestProgressOverlay(Area area, QuestDisplayInfo displayInfo, ProgressBar questProgressBar, TextureInfo backgroundFrame, ResourceLocation font) {
         super(area, displayInfo, questProgressBar, backgroundFrame, font);
     }
 

@@ -56,6 +56,7 @@ public class AnimationTimer {
 
 
     public AnimationTimer pause(boolean pause) {
+        if(this.paused != pause) this.timer.advanceTime(Util.getMillis());
         this.paused = pause;
         return this;
     }
@@ -70,6 +71,10 @@ public class AnimationTimer {
     public void updateTime() {
         int j = this.timer.advanceTime(Util.getMillis());
 
+        if(this.paused) {
+            return;
+        }
+
         if(!this.isStarted()) {
             this.sleepCounter += j;
         }
@@ -77,9 +82,6 @@ public class AnimationTimer {
             this.loop.loop(this);
         }
         else {
-            if(this.paused) {
-                return;
-            }
             if(!this.inverted) {
                 this.timeLeft -= j;
             }
@@ -91,7 +93,7 @@ public class AnimationTimer {
 
 
     public boolean isStarted() {
-        return this.sleepCounter > this.startTime;
+        return this.sleepCounter >= this.startTime;
     }
 
 
@@ -144,5 +146,10 @@ public class AnimationTimer {
 
     public float getTimePassed() {
         return this.duration - this.timeLeft;
+    }
+
+
+    public ILoopType getLoopType() {
+        return this.loop;
     }
 }
