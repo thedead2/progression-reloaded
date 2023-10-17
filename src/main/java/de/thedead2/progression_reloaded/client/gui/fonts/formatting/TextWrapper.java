@@ -12,7 +12,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 
 public class TextWrapper {
@@ -26,37 +25,26 @@ public class TextWrapper {
     }
 
 
-    public List<FormattedText> splitLines(net.minecraft.network.chat.FormattedText text, FontFormatting formatting, float maxWidth) {
+    public List<FormattedText> splitLines(net.minecraft.network.chat.FormattedText text, ResourceLocation font, FontFormatting formatting, boolean withShadow, float maxWidth) {
         LineBreakFinder lineBreakFinder = new LineBreakFinder(maxWidth, formatting);
         TextCharIterator.iterate(text, lineBreakFinder);
         String newText = insertBreakChars(new StringBuilder(text.getString()));
-        return splitAtLineBreakChars(new FormattedText(newText, new ResourceLocation("default"), new FontFormatting(), false));
-    }
-    public List<FormattedText> splitLines(String text, FontFormatting formatting, float maxWidth) {
-        LineBreakFinder lineBreakFinder = new LineBreakFinder(maxWidth, formatting);
-        TextCharIterator.iterate(text, lineBreakFinder);
-        String newText = insertBreakChars(new StringBuilder(text));
-        return splitAtLineBreakChars(new FormattedText(newText, new ResourceLocation("default"), new FontFormatting(), false));
+        return splitAtLineBreakChars(new FormattedText(newText, font, formatting, withShadow));
     }
 
-    public List<FormattedText> splitLines(FormattedCharSequence text, FontFormatting formatting, float maxWidth) {
-        LineBreakFinder lineBreakFinder = new LineBreakFinder(maxWidth, formatting);
-        StringBuilder builder = new StringBuilder();
-        text.accept((pos, style, codePoint) -> {
-            builder.appendCodePoint(codePoint);
-            return lineBreakFinder.visit(pos, codePoint);
-        });
-        String newText = insertBreakChars(builder);
-        return splitAtLineBreakChars(new FormattedText(newText, new ResourceLocation("default"), new FontFormatting(), false));
-    }
 
     private String insertBreakChars(StringBuilder text) {
         for (int breakPos : this.breakPositions) {
-            if(text.charAt(breakPos + 1) == ' ') text.replace(breakPos + 1, breakPos + 2, "\n");
-            else text.insert(breakPos + 1, '\n');
+            if(text.charAt(breakPos) == ' ') {
+                text.replace(breakPos, breakPos + 1, "\n");
+            }
+            else {
+                text.insert(breakPos, '\n');
+            }
         }
         return text.toString();
     }
+
 
     public List<FormattedText> splitAtLineBreakChars(FormattedText text) {
         List<FormattedText> texts = Lists.newArrayList();
@@ -65,15 +53,43 @@ public class TextWrapper {
         TextCharIterator.iterate(text.text(), (charPos, codePoint) -> {
             current.setValue(charPos);
             if(codePoint == '\n' && current.intValue() != start.intValue()) {
-                texts.add(text.subString(start.intValue(), current.intValue() - 1));
+                FormattedText sub = text.subString(start.intValue(), current.intValue());
+
+                if(!sub.isEmpty()) {
+                    texts.add(sub);
+                }
                 start.setValue(charPos + 1);
             }
             return true;
         });
 
-        texts.add(text.subString(start.intValue(), current.intValue()));
+        FormattedText sub = text.subString(start.intValue(), current.intValue() + 1);
+
+        if(!sub.isEmpty()) {
+            texts.add(sub);
+        }
 
         return texts;
+    }
+
+
+    public List<FormattedText> splitLines(String text, ResourceLocation font, FontFormatting formatting, boolean withShadow, float maxWidth) {
+        LineBreakFinder lineBreakFinder = new LineBreakFinder(maxWidth, formatting);
+        TextCharIterator.iterate(text, lineBreakFinder);
+        String newText = insertBreakChars(new StringBuilder(text));
+        return splitAtLineBreakChars(new FormattedText(newText, font, formatting, withShadow));
+    }
+
+
+    public List<FormattedText> splitLines(FormattedCharSequence text, ResourceLocation font, FontFormatting formatting, boolean withShadow, float maxWidth) {
+        LineBreakFinder lineBreakFinder = new LineBreakFinder(maxWidth, formatting);
+        StringBuilder builder = new StringBuilder();
+        text.accept((pos, style, codePoint) -> {
+            builder.appendCodePoint(codePoint);
+            return lineBreakFinder.visit(pos, codePoint);
+        });
+        String newText = insertBreakChars(builder);
+        return splitAtLineBreakChars(new FormattedText(newText, font, formatting, withShadow));
     }
 
 
@@ -185,7 +201,6 @@ public class TextWrapper {
         }
     }*/
 
-
     private class LineBreakFinder implements TextCharIterator.ICharVisitor {
         private final float maxLineWidth;
         private final FontFormatting formatting;
@@ -204,7 +219,10 @@ public class TextWrapper {
             float f = TextWrapper.this.widthProvider.getWidth(codePoint, this.formatting);
             this.width += f;
             if(codePoint == 32) this.lastSpacePos = charPos;
-            if(this.width > this.maxLineWidth) {
+            if(codePoint == '\n') {
+                this.width = 0;
+            }
+            if(this.width > this.maxLineWidth && !TextWrapper.this.breakPositions.contains(this.lastSpacePos != -1 ? this.lastSpacePos : charPos)) {
                 TextWrapper.this.breakPositions.add(this.lastSpacePos != -1 ? this.lastSpacePos : charPos);
                 this.width = 0;
             }

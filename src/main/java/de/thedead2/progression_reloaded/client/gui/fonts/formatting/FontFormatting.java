@@ -26,7 +26,8 @@ public class FontFormatting {
     private final int[] color = new int[4], bgColor = new int[4];
     private boolean bold, italic, underlined, strikethrough, obfuscated;
 
-    public FontFormatting() {
+
+    private FontFormatting() {
         this(8, 0, 3, Alignment.DEFAULT, Color.WHITE.getRGB(), 0, false, false, false, false, false);
     }
 
@@ -57,6 +58,10 @@ public class FontFormatting {
         return new FontFormatting(8, 0, 1, Alignment.DEFAULT, style.getColor() != null ? style.getColor().getValue() : Color.WHITE.getRGB(), 0, style.isBold(), style.isItalic(), style.isUnderlined(), style.isStrikethrough(), style.isObfuscated());
     }
 
+
+    public static FontFormatting defaultFormatting() {
+        return new FontFormatting();
+    }
 
     public FontFormatting setObfuscated(boolean obfuscated) {
         this.obfuscated = obfuscated;

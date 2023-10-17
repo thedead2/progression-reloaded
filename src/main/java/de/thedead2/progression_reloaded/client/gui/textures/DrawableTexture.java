@@ -101,7 +101,10 @@ public class DrawableTexture implements IDrawableResource {
 
     public void setAlpha(float alpha) {
         this.colorShift[3] = alpha;
-    }    @Override
+    }
+
+
+    @Override
     public void draw(PoseStack poseStack, float xPos, float yPos, float zPos) {
         this.renderArea.setPosition(xPos, yPos, zPos);
         this.draw(poseStack);

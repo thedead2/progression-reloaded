@@ -14,14 +14,11 @@ import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
 import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
-import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 import java.util.List;
 
 
@@ -43,8 +40,9 @@ public class ProgressCompleteToast extends ScreenComponent {
         this.toastTexture = new DrawableTexture(toastTexture, this.area);
         this.animation = new SimpleAnimation(0, MathHelper.secondsToTicks(4), LoopTypes.LOOP_TIMES_INVERSE(1), AnimationTypes.EASE_IN_OUT, InterpolationTypes.EXPONENTIAL).pause(true);
 
-        this.textBox = new TextBox(this.area, List.of(new FormattedText(title, font, new FontFormatting().setLineHeight(4), true),
-                                                      new FormattedText(displayInfo.getTitle(), font, new FontFormatting().setLineHeight(10).setLetterSpacing(2).setTextAlignment(Alignment.TOP_CENTERED), true)
+        this.textBox = new TextBox(this.area, List.of(
+                new FormattedText(title, font, FontFormatting.defaultFormatting().setLineHeight(4), true),
+                new FormattedText(displayInfo.getTitle(), font, FontFormatting.defaultFormatting().setLineHeight(10).setLetterSpacing(2).setTextAlignment(Alignment.TOP_CENTERED), true)
         ));
     }
 

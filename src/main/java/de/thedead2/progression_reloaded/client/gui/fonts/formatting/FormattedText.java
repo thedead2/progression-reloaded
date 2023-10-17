@@ -59,4 +59,9 @@ public class FormattedText {
         String sub = this.text.substring(start, end);
         return new FormattedText(sub, this.font, this.formatting, this.withShadow);
     }
+
+
+    public boolean isEmpty() {
+        return this.text.isEmpty();
+    }
 }

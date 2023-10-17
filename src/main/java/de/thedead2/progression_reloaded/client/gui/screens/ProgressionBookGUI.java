@@ -52,17 +52,8 @@ public class ProgressionBookGUI extends Screen {
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         this.renderBackground(poseStack);
         this.background.draw(poseStack);
-        this.animation.animate(300, 0, t -> this.textBox.getArea().setWidth(t));
-        /*this.animation.animate(400, 0, t -> {
-            this.textBox.getFormattedTexts().forEach(formattedText -> {
-                int val = (int) t;
+        //this.animation.animate(300, 0, t -> this.textBox.getArea().setWidth(t));
 
-                if(val <= 400 && val > 300) formattedText.formatting().setTextAlignment(new Alignment(Alignment.X.RIGHT, Alignment.Y.CENTER));
-                else if(val <= 300 && val > 200) formattedText.formatting().setTextAlignment(new Alignment(Alignment.X.CENTER, Alignment.Y.CENTER));
-                else if(val <= 200 && val > 100) formattedText.formatting().setTextAlignment(new Alignment(Alignment.X.LEFT, Alignment.Y.CENTER));
-                else formattedText.formatting().setTextAlignment(Alignment.DEFAULT);
-            });
-        });*/
         this.textBox.render(poseStack, mouseX, mouseY, partialTick);
     }
 
@@ -72,10 +63,7 @@ public class ProgressionBookGUI extends Screen {
         ThemeManager themeManager = ModClientInstance.getInstance().getModRenderer().getThemeManager();
         this.background = new DrawableTexture(themeManager.getActiveTheme().get().backgroundFrame(), new Area(0, 0, 0, this.width, this.height, new Padding(25)));
         this.textBox = new TextBox(new Area(50, 50, 0, 300, 100, new Padding(5)), List.of(
-                new FormattedText("This is a test!!!", new ResourceLocation("default"), new FontFormatting().setItalic(true).setTextAlignment(new Alignment(Alignment.X.RIGHT, Alignment.Y.TOP)), false),
-                new FormattedText("This is a test2!!!", new ResourceLocation(ModHelper.MOD_ID, "expansiva"), new FontFormatting().setTextAlignment(Alignment.CENTERED).setObfuscated(true), false),
-                new FormattedText("This is a test333!!!", new ResourceLocation("default"), new FontFormatting().setStrikethrough(true).setTextAlignment(new Alignment(Alignment.X.LEFT, Alignment.Y.BOTTOM)), true),
-                new FormattedText("This is a test444444!!!", new ResourceLocation("default"), new FontFormatting().setUnderlined(true).setTextAlignment(new Alignment(Alignment.X.CENTER, Alignment.Y.BOTTOM)), true)
+                new FormattedText("Just Testing!", new ResourceLocation(ModHelper.MOD_ID, "expansiva"), FontFormatting.defaultFormatting().setTextAlignment(Alignment.CENTERED).setLineHeight(11), false)
         ), Color.GRAY.getRGB());
         this.font = FontManager.getFont(new ResourceLocation(ModHelper.MOD_ID, "expansiva")).setLineHeight(50);
         this.animation.reset();

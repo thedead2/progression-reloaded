@@ -6,7 +6,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.renderer.GameRenderer;
@@ -24,12 +23,15 @@ import org.joml.*;
 
 import java.awt.*;
 import java.lang.Math;
+import java.text.DecimalFormat;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
 import static net.minecraft.client.gui.GuiComponent.fill;
 
 
 public class RenderUtil {
+
+    private static final DecimalFormat DEBUG_FORMAT = new DecimalFormat("0.00 px");
 
     private static LivingEntity entity = null;
 
@@ -303,8 +305,9 @@ public class RenderUtil {
         float height = yMax - yMin;
         float width = xMax - xMin;
         Font font = Minecraft.getInstance().font;
-        font.draw(poseStack, width + " px", xMin + ((width / 2) - ((float) font.width(width + " px") / 2)), yMin - font.lineHeight - 1, color);
-        font.draw(poseStack, height + " px", xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
+        double scale = Minecraft.getInstance().getWindow().getGuiScale();
+        font.draw(poseStack, DEBUG_FORMAT.format(width * scale), xMin + ((width / 2) - ((float) font.width(DEBUG_FORMAT.format(width * scale)) / 2)), yMin - font.lineHeight - 1, color);
+        font.draw(poseStack, DEBUG_FORMAT.format(height * scale), xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
     }
     public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
         horizontalLine(poseStack, xMin, xMax, yMin, 2, color);

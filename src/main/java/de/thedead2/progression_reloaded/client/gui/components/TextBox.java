@@ -12,7 +12,6 @@ import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.awt.*;
 import java.util.List;
 
 
@@ -60,17 +59,14 @@ public class TextBox extends ScreenComponent {
             float currentYPos = currentTextAlignment.getYPos(this.area.getInnerY(), this.area.getInnerHeight(), completeTextHeight, nextYOffset);
 
             nextYOffset += currentHeight;
-            /*if(ModRenderer.isGuiDebug())
-                RenderUtil.renderSquareOutlineDebug(poseStack, currentXPos, currentXPos + currentWidth, currentYPos, currentYPos + currentHeight, Color.YELLOW.getRGB());
-*/
 
-            if (currentYPos + currentHeight > this.area.getInnerYMax())
+            if(currentYPos + currentHeight > this.area.getInnerYMax() && !ModRenderer.isGuiDebug())
                 continue;
             if (currentText.withShadow()) {
-                currentFont.drawShadowWithLineWrap(poseStack, currentText.text(), (formattedText) -> currentTextAlignment.getXPos(this.area.getInnerX(), this.area.getInnerWidth(), currentText.width(), 0), currentYPos, this.area.getZ(), this.area.getInnerWidth());
+                currentFont.drawShadowWithLineWrap(poseStack, currentText.text(), formattedText -> currentFormatting.getTextAlignment().getXPos(this.area.getInnerX(), this.area.getInnerWidth(), formattedText.width(), 0), currentYPos, this.area.getZ(), this.area.getInnerWidth());
             }
             else {
-                currentFont.drawWithLineWrap(poseStack, currentText.text(), formattedText -> currentTextAlignment.getXPos(this.area.getInnerX(), this.area.getInnerWidth(), currentText.width(), 0), currentYPos, this.area.getZ(), this.area.getInnerWidth());
+                currentFont.drawWithLineWrap(poseStack, currentText.text(), formattedText -> currentFormatting.getTextAlignment().getXPos(this.area.getInnerX(), this.area.getInnerWidth(), formattedText.width(), 0), currentYPos, this.area.getZ(), this.area.getInnerWidth());
             }
         }
         if(borderColor != null) {

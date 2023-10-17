@@ -19,7 +19,6 @@ import de.thedead2.progression_reloaded.client.gui.textures.FontTexture;
 import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import it.unimi.dsi.fastutil.floats.Float2FloatFunction;
 import it.unimi.dsi.fastutil.ints.*;
-import it.unimi.dsi.fastutil.objects.Object2FloatFunction;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -43,7 +42,8 @@ import java.util.function.Function;
 public class ProgressionFont {
     private static final RandomSource RANDOM = RandomSource.create();
     private final ResourceLocation name;
-    private FontFormatting formatting = new FontFormatting();
+
+    private FontFormatting formatting = FontFormatting.defaultFormatting();
     private BakedFontGlyph missingGlyph;
     private BakedFontGlyph whiteGlyph;
     private final List<IFontGlyphProvider> glyphProviders = Lists.newArrayList();
@@ -169,13 +169,13 @@ public class ProgressionFont {
     }
 
     public float height(String text, float maxWidth) {
-        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.formatting, maxWidth).size();
+        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth).size();
     }
     public float height(net.minecraft.network.chat.FormattedText text, float maxWidth) {
-        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.formatting, maxWidth).size();
+        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth).size();
     }
     public float height(FormattedCharSequence text, float maxWidth) {
-        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.formatting, maxWidth).size();
+        return (this.getLineHeight() + this.formatting.getLineSpacing()) * this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth).size();
     }
 
     public float getScalingFactor(int codePoint, float px) {
@@ -218,7 +218,7 @@ public class ProgressionFont {
     }
 
     public ProgressionFont defaultFormatting() {
-        this.formatting = new FontFormatting();
+        this.formatting = FontFormatting.defaultFormatting();
         return this;
     }
 
@@ -313,7 +313,7 @@ public class ProgressionFont {
 
     public float drawWithLineWrap(PoseStack poseStack, String text, Function<FormattedText, Float> x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth)) {
             this.draw(poseStack, formattedText.text(), x.apply(formattedText), i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
@@ -321,7 +321,7 @@ public class ProgressionFont {
     }
     public float drawWithLineWrap(PoseStack poseStack, Component text, float x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth)) {
             this.draw(poseStack, formattedText.text(), x, i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
@@ -329,7 +329,7 @@ public class ProgressionFont {
     }
     public float drawWithLineWrap(PoseStack poseStack, FormattedCharSequence text, float x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, false, maxWidth)) {
             this.draw(poseStack, formattedText.text(), x, i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
@@ -338,7 +338,7 @@ public class ProgressionFont {
 
     public float drawShadowWithLineWrap(PoseStack poseStack, String text, Function<FormattedText, Float> x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, true, maxWidth)) {
             this.drawShadow(poseStack, formattedText.text(), x.apply(formattedText), i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
@@ -347,7 +347,7 @@ public class ProgressionFont {
     }
     public float drawShadowWithLineWrap(PoseStack poseStack, Component text, float x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, true, maxWidth)) {
             this.drawShadow(poseStack, formattedText.text(), x, i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
@@ -356,7 +356,7 @@ public class ProgressionFont {
     }
     public float drawShadowWithLineWrap(PoseStack poseStack, FormattedCharSequence text, float x, float y, float z, float maxWidth) {
         float i = y;
-        for (FormattedText formattedText : this.textWrapper.splitLines(text, this.formatting, maxWidth)) {
+        for(FormattedText formattedText : this.textWrapper.splitLines(text, this.name, this.formatting, true, maxWidth)) {
             this.drawShadow(poseStack, formattedText.text(), x, i, z);
             i += this.formatting.getLineHeight() + this.formatting.getLineSpacing();
         }
