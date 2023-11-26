@@ -39,7 +39,6 @@ public class WorldBorderReward implements IReward {
         double oldSize = worldborder.getSize();
         double newSize = oldSize + this.addWidth;
 
-        ModHelper.LOGGER.debug(oldSize);
         if(oldSize >= 5.9999968E7D) {
             return;
         }

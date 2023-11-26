@@ -56,12 +56,12 @@ public class LoopTypes {
     }
 
     /**
-     * Creates a {@link ILoopType} that loops until the given {@link Predicate} returns true.
+     * Creates a {@link ILoopType} that loops while the given {@link Predicate} returns true.
      * @param predicate the predicate to test
      * **/
-    public static ILoopType LOOP_UNTIL(Predicate<AnimationTimer> predicate) {
+    public static ILoopType LOOP_WHILE(Predicate<AnimationTimer> predicate) {
         return (timer, shouldRun) -> {
-            if(!predicate.test(timer)) {
+            if(predicate.test(timer)) {
                 LOOP.loop(timer, true);
                 return true;
             }
@@ -69,12 +69,37 @@ public class LoopTypes {
         };
     }
     /**
-     * Same as {@link #LOOP_UNTIL(Predicate)} but in inverse direction
+     * Same as {@link #LOOP_WHILE(Predicate)} but in inverse direction
      * **/
-    public static ILoopType LOOP_INVERSE_UNTIL(Predicate<AnimationTimer> predicate) {
+    public static ILoopType LOOP_INVERSE_WHILE(Predicate<AnimationTimer> predicate) {
         return (timer, shouldRun) -> {
-            if(!predicate.test(timer)) {
+            if(predicate.test(timer)) {
                 LOOP_INVERSE.loop(timer, true);
+                return true;
+            }
+            return false;
+        };
+    }
+
+
+    public static ILoopType LOOP_UNTIL(Predicate<AnimationTimer> predicate) {
+        final boolean[] bool = {true};
+        return (timer, shouldRun) -> {
+            if(predicate.test(timer) && bool[0]) {
+                LOOP.loop(timer, true);
+                bool[0] = false;
+                return true;
+            }
+            return false;
+        };
+    }
+
+    public static ILoopType LOOP_INVERSE_UNTIL(Predicate<AnimationTimer> predicate) {
+        final boolean[] bool = {true};
+        return (timer, shouldRun) -> {
+            if(predicate.test(timer) && bool[0]) {
+                LOOP_INVERSE.loop(timer, true);
+                bool[0] = false;
                 return true;
             }
             return false;

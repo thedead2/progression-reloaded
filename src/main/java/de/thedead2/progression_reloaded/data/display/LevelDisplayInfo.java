@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.data.display;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.network.FriendlyByteBuf;
@@ -15,7 +16,7 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 
 
-public final class LevelDisplayInfo implements IDisplayInfo {
+public final class LevelDisplayInfo implements IDisplayInfo<ProgressionLevel> {
 
     private final ResourceLocation id;
 
@@ -143,7 +144,7 @@ public final class LevelDisplayInfo implements IDisplayInfo {
     @Override
     public String toString() {
         return "LevelDisplayInfo[" +
-                "id=" + id + ", " +
+                "uuid=" + id + ", " +
                 "title=" + title + ", " +
                 "description=" + description + ", " +
                 "icon=" + icon + ", " +
@@ -235,7 +236,7 @@ public final class LevelDisplayInfo implements IDisplayInfo {
 
         public LevelDisplayInfo build() {
             if(!this.canBuild()) {
-                throw new IllegalStateException("Can't build DisplayInfo for level with missing id or title!");
+                throw new IllegalStateException("Can't build DisplayInfo for level with missing uuid or title!");
             }
 
             return new LevelDisplayInfo(this.id, this.title, this.description, this.icon, this.previousLevel);

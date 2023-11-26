@@ -57,7 +57,7 @@ public class JsonHelper {
 
     public static JsonObject effectInstanceToJson(MobEffectInstance effect) {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("effect", ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect()).toString()); //TODO: Better by id!!
+        jsonObject.addProperty("effect", ForgeRegistries.MOB_EFFECTS.getKey(effect.getEffect()).toString()); //TODO: Better by uuid!!
         jsonObject.addProperty("duration", effect.getDuration());
         jsonObject.addProperty("amplifier", effect.getAmplifier());
         jsonObject.addProperty("ambient", effect.isAmbient());

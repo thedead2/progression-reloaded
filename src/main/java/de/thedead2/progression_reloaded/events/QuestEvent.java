@@ -1,14 +1,10 @@
 package de.thedead2.progression_reloaded.events;
 
-import com.google.common.collect.ImmutableSet;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraftforge.eventbus.api.Cancelable;
-
-import java.util.Set;
 
 
 public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
@@ -94,24 +90,16 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
 
     public static class UpdateQuestStatusEvent extends PREventFactory.ProgressionEvent {
 
-        private final KnownPlayer player;
-
-        private final ImmutableSet<ProgressionQuest> activeQuests;
+        private final PlayerData player;
 
 
-        public UpdateQuestStatusEvent(KnownPlayer player, Set<ProgressionQuest> activeQuests) {
+        public UpdateQuestStatusEvent(PlayerData player) {
             this.player = player;
-            this.activeQuests = ImmutableSet.copyOf(activeQuests);
         }
 
 
-        public KnownPlayer getPlayer() {
+        public PlayerData getPlayer() {
             return player;
-        }
-
-
-        public ImmutableSet<ProgressionQuest> getActiveQuests() {
-            return activeQuests;
         }
     }
 

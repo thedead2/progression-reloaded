@@ -49,9 +49,7 @@ public abstract class ModNetworkHandler {
 
         registerPacket(ClientDisplayProgressToast.class);
         registerPacket(ClientOpenProgressionBookPacket.class);
-        registerPacket(ClientSyncLevelsPacket.class);
-        registerPacket(ClientSyncPlayerPacket.class);
-        registerPacket(ClientSyncQuestsPacket.class);
+        registerPacket(ClientSyncPlayerDataPacket.class);
         registerPacket(ClientSyncRestrictionsPacket.class);
         registerPacket(ClientUsedExtraLifePacket.class);
         registerPacket(UpdateRenderersPacket.class);
@@ -136,7 +134,7 @@ public abstract class ModNetworkHandler {
     private static void handlePacket(ModNetworkPacket packet, Supplier<NetworkEvent.Context> ctx) {
         try {
             DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> {
-                LOGGER.debug(marker, "Received packet {} from server, attempting to handle it...", packet.getClass().getName());
+                //LOGGER.debug(marker, "Received packet {} from server, attempting to handle it...", packet.getClass().getName());
                 return packet.onClient(ctx);
             });
             DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> {

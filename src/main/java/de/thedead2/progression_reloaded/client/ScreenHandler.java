@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.client;
 
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
@@ -20,7 +22,6 @@ import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,40 +90,46 @@ public class ScreenHandler {
         final Minecraft minecraft = Minecraft.getInstance();
 
         if(minecraft.options.renderDebug) {
+            List<String> rightSide = event.getRight();
 
             if(minecraft.player.isShiftKeyDown()) {
-                var clientDataManager = ModClientInstance.getInstance().getClientDataManager();
-
-                final PlayerData clientData = clientDataManager.getClientData();
-                final int maxQuests = 5;
+                final PlayerData clientData = ModClientInstance.getInstance().getClientData();
+                final int maxQuests = 25;
 
                 if(clientData != null) {
-                    event.getRight().add("");
-                    event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME);
-                    if(ConfigManager.MAX_EXTRA_LIVES.get() > 0) {
-                        event.getRight().add("Extra Lives: " + clientData.getExtraLives());
+                    rightSide.clear();
+                    rightSide.add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME);
+                    rightSide.add("Current Level: " + clientData.getCurrentLevel().getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getCurrentLevelProgress().getPercent() * 100) + " %]");
+                    clientData.getTeam().ifPresent(team -> rightSide.add("Team: " + team.getName() + " [" + team.getMembers().size() + " members]"));
+                    if(ConfigManager.MAX_EXTRA_LIVES.get() > 0 || ExtraLifeItem.isUnlimited()) {
+                        rightSide.add("Extra Lives: " + (ExtraLifeItem.isUnlimited() ? "Unlimited" : clientData.getExtraLives()) + " [max. " + ConfigManager.MAX_EXTRA_LIVES.get() + "]");
                     }
-                    event.getRight().add("Level: " + clientData.getProgressionLevel().getTitle().getString());
-                    clientData.getTeam().ifPresent(team -> event.getRight().add("Team: " + team.getName()));
-                    event.getRight().add("Active Quests:");
-                    List<String> list = (List<String>) CollectionHelper.convertCollection(clientDataManager.getActiveQuests(), new ArrayList<>(), quest -> quest.getTitle().getString());
-                    list.forEach(s -> {
-                        if(list.indexOf(s) < maxQuests) {
-                            event.getRight().add(s);
+                    List<ProgressionQuest> activeQuests = CollectionHelper.convertCollection(clientData.getQuestData().getActiveQuests(), quest -> quest);
+                    rightSide.add("Active Quests:" + (activeQuests.isEmpty() ? " None" : ""));
+                    activeQuests.forEach(quest -> {
+                        if(activeQuests.indexOf(quest) < maxQuests) {
+                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getQuestData().getOrStartProgress(quest).getPercent() * 100) + " %]");
                         }
                     });
-                    if(list.size() > maxQuests) {
-                        event.getRight().add("...");
+                    if(activeQuests.size() > maxQuests) {
+                        rightSide.add("...");
                     }
-                    else if(list.isEmpty()) {
-                        event.getRight().add("None");
+
+                    List<ProgressionQuest> completedQuests = CollectionHelper.convertCollection(clientData.getQuestData().getCompletedQuests(), quest -> quest);
+                    rightSide.add("Complete Quests:" + (completedQuests.isEmpty() ? " None" : ""));
+                    completedQuests.forEach(quest -> {
+                        if(completedQuests.indexOf(quest) < maxQuests) {
+                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getQuestData().getOrStartProgress(quest).getPercent() * 100) + " %]");
+                        }
+                    });
+                    if(completedQuests.size() > maxQuests) {
+                        rightSide.add("...");
                     }
                 }
             }
-
             else {
-                event.getRight().add("");
-                event.getRight().add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME + " [Shift]");
+                rightSide.add("");
+                rightSide.add(ChatFormatting.GOLD + ChatFormatting.UNDERLINE.toString() + MOD_NAME + " [Shift]");
             }
         }
     }

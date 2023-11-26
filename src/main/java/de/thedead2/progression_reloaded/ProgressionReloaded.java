@@ -2,22 +2,20 @@ package de.thedead2.progression_reloaded;
 
 import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.commands.ModCommands;
-import de.thedead2.progression_reloaded.data.AbilityManager;
 import de.thedead2.progression_reloaded.data.LevelManager;
-import de.thedead2.progression_reloaded.data.abilities.ModRestrictionManagers;
+import de.thedead2.progression_reloaded.data.RestrictionManager;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.events.RegisterEvent;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
 import de.thedead2.progression_reloaded.loot.ModLootModifiers;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.network.packets.ClientUsedExtraLifePacket;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.GameState;
@@ -108,7 +106,6 @@ public class ProgressionReloaded {
 
         ModRegistries.register(modEventBus);
         ModLootModifiers.register(modEventBus);
-        ModRestrictionManagers.register();
 
         modEventBus.addListener(this::setup);
 
@@ -118,7 +115,7 @@ public class ProgressionReloaded {
         forgeEventBus.addListener(LevelManager::onGameModeChange);
 
         forgeEventBus.register(this);
-        forgeEventBus.register(AbilityManager.class);
+        forgeEventBus.register(RestrictionManager.class);
         if(FMLEnvironment.dist.isClient()) {
             forgeEventBus.register(ModClientInstance.getInstance());
         }
@@ -161,16 +158,14 @@ public class ProgressionReloaded {
     @SubscribeEvent
     public void onServerStarting(final ServerStartingEvent event) {
         GAME_STATE = GameState.ABOUT_TO_START;
-        PlayerDataHandler.loadData(event.getServer().overworld());
-        LevelManager.create(event.getServer().overworld());
+        PlayerDataManager.loadData(event.getServer().overworld());
+        LevelManager.create();
     }
 
 
     @SubscribeEvent
     public void onServerStopping(final ServerStoppingEvent event) {
         GAME_STATE = GameState.ABOUT_TO_STOP;
-        LevelManager.getInstance().saveData();
-        LevelManager.getInstance().getQuestManager().stopListening();
     }
 
 
@@ -183,35 +178,32 @@ public class ProgressionReloaded {
 
     @SubscribeEvent
     public void onPlayerFileLoad(final PlayerEvent.LoadFromFile event) {
-        PlayerDataHandler.loadPlayerData(event.getPlayerFile(MOD_ID), event.getEntity());
+        PlayerDataManager.loadPlayerData(event.getPlayerFile(MOD_ID), (ServerPlayer) event.getEntity());
         LevelManager.getInstance().updateData();
     }
 
 
     @SubscribeEvent
     public void onPlayerFileSave(final PlayerEvent.SaveToFile event) {
-        PlayerDataHandler.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
-        PlayerData data = PlayerDataHandler.getActivePlayer(event.getEntity());
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(data), data.getServerPlayer());
+        PlayerDataManager.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
+        PlayerData data = PlayerDataManager.getPlayerData(event.getEntity());
+        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(data), data.getServerPlayer());
 
         if(GAME_STATE == GameState.PLAYER_LOGGED_OUT) {
             Player player = event.getEntity();
-            PlayerDataHandler.removeActivePlayer(player);
-            if(player instanceof ServerPlayer serverPlayer) {
-                AbilityManager.syncRestrictionsWithClient(serverPlayer, true);
-            }
+            PlayerDataManager.clearPlayerData(player);
         }
     }
 
 
-    //We're only hooking in when the player is being placed in the world, the connection is established and the UpdateRecipesEvent hasn't fired yet
+    //We're only hooking in when the player is being placed in the world, the connection is established, and the UpdateRecipesEvent hasn't fired yet
     @SubscribeEvent
     public void onDataPackReload(final OnDatapackSyncEvent event) {
         ServerPlayer player = event.getPlayer();
         if(player != null) {
-            PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
-            ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(playerData), player);
-            AbilityManager.syncRestrictionsWithClient(player, false);
+            PlayerData playerData = PlayerDataManager.getPlayerData(player);
+            ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(playerData), player);
+            LevelManager.getInstance().getRestrictionManager().syncRestrictions(player);
         }
     }
 
@@ -220,7 +212,7 @@ public class ProgressionReloaded {
     public void onPlayerLoggedIn(final PlayerEvent.PlayerLoggedInEvent event) {
         GAME_STATE = GameState.PLAYER_LOGGED_IN;
         Player player = event.getEntity();
-        PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+        PlayerData playerData = PlayerDataManager.getPlayerData(player);
         LevelManager.getInstance().checkForCreativeMode(playerData);
         LevelManager.getInstance().updateStatus();
     }
@@ -247,8 +239,8 @@ public class ProgressionReloaded {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void onPlayerDeath(final LivingDeathEvent event) {
         if(event.getEntity() instanceof ServerPlayer serverPlayer && !serverPlayer.level.isClientSide()) {
-            PlayerData player = PlayerDataHandler.getActivePlayer(serverPlayer);
-            if(player.hasExtraLife() || ExtraLifeItem.isUnlimited()) {
+            PlayerData player = PlayerDataManager.getPlayerData(serverPlayer);
+            if(player.hasAndUpdateExtraLives() || ExtraLifeItem.isUnlimited()) {
                 serverPlayer.setHealth(serverPlayer.getMaxHealth());
                 serverPlayer.removeAllEffects();
                 serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(30), 1));
@@ -258,7 +250,7 @@ public class ProgressionReloaded {
                 serverPlayer.addEffect(new MobEffectInstance(MobEffects.CONFUSION, secondsToTicks(7)));
                 event.setCanceled(true);
                 ModNetworkHandler.sendToPlayer(new ClientUsedExtraLifePacket(serverPlayer), serverPlayer);
-                ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(player), serverPlayer);
+                ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), serverPlayer);
             }
         }
     }

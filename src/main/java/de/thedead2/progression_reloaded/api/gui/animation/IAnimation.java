@@ -1,13 +1,20 @@
 package de.thedead2.progression_reloaded.api.gui.animation;
 
+import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.client.gui.animation.AnimationTimer;
 import de.thedead2.progression_reloaded.client.gui.animation.Keyframe;
 import de.thedead2.progression_reloaded.client.gui.animation.KeyframeAnimation;
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
 import net.minecraft.util.Mth;
 
+import java.util.function.Predicate;
+
 
 public interface IAnimation {
+
+    static IAnimation fromJson(JsonElement jsonElement) {
+        return null;
+    }
 
     /**
      * Inverts the play direction of this animation.
@@ -15,11 +22,22 @@ public interface IAnimation {
      * **/
     IAnimation invert(boolean inverted);
 
+    default IAnimation startIf(Predicate<IAnimation> predicate) {
+        if(predicate.test(this)) {
+            this.start();
+        }
+        return this;
+    }
+
+    IAnimation start();
+
     /**
      * Pauses or resumes this animation
      * @param paused true if this animation should be paused, false if it should be resumed or not paused
      * **/
     IAnimation pause(boolean paused);
+
+    IAnimation stop();
 
     /**
      * Sets the {@link ILoopType} for this animation.
@@ -82,6 +100,8 @@ public interface IAnimation {
      **/
     boolean isLooping();
 
+    boolean isInverted();
+
     /**
      * Resets this {@link IAnimation} to start again
      * @return this
@@ -111,6 +131,32 @@ public interface IAnimation {
         return other.animateWithKeyframes(from, to, consumer, keyframes);
     }
 
+    default IAnimation animateIf(Predicate<IAnimation> predicate, float from, float to, FloatConsumer consumer) {
+        if(predicate.test(this)) {
+            this.startIfNeeded()
+                .pause(false);
+        }
+        else {
+            this.pause(this.isStarted());
+        }
+
+        return this.animate(from, to, consumer);
+    }
+
+    /**
+     * Starts this animation if it hasn't been started yet.
+     *
+     * @return this
+     *
+     * @see #start()
+     **/
+    default IAnimation startIfNeeded() {
+        if(!this.isStarted()) {
+            this.start();
+        }
+        return this;
+    }
+
     static void animateWithKeyframes(AnimationTimer timer, IAnimationType animationType, IInterpolationType interpolationType, float from, float to, FloatConsumer consumer, Keyframe... keyframes) {
         timer.updateTime();
         float f;
@@ -131,5 +177,50 @@ public interface IAnimation {
             f = currentKeyframe.animationType().transform(currentKeyframe.setPoint(), nextKeyframe.setPoint(), timeBetweenKeyframes, timeLeftBetweenKeyframes, currentKeyframe.interpolationType());
         }
         consumer.accept(f);
+    }
+
+    default IAnimation animateInvertedIf(Predicate<IAnimation> predicate, float from, float to, FloatConsumer consumer) {
+        if(predicate.test(this)) {
+            this.invert(true)
+                .startIfNeeded()
+                .pause(false);
+        }
+        else {
+            this.pause(this.isStarted());
+        }
+
+        return this.animate(from, to, consumer);
+    }
+
+    JsonElement toJson();
+
+    default IAnimation startIfNeededIf(Predicate<IAnimation> predicate) {
+        if(predicate.test(this)) {
+            this.startIfNeeded();
+        }
+        return this;
+    }
+
+    /**
+     * Pauses this animation for the given time if the given predicate returns true.
+     *
+     * @param predicate the predicate to test for
+     * @param ticks     the amount in ticks this animation should sleep
+     *
+     * @return this
+     *
+     * @see #sleep(float)
+     **/
+    default IAnimation sleepIf(Predicate<IAnimation> predicate, float ticks) {
+        if(predicate.test(this)) {
+            this.sleep(ticks);
+        }
+        return this;
+    }
+
+    IAnimation sleep(float ticks);
+
+    default boolean isFinishedButLooping() {
+        return this.isFinished() && this.isLooping();
     }
 }

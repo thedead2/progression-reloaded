@@ -39,4 +39,7 @@ public interface IReward {
     ResourceLocation getId();
 
     JsonElement toJson();
+
+    /*@OnlyIn(Dist.CLIENT)
+    RewardComponent<? extends IReward> getDisplayComponent(Area area);*/
 }

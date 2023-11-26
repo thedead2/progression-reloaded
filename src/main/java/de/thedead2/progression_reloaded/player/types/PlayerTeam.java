@@ -2,11 +2,14 @@ package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.data.display.TeamDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
+import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -28,23 +31,26 @@ public class PlayerTeam {
 
     private final Set<KnownPlayer> knownMembers = new HashSet<>();
 
+    private final Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = new HashMap<>();
+
     private ProgressionLevel progressionLevel;
 
 
     public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers) {
-        this(teamName, id, knownMembers, null);
+        this(teamName, id, knownMembers, new HashMap<>(), null);
     }
 
 
-    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, ProgressionLevel level) {
+    public PlayerTeam(String teamName, ResourceLocation id, Collection<KnownPlayer> knownMembers, Map<KnownPlayer, PlayerQuests> pendingQuestSyncs, ProgressionLevel level) {
         this.teamName = teamName;
         this.id = id;
         this.knownMembers.addAll(knownMembers);
         this.progressionLevel = level;
+
+        this.pendingQuestSyncs.putAll(pendingQuestSyncs);
     }
 
 
-    //TODO: Data doesn't get saved --> members and level
     public static PlayerTeam fromCompoundTag(CompoundTag tag) {
         if(tag == null || tag.isEmpty()) {
             return null;
@@ -52,16 +58,10 @@ public class PlayerTeam {
         String level = tag.getString("level");
         String name = tag.getString("name");
         String id = tag.getString("id");
-        CompoundTag members = tag.getCompound("members");
-        List<KnownPlayer> memberIds = new ArrayList<>();
-        members.getAllKeys().forEach(s -> {
-            KnownPlayer player = KnownPlayer.fromCompoundTag(members.getCompound(s));
-            if(!PlayerDataHandler.playerLastOnlineLongAgo(player)) {
-                memberIds.add(player);
-            }
-        });
+        Set<KnownPlayer> members = CollectionHelper.loadFromNBT(new HashSet<>(), tag.getList("members", 0), tag1 -> KnownPlayer.fromCompoundTag((CompoundTag) tag1));
+        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = CollectionHelper.loadFromNBT(tag.getCompound("pendingQuestSyncs"), KnownPlayer::fromString, tag1 -> PlayerQuests.loadFromNBT((CompoundTag) tag1));
 
-        return new PlayerTeam(name, new ResourceLocation(id), memberIds, ProgressionLevel.fromKey(new ResourceLocation(level)));
+        return new PlayerTeam(name, new ResourceLocation(id), members, pendingQuestSyncs, ProgressionLevel.fromKey(new ResourceLocation(level)));
     }
 
 
@@ -77,7 +77,7 @@ public class PlayerTeam {
 
 
     public static PlayerTeam fromKey(ResourceLocation teamId) {
-        return PlayerDataHandler.getTeam(teamId);
+        return PlayerDataManager.getTeam(teamId);
     }
 
 
@@ -95,9 +95,10 @@ public class PlayerTeam {
         String teamName = buf.readUtf();
         ResourceLocation id = buf.readResourceLocation();
         Set<KnownPlayer> members = buf.readCollection(Sets::newHashSetWithExpectedSize, KnownPlayer::fromNetwork);
+        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = buf.readMap(Maps::newHashMapWithExpectedSize, KnownPlayer::fromNetwork, PlayerQuests::loadFromNetwork);
         ProgressionLevel level = ModRegistries.LEVELS.get().getValue(buf.readResourceLocation());
 
-        return new PlayerTeam(teamName, id, members, level);
+        return new PlayerTeam(teamName, id, members, pendingQuestSyncs, level);
     }
 
 
@@ -138,9 +139,9 @@ public class PlayerTeam {
         }
         tag.putString("name", this.teamName);
         tag.putString("id", this.id.toString());
-        CompoundTag members = new CompoundTag();
-        this.knownMembers.forEach(knownPlayer -> members.put(knownPlayer.id().toString(), knownPlayer.toCompoundTag()));
-        tag.put("members", members);
+        tag.put("members", CollectionHelper.saveToNBT(this.knownMembers, KnownPlayer::toCompoundTag));
+        tag.put("pendingQuestSyncs", CollectionHelper.saveToNBT(this.pendingQuestSyncs, KnownPlayer::toString, PlayerQuests::saveToNBT));
+
         return tag;
     }
 
@@ -152,7 +153,7 @@ public class PlayerTeam {
 
     private void addPlayer(KnownPlayer knownPlayer) {
         this.knownMembers.add(knownPlayer);
-        this.addActivePlayer(PlayerDataHandler.getActivePlayer(knownPlayer));
+        this.addActivePlayer(PlayerDataManager.getPlayerData(knownPlayer));
     }
 
 
@@ -160,13 +161,21 @@ public class PlayerTeam {
         if(playerData == null || !this.accept(playerData)) {
             return;
         }
-        activeMembers.add(playerData);
+        this.activeMembers.add(playerData);
         playerData.setTeam(this);
+
+        KnownPlayer key = KnownPlayer.fromSinglePlayer(playerData);
+        PlayerQuests playerQuests = this.pendingQuestSyncs.get(key);
+
+        if(playerQuests != null) {
+            playerData.copyQuestProgress(playerQuests);
+            this.pendingQuestSyncs.remove(key);
+        }
     }
 
 
     public boolean isPlayerInTeam(KnownPlayer player) {
-        return knownMembers.contains(player);
+        return this.knownMembers.contains(player);
     }
 
 
@@ -182,7 +191,7 @@ public class PlayerTeam {
 
     private void removePlayer(KnownPlayer knownPlayer) {
         this.knownMembers.remove(knownPlayer);
-        var singlePlayer = PlayerDataHandler.getActivePlayer(knownPlayer);
+        var singlePlayer = PlayerDataManager.getPlayerData(knownPlayer);
         this.removeActivePlayer(singlePlayer);
         singlePlayer.setTeam(null);
     }
@@ -212,6 +221,12 @@ public class PlayerTeam {
         buf.writeUtf(this.teamName);
         buf.writeResourceLocation(this.id);
         buf.writeCollection(this.knownMembers, (buf1, player) -> player.toNetwork(buf1));
+        buf.writeMap(this.pendingQuestSyncs, (friendlyByteBuf, player) -> player.toNetwork(friendlyByteBuf), (friendlyByteBuf, playerQuests) -> playerQuests.saveToNetwork(friendlyByteBuf));
         buf.writeResourceLocation(this.progressionLevel.getId());
+    }
+
+
+    public void queueQuestSync(KnownPlayer member, PlayerQuests playerQuests) {
+        this.pendingQuestSyncs.put(member, playerQuests);
     }
 }

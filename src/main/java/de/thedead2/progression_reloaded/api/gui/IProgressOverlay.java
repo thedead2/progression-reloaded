@@ -1,12 +1,13 @@
 package de.thedead2.progression_reloaded.api.gui;
 
 import de.thedead2.progression_reloaded.api.IProgressInfo;
+import de.thedead2.progression_reloaded.api.IProgressable;
 import net.minecraft.client.gui.components.Renderable;
 
 
-public interface IProgressOverlay extends Renderable {
+public interface IProgressOverlay<T extends IProgressable<T>> extends Renderable {
 
-    void updateProgress(Class<? extends IProgressOverlay> target, IProgressInfo progressInfo);
+    void updateProgress(IProgressInfo<T> progressInfo);
 
-    void updateDisplayInfo(Class<? extends IProgressOverlay> target, IDisplayInfo displayInfo);
+    void updateDisplayInfo(IDisplayInfo<T> displayInfo);
 }

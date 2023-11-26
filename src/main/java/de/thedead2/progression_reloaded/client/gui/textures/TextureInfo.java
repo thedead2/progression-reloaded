@@ -26,20 +26,23 @@ public class TextureInfo {
 
     private final float aspectRatio;
 
+    private final boolean keepRatio;
+
     private final float[] colorShift = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
 
 
-    public TextureInfo(ResourceLocation textureLocation, float textureWidth, float textureHeight) {
-        this(textureLocation, 0, 0, textureWidth, textureHeight);
+    public TextureInfo(ResourceLocation textureLocation, float textureWidth, float textureHeight, boolean keepRatio) {
+        this(textureLocation, 0, 0, textureWidth, textureHeight, keepRatio);
     }
 
 
-    public TextureInfo(ResourceLocation textureLocation, float u, float v, float textureWidth, float textureHeight) {
+    public TextureInfo(ResourceLocation textureLocation, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
         this.textureLocation = textureLocation;
         this.u = u;
         this.v = v;
         this.textureWidth = textureWidth;
         this.textureHeight = textureHeight;
+        this.keepRatio = keepRatio;
         this.aspectRatio = textureWidth / textureHeight;
     }
 
@@ -71,6 +74,11 @@ public class TextureInfo {
 
     public float getAspectRatio() {
         return aspectRatio;
+    }
+
+
+    public boolean shouldKeepRatio() {
+        return keepRatio;
     }
 
 

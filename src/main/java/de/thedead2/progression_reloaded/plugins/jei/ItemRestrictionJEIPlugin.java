@@ -1,6 +1,9 @@
 package de.thedead2.progression_reloaded.plugins.jei;
 
-import de.thedead2.progression_reloaded.data.abilities.restrictions.ItemRestriction;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
+import de.thedead2.progression_reloaded.data.RestrictionManager;
+import de.thedead2.progression_reloaded.data.restrictions.ItemRestriction;
+import de.thedead2.progression_reloaded.data.restrictions.RestrictionTypes;
 import de.thedead2.progression_reloaded.events.LevelEvent;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
@@ -15,13 +18,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RecipesUpdatedEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.EventPriority;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static de.thedead2.progression_reloaded.data.abilities.ModRestrictionManagers.ITEM_RESTRICTION_MANAGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
 
@@ -78,19 +79,18 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
 
     private void collectRestrictedItems(IIngredientManager ingredients) {
         final long hideCalcStart = System.nanoTime();
+        final RestrictionManager restrictionManager = ModClientInstance.getInstance().getClientRestrictionManager();
+
         for(final ItemStack item : ingredients.getAllIngredients(VanillaTypes.ITEM_STACK)) {
-
-            final Pair<Boolean, ItemRestriction> pair = ITEM_RESTRICTION_MANAGER.isRestricted(item.getItem());
-
-            if(pair.getLeft()) {
-                ItemRestriction restriction = pair.getRight();
-                if(ITEM_RESTRICTION_MANAGER.doesNotHaveLevel(Minecraft.getInstance().player, restriction) && restriction.shouldHideInJEI()) {
+            if(restrictionManager.isRestricted(RestrictionTypes.ITEM, item.getItem())) {
+                ItemRestriction restriction = restrictionManager.getRestrictionFor(RestrictionTypes.ITEM, ItemRestriction.class, item.getItem());
+                if(restriction.isActiveForPlayer(Minecraft.getInstance().player) && restriction.shouldHideInJEI()) {
                     this.hiddenItems.add(item);
                 }
             }
         }
 
-        LOGGER.debug("Marked {} entries for hiding. Took {}ms.", this.hiddenItems.size(), DECIMAL_FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
+        LOGGER.debug("Marked {} entries for hiding. Took {} ms.", this.hiddenItems.size(), DECIMAL_FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
     }
 
 

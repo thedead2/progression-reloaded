@@ -1,41 +1,55 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
-public class Alignment {
-
-    public static Alignment DEFAULT = new Alignment(X.LEFT, Y.TOP);
-
-    public static Alignment CENTERED = new Alignment(X.CENTER, Y.CENTER);
-
-    public static Alignment LEFT_CENTERED = new Alignment(X.LEFT, Y.CENTER);
-
-    public static Alignment RIGHT_CENTERED = new Alignment(X.RIGHT, Y.CENTER);
-
-    public static Alignment TOP_CENTERED = new Alignment(X.CENTER, Y.TOP);
-
-    public static Alignment BOTTOM_CENTERED = new Alignment(X.CENTER, Y.BOTTOM);
-
-    private final X x;
-
-    private final Y y;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 
-    public Alignment(X x, Y y) {
-        this.x = x;
-        this.y = y;
+public record Alignment(XAlignment xAlignment, YAlignment yAlignment) {
+
+    public static Alignment DEFAULT = new Alignment(XAlignment.LEFT, YAlignment.TOP);
+
+    public static Alignment CENTERED = new Alignment(XAlignment.CENTER, YAlignment.CENTER);
+
+    public static Alignment LEFT_CENTERED = new Alignment(XAlignment.LEFT, YAlignment.CENTER);
+
+    public static Alignment RIGHT_CENTERED = new Alignment(XAlignment.RIGHT, YAlignment.CENTER);
+
+    public static Alignment TOP_CENTERED = new Alignment(XAlignment.CENTER, YAlignment.TOP);
+
+    public static Alignment BOTTOM_CENTERED = new Alignment(XAlignment.CENTER, YAlignment.BOTTOM);
+
+
+    public static Alignment fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+        XAlignment xAlignment = XAlignment.valueOf(jsonObject.get("x").getAsString());
+        YAlignment yAlignment = YAlignment.valueOf(jsonObject.get("y").getAsString());
+
+        return new Alignment(xAlignment, yAlignment);
     }
 
 
     public float getXPos(float origin, float screenWidth, float width, float offset) {
-        return x.getXPos(origin, screenWidth, width) + offset;
+        return this.xAlignment.getXPos(origin, screenWidth, width) + offset;
     }
 
 
     public float getYPos(float origin, float screenHeight, float height, float offset) {
-        return y.getYPos(origin, screenHeight, height) + offset;
+        return this.yAlignment.getYPos(origin, screenHeight, height) + offset;
     }
 
 
-    public enum X {
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+
+        jsonObject.addProperty("x", this.xAlignment.name());
+        jsonObject.addProperty("y", this.yAlignment.name());
+
+        return jsonObject;
+    }
+
+
+    public enum XAlignment {
         LEFT {
             @Override
             public float getXPos(float origin, float screenWidth, float width) {
@@ -56,10 +70,10 @@ public class Alignment {
         };
 
 
-        protected abstract float getXPos(float origin, float screenWidth, float width);
+        public abstract float getXPos(float origin, float screenWidth, float width);
     }
 
-    public enum Y {
+    public enum YAlignment {
         TOP {
             @Override
             public float getYPos(float origin, float screenHeight, float height) {
@@ -80,6 +94,6 @@ public class Alignment {
         };
 
 
-        protected abstract float getYPos(float origin, float screenHeight, float height);
+        public abstract float getYPos(float origin, float screenHeight, float height);
     }
 }

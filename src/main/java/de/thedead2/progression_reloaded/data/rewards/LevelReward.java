@@ -3,7 +3,7 @@ package de.thedead2.progression_reloaded.data.rewards;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.LevelManager;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -27,7 +27,7 @@ public class LevelReward implements IReward {
 
     @Override
     public void rewardPlayer(ServerPlayer player) {
-        LevelManager.getInstance().updateLevel(PlayerDataHandler.getActivePlayer(player), this.levelId);
+        LevelManager.getInstance().updateLevel(PlayerDataManager.getPlayerData(player), this.levelId);
     }
 
 

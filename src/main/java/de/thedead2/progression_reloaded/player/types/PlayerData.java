@@ -1,15 +1,15 @@
 package de.thedead2.progression_reloaded.player.types;
 
-import com.google.common.base.Objects;
-import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
+import de.thedead2.progression_reloaded.player.data.PlayerLevels;
+import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.helper.PlayerHelper;
-import de.thedead2.progression_reloaded.util.helper.ResourceLocationHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
@@ -20,6 +20,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import org.apache.logging.log4j.Level;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,45 +29,49 @@ import java.util.UUID;
 
 
 public class PlayerData {
-
     private final String playerName;
 
     private final UUID uuid;
 
-    private final ResourceLocation id;
-
     private final Player player;
 
+    private final PlayerLevels levels;
+
+    private final PlayerQuests quests;
+
+    @Nullable
     private PlayerTeam team;
-
-    private ProgressionLevel progressionLevel;
-
     private int extraLives;
 
 
-    public PlayerData(Player player, ResourceLocation id) {
-        this(null, player, id, player instanceof ServerPlayer serverPlayer ? serverPlayer.gameMode.isCreative() && ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get() ? LevelManager.CREATIVE.getId() :
-                ResourceLocationHelper.getOrDefault(ConfigManager.DEFAULT_STARTING_LEVEL.get(), LevelManager.CREATIVE.getId()) : LevelManager.CREATIVE.getId(), 0);
+    public PlayerData(Player player) {
+        this.playerName = player.getScoreboardName();
+        this.team = null;
+        this.uuid = player.getUUID();
+        this.player = player;
+        this.levels = new PlayerLevels(() -> this);
+        this.quests = new PlayerQuests(() -> this);
+        this.extraLives = 0;
     }
 
 
-    public PlayerData(PlayerTeam team, Player player, ResourceLocation id, ResourceLocation progressionLevelId, int extraLives) {
-        this(player.getScoreboardName(), team, player.getUUID(), player, id, progressionLevelId, extraLives);
+    public PlayerData(PlayerTeam team, Player player, PlayerLevels levels, PlayerQuests quests, int extraLives) {
+        this(player.getScoreboardName(), team, player.getUUID(), player, levels, quests, extraLives);
     }
 
 
-    public PlayerData(String playerName, PlayerTeam team, UUID uuid, Player player, ResourceLocation id, ResourceLocation progressionLevelId, int extraLives) {
+    public PlayerData(String playerName, @Nullable PlayerTeam team, UUID uuid, Player player, PlayerLevels levels, PlayerQuests quests, int extraLives) {
         this.playerName = playerName;
         this.team = team;
         this.uuid = uuid;
-        this.id = id;
         this.player = player;
-        this.progressionLevel = this.team != null ? this.team.getProgressionLevel() : ProgressionLevel.fromKey(progressionLevelId);
+        this.levels = levels;
+        this.quests = quests;
         this.extraLives = extraLives;
     }
 
 
-    public static PlayerData fromFile(File playerDataFile, ServerPlayer player) {
+    public static PlayerData loadFromFile(File playerDataFile, ServerPlayer player) {
         CompoundTag tag = null;
         try {
             if(playerDataFile.exists()) {
@@ -76,22 +81,26 @@ public class PlayerData {
         catch(IOException e) {
             CrashHandler.getInstance().handleException("Failed to read compound tag from" + playerDataFile.getName(), e, Level.FATAL);
         }
-        return fromCompoundTag(tag, player);
+        return loadFromNBT(tag, player);
     }
 
 
-    public static PlayerData fromCompoundTag(CompoundTag tag, ServerPlayer player) {
+    public static PlayerData loadFromNBT(CompoundTag tag, ServerPlayer player) {
         if(tag == null || tag.isEmpty()) {
-            return new PlayerData(player, createId(player.getStringUUID()));
+            return new PlayerData(player);
         }
         UUID uuid = tag.getUUID("uuid");
-        String level = tag.getString("level");
-        String team = tag.getString("team");
-        int extraLives = tag.getInt("extra_lives");
-        if(player.getUUID().equals(uuid)) {
-            return new PlayerData(PlayerTeam.fromRegistry(team, player), player, createId(player.getStringUUID()), ResourceLocation.tryParse(level), extraLives);
+
+        if(!player.getUUID().equals(uuid)) {
+            throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
         }
-        throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
+
+        PlayerTeam team = PlayerTeam.fromRegistry(tag.getString("team"), player);
+        PlayerLevels levels = PlayerLevels.loadFromNBT(tag.getCompound("levels"));
+        PlayerQuests quests = PlayerQuests.loadFromNBT(tag.getCompound("quests"));
+        int extraLives = tag.getInt("extra_lives");
+
+        return new PlayerData(team, player, levels, quests, extraLives);
     }
 
 
@@ -103,12 +112,13 @@ public class PlayerData {
     public static PlayerData fromNetwork(FriendlyByteBuf buf) {
         String playerName = buf.readUtf();
         UUID uuid = buf.readUUID();
-        ResourceLocation id = buf.readResourceLocation();
-        PlayerTeam team = buf.readNullable(PlayerTeam::fromNetwork);
-        ResourceLocation levelId = buf.readResourceLocation();
-        int extraLives = buf.readInt();
         Player player = PlayerHelper.getPlayerForUUID(uuid);
-        return new PlayerData(playerName, team, uuid, player, id, levelId, extraLives);
+        PlayerTeam team = buf.readNullable(PlayerTeam::fromNetwork);
+        PlayerLevels levels = PlayerLevels.loadFromNetwork(buf);
+        PlayerQuests quests = PlayerQuests.loadFromNetwork(buf);
+        int extraLives = buf.readInt();
+
+        return new PlayerData(playerName, team, uuid, player, levels, quests, extraLives);
     }
 
 
@@ -132,12 +142,12 @@ public class PlayerData {
     }
 
 
-    public String getPlayerName() {
+    public String getName() {
         return playerName;
     }
 
 
-    public UUID getUuid() {
+    public UUID getUUID() {
         return uuid;
     }
 
@@ -148,12 +158,13 @@ public class PlayerData {
 
 
     public void updateProgressionLevel(ProgressionLevel level) {
-        this.progressionLevel = level;
+        this.levels.updateLevel(level);
     }
 
 
-    public ProgressionLevel getProgressionLevel() {
-        return progressionLevel;
+    public boolean hasProgressionLevel(ProgressionLevel other) {
+        ProgressionLevel currentLevel = this.getCurrentLevel();
+        return currentLevel.equals(other) || currentLevel.contains(other);
     }
 
 
@@ -162,38 +173,21 @@ public class PlayerData {
     }
 
 
-    public boolean hasProgressionLevel(ProgressionLevel other) {
-        return this.progressionLevel.equals(other) || this.progressionLevel.contains(other);
+    public ProgressionLevel getCurrentLevel() {
+        return levels.getCurrentLevel();
     }
 
 
     public void setTeam(PlayerTeam playerTeam) {
         this.team = playerTeam;
         if(this.player instanceof ServerPlayer serverPlayer) {
-            ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(this), serverPlayer);
+            ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(this), serverPlayer);
         }
     }
 
 
-    private CompoundTag toCompoundTag() {
-        CompoundTag tag = new CompoundTag();
-        tag.putUUID("uuid", this.uuid);
-        tag.putString("level", this.progressionLevel.getId().toString());
-        if(this.team != null) {
-            tag.putString("team", this.team.getId().toString());
-        }
-        tag.putInt("extra_lives", this.extraLives);
-        return tag;
-    }
-
-
-    public ResourceLocation getId() {
-        return this.id;
-    }
-
-
-    public void toFile(File playerFile) {
-        CompoundTag tag = this.toCompoundTag();
+    public void saveToFile(File playerFile) {
+        CompoundTag tag = this.saveToNBT();
         try {
             NbtIo.writeCompressed(tag, playerFile);
         }
@@ -203,14 +197,18 @@ public class PlayerData {
     }
 
 
-    @Override
-    public int hashCode() {
-        return Objects.hashCode(playerName, team, uuid, id, player, progressionLevel);
+    private CompoundTag saveToNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("uuid", this.uuid);
+        if(this.team != null) {
+            tag.putString("team", this.team.getId().toString());
+        }
+        tag.put("levels", this.levels.saveToNBT());
+        tag.put("quests", this.quests.saveToNBT());
+        tag.putInt("extra_lives", this.extraLives);
+
+        return tag;
     }
-
-
-
-
 
     public boolean isInTeam() {
         return team != null;
@@ -227,7 +225,7 @@ public class PlayerData {
     }
 
 
-    public boolean hasExtraLife() {
+    public boolean hasAndUpdateExtraLives() {
         if(this.extraLives > 0) {
             this.extraLives--;
             return true;
@@ -241,28 +239,33 @@ public class PlayerData {
     }
 
 
-    @Override
-    public boolean equals(Object o) {
-        if(this == o) {
-            return true;
-        }
-        if(o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        PlayerData player1 = (PlayerData) o;
-        return Objects.equal(playerName, player1.playerName)
-                && Objects.equal(team, player1.team) && Objects.equal(uuid, player1.uuid)
-                && Objects.equal(id, player1.id) && Objects.equal(player, player1.player)
-                && Objects.equal(progressionLevel, player1.progressionLevel);
-    }
-
 
     public void serializeToNetwork(FriendlyByteBuf buf) {
         buf.writeUtf(this.playerName);
         buf.writeUUID(this.uuid);
-        buf.writeResourceLocation(this.id);
         buf.writeNullable(this.team, (buf1, team1) -> team1.toNetwork(buf1));
-        buf.writeResourceLocation(this.progressionLevel.getId());
+        this.levels.saveToNetwork(buf);
+        this.quests.saveToNetwork(buf);
         buf.writeInt(this.extraLives);
+    }
+
+
+    public PlayerLevels getLevelData() {
+        return this.levels;
+    }
+
+
+    public PlayerQuests getQuestData() {
+        return this.quests;
+    }
+
+
+    public LevelProgress getCurrentLevelProgress() {
+        return this.levels.getCurrentLevelProgress();
+    }
+
+
+    public void copyQuestProgress(PlayerQuests playerQuests) {
+        this.quests.copy(playerQuests);
     }
 }

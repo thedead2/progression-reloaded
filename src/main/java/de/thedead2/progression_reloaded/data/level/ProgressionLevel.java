@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-public class ProgressionLevel implements IProgressable, Comparable<ProgressionLevel> {
+public class ProgressionLevel implements IProgressable<ProgressionLevel> {
 
     private final LevelDisplayInfo displayInfo;
 
@@ -74,7 +74,7 @@ public class ProgressionLevel implements IProgressable, Comparable<ProgressionLe
             return true;
         }
 
-        ProgressionLevel previousLevel = this.getPreviousLevel() != null ? ModRegistries.LEVELS.get().getValue(this.getPreviousLevel()) : null;
+        ProgressionLevel previousLevel = this.getParent() != null ? ModRegistries.LEVELS.get().getValue(this.getParent()) : null;
         if(this.equals(other) || (previousLevel != null && previousLevel.equals(other))) {
             return true;
         }
@@ -97,8 +97,8 @@ public class ProgressionLevel implements IProgressable, Comparable<ProgressionLe
         ResourceLocation thisId = this.getId();
         ResourceLocation otherId = other.getId();
 
-        ResourceLocation thisPrevious = this.getPreviousLevel();
-        ResourceLocation otherPrevious = other.getPreviousLevel();
+        ResourceLocation thisPrevious = this.getParent();
+        ResourceLocation otherPrevious = other.getParent();
 
         if(thisId.equals(otherId)) { // same levels
             return 0;
@@ -115,9 +115,9 @@ public class ProgressionLevel implements IProgressable, Comparable<ProgressionLe
     }
 
 
-    public boolean contains(ProgressionQuest quest) {
-        ProgressionLevel previousLevel = this.getPreviousLevel() != null ? ModRegistries.LEVELS.get().getValue(this.getPreviousLevel()) : null;
-        return this.quests.contains(quest.getId()) || (previousLevel != null && previousLevel.contains(quest));
+    @Nullable
+    public ResourceLocation getParent() {
+        return this.displayInfo.previousLevel();
     }
 
 
@@ -151,7 +151,8 @@ public class ProgressionLevel implements IProgressable, Comparable<ProgressionLe
     }
 
 
-    public @Nullable ResourceLocation getPreviousLevel() {
-        return this.displayInfo.previousLevel();
+    public boolean contains(ProgressionQuest quest) {
+        ProgressionLevel previousLevel = this.getParent() != null ? ModRegistries.LEVELS.get().getValue(this.getParent()) : null;
+        return this.quests.contains(quest.getId()) || (previousLevel != null && previousLevel.contains(quest));
     }
 }

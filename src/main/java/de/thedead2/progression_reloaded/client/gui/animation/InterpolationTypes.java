@@ -3,8 +3,12 @@ package de.thedead2.progression_reloaded.client.gui.animation;
 import de.thedead2.progression_reloaded.api.gui.animation.IInterpolationType;
 import net.minecraft.util.Mth;
 
+import java.util.Random;
+
 
 public class InterpolationTypes {
+
+    private static final Random RANDOM_GEN = new Random();
 
     public static final IInterpolationType LINEAR = val -> val;
 
@@ -32,6 +36,8 @@ public class InterpolationTypes {
 
         return c3 * val * val * val - c1 * val * val;
     };
+
+    public static final IInterpolationType RANDOM = val -> val * RANDOM_GEN.nextFloat(0.75f, 1.25f);
 
 
     public static IInterpolationType CATMULL_ROM(float pointA, float pointB, float pointC, float pointD) {

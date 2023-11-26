@@ -5,6 +5,7 @@ import com.ibm.icu.text.DecimalFormat;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.language.TranslationKeyProvider;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.repository.PackRepository;
 import net.minecraft.world.level.storage.WorldData;
@@ -45,13 +46,13 @@ public abstract class ModHelper {
 
     public static final Path QUESTS_PATH = DIR_PATH.resolve("quests");
 
-    public static final Logger LOGGER = LogManager.getLogger(MOD_ID);
-
     public static final ModProperties MOD_PROPERTIES = ModProperties.fromInputStream(ReflectionHelper.findResource("META-INF/mod.properties"));
 
     public static final String MOD_VERSION = MOD_PROPERTIES.getProperty("mod_version");
 
     public static final String MOD_NAME = MOD_PROPERTIES.getProperty("mod_name");
+
+    public static final Logger LOGGER = LogManager.getLogger(MOD_NAME);
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
 
@@ -66,7 +67,7 @@ public abstract class ModHelper {
 
 
     public static ModContainer THIS_MOD_CONTAINER() {
-        return ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for id: " + MOD_ID));
+        return ModList.get().getModContainerById(MOD_ID).orElseThrow(() -> new RuntimeException("Unable to retrieve ModContainer for uuid: " + MOD_ID));
     }
 
 
@@ -99,6 +100,11 @@ public abstract class ModHelper {
 
     public static void init() {
 
+    }
+
+
+    public static boolean isGamePaused() {
+        return Minecraft.getInstance().isPaused();
     }
 
 

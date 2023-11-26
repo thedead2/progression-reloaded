@@ -3,46 +3,52 @@ package de.thedead2.progression_reloaded.client.gui.textures;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import de.thedead2.progression_reloaded.api.gui.IDrawableResource;
+import de.thedead2.progression_reloaded.client.ModRenderer;
+import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.client.gui.util.Padding;
+import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Matrix4f;
 
+import java.awt.*;
 
-public class DrawableTexture implements IDrawableResource {
+
+public class DrawableTexture extends ScreenComponent implements IDrawableResource {
 
     private final TextureInfo textureInfo;
 
-    private final Area renderArea;
-
-    private final float[] colorShift = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
+    private final float[] colorShift;
 
     private Padding textureMask;
 
 
-    public DrawableTexture(TextureInfo textureInfo, Area renderArea) {
+    public DrawableTexture(TextureInfo textureInfo, Area area) {
+        super(area);
         this.textureInfo = textureInfo;
-        this.renderArea = renderArea;
+        this.colorShift = textureInfo.getColorShift();
     }
 
 
     public float getRenderWidth() {
-        return this.renderArea.getInnerWidth();
+        return this.area.getInnerWidth();
     }
 
 
     public void setRenderWidth(float width) {
-        this.renderArea.setInnerWidth(width);
+        this.area.setInnerWidth(width);
     }
 
 
     public float getRenderHeight() {
-        return this.renderArea.getInnerHeight();
+        return this.area.getInnerHeight();
     }
 
 
     public void setRenderHeight(float height) {
-        this.renderArea.setInnerHeight(height);
+        this.area.setInnerHeight(height);
     }
 
 
@@ -59,12 +65,28 @@ public class DrawableTexture implements IDrawableResource {
         this.colorShift[2] = blue;
     }
 
+
+    public DrawableTexture setAlpha(float alpha) {
+        this.colorShift[3] = alpha;
+        return this;
+    }
+
+
     @Override
+    @Deprecated
+    public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+        super.render(poseStack, mouseX, mouseY, partialTick);
+    }
+
+
+    @Override
+    public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
+
+    }    @Override
     public void draw(PoseStack poseStack) {
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
         RenderSystem.setShaderTexture(0, this.textureInfo.getTextureLocation());
-        RenderSystem.setShaderColor(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3]);
 
         float maskLeft = 0, maskTop = 0, maskRight = 0, maskBottom = 0;
 
@@ -74,39 +96,49 @@ public class DrawableTexture implements IDrawableResource {
             maskRight = this.textureMask.getRight();
             maskBottom = this.textureMask.getBottom();
         }
-        float x = this.renderArea.getInnerX() + maskLeft;
-        float y = this.renderArea.getInnerY() + maskTop;
-        float z = this.renderArea.getZ();
+        float x = this.area.getInnerX() + maskLeft;
+        float y = this.area.getInnerY() + maskTop;
+        float z = this.area.getZ();
         float u = this.textureInfo.getU() + maskLeft;
         float v = this.textureInfo.getV() + maskTop;
-        float width = this.renderArea.getInnerWidth() - maskRight - maskLeft;
-        float height = this.renderArea.getInnerHeight() - maskBottom - maskTop;
+        float width = this.area.getInnerWidth() - maskRight - maskLeft;
+        float height = this.area.getInnerHeight() - maskBottom - maskTop;
+
         //float f = 1.0F / this.textureInfo.getTextureWidth();
         //float f1 = 1.0F / this.textureInfo.getTextureHeight();
-        float f = 1.0F / this.renderArea.getInnerWidth();
-        float f1 = 1.0F / this.renderArea.getInnerHeight();
+        float f = 1.0F / this.area.getInnerWidth();
+        float f1 = 1.0F / this.area.getInnerHeight();
 
         Tesselator tessellator = Tesselator.getInstance();
         BufferBuilder bufferbuilder = tessellator.getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX); //TODO: Use POSITION_TEX_COLOR with .color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
         Matrix4f matrix = poseStack.last().pose();
-        bufferbuilder.vertex(matrix, x, y + height, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv(u * f, (v + height) * f1).endVertex();
-        bufferbuilder.vertex(matrix, x + width, y + height, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv((u + width) * f, (v + height) * f1).endVertex();
-        bufferbuilder.vertex(matrix, x + width, y, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv((u + width) * f, v * f1).endVertex();
-        bufferbuilder.vertex(matrix, x, y, z)/*.color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3])*/.uv(u * f, v * f1).endVertex();
+        bufferbuilder.vertex(matrix, x, y + height, z).color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3]).uv(u * f, (v + height) * f1).endVertex();
+        bufferbuilder.vertex(matrix, x + width, y + height, z).color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3]).uv((u + width) * f, (v + height) * f1).endVertex();
+        bufferbuilder.vertex(matrix, x + width, y, z).color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3]).uv((u + width) * f, v * f1).endVertex();
+        bufferbuilder.vertex(matrix, x, y, z).color(this.colorShift[0], this.colorShift[1], this.colorShift[2], this.colorShift[3]).uv(u * f, v * f1).endVertex();
         tessellator.end();
         RenderSystem.disableBlend();
+
+        if(ModRenderer.isGuiDebug()) {
+            RenderUtil.renderAreaDebug(poseStack, this.area, Color.BLUE.getRGB(), Color.MAGENTA.getRGB());
+        }
     }
 
 
-    public void setAlpha(float alpha) {
-        this.colorShift[3] = alpha;
+    public float getX() {
+        return this.area.getX();
+    }
+
+
+    public float getWidth() {
+        return this.area.getWidth();
     }
 
 
     @Override
     public void draw(PoseStack poseStack, float xPos, float yPos, float zPos) {
-        this.renderArea.setPosition(xPos, yPos, zPos);
+        this.area.setPosition(xPos, yPos, zPos);
         this.draw(poseStack);
     }
 
@@ -116,14 +148,7 @@ public class DrawableTexture implements IDrawableResource {
     }
 
 
-    public float getX() {
-        return this.renderArea.getX();
-    }
 
-
-    public Area getArea() {
-        return this.renderArea;
-    }
 
 
 

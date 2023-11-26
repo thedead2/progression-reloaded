@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.data.display;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.network.FriendlyByteBuf;
@@ -15,7 +16,7 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 
 
-public final class QuestDisplayInfo implements IDisplayInfo {
+public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
 
     private final ResourceLocation id;
 
@@ -148,7 +149,7 @@ public final class QuestDisplayInfo implements IDisplayInfo {
     @Override
     public String toString() {
         return "QuestDisplayInfo[" +
-                "id=" + id + ", " +
+                "uuid=" + id + ", " +
                 "title=" + title + ", " +
                 "description=" + description + ", " +
                 "icon=" + icon + ", " +
@@ -250,7 +251,7 @@ public final class QuestDisplayInfo implements IDisplayInfo {
 
         public QuestDisplayInfo build() {
             if(!this.canBuild()) {
-                throw new IllegalStateException("Can't build DisplayInfo for quest with missing id or title!");
+                throw new IllegalStateException("Can't build DisplayInfo for quest with missing uuid or title!");
             }
 
             return new QuestDisplayInfo(this.id, this.title, this.description, this.icon, this.isMainQuest, this.parentQuest);

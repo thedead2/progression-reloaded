@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -12,12 +13,15 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import org.joml.*;
 
@@ -26,7 +30,6 @@ import java.lang.Math;
 import java.text.DecimalFormat;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
-import static net.minecraft.client.gui.GuiComponent.fill;
 
 
 public class RenderUtil {
@@ -71,8 +74,7 @@ public class RenderUtil {
             badComponentString = badComponentString + " Blue";
         }
         if (rangeError) {
-            throw new IllegalArgumentException("Color parameter outside of expected range:"
-                                                       + badComponentString);
+            throw new IllegalArgumentException("Color parameter outside of expected range:" + badComponentString);
         }
     }
 
@@ -100,23 +102,23 @@ public class RenderUtil {
     @SuppressWarnings("DataFlowIssue")
     public static void renderEntity(EntityType<? extends LivingEntity> entityType, int xPos, int yPos, int scale, float xRot, float yRot) {
         if(entity == null || !entity.getType().equals(entityType)) {
-            entity = entityType.create(Minecraft.getInstance().level); //TODO: returns sometimes null
+            entity = entityType.create(Minecraft.getInstance().level); //FIXME: returns sometimes null
         }
         renderEntityInternal(entity, xPos, yPos, scale, xRot, yRot);
     }
 
 
     private static void renderEntityInternal(LivingEntity entity, int xPos, int yPos, int scale, float xRot, float yRot) {
-        PoseStack poseStack = RenderSystem.getModelViewStack();
-        poseStack.pushPose();
-        poseStack.translate((float) xPos, (float) yPos, 1050.0F);
-        poseStack.scale(1.0F, 1.0F, -1.0F);
+        PoseStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushPose();
+        modelViewStack.translate((float) xPos, (float) yPos, 1050.0F);
+        modelViewStack.scale(1.0F, 1.0F, -1.0F);
         RenderSystem.applyModelViewMatrix();
 
-        PoseStack poseStack1 = new PoseStack();
-        poseStack1.translate(0.0F, 0.0F, 1000.0F);
-        poseStack1.scale((float) scale, (float) scale, (float) scale);
-        flip(poseStack1, Axis.ZP);
+        PoseStack poseStack = new PoseStack();
+        poseStack.translate(0.0F, 0.0F, 1000.0F);
+        poseStack.scale((float) scale, (float) scale, (float) scale);
+        flip(poseStack, Axis.ZP);
 
         entity.setYBodyRot(180 + yRot);
         entity.setYHeadRot(180 + yRot);
@@ -125,30 +127,161 @@ public class RenderUtil {
         Lighting.setupForEntityInInventory();
         EntityRenderDispatcher entityrenderdispatcher = Minecraft.getInstance().getEntityRenderDispatcher();
         entityrenderdispatcher.setRenderShadow(false);
-        MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
-        RenderSystem.runAsFancy(() -> entityrenderdispatcher.render(entity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, poseStack1, multibuffersource$buffersource, 15728880));
-        multibuffersource$buffersource.endBatch();
+        MultiBufferSource.BufferSource buffer = Minecraft.getInstance().renderBuffers().bufferSource();
+        RenderSystem.runAsFancy(() -> entityrenderdispatcher.render(entity, 0.0D, 0.0D, 0.0D, 0.0F, 1.0F, poseStack, buffer, 15728880));
+        buffer.endBatch();
         entityrenderdispatcher.setRenderShadow(true);
 
-        poseStack.popPose();
+        modelViewStack.popPose();
         RenderSystem.applyModelViewMatrix();
         Lighting.setupFor3DItems();
     }
 
 
     /**
-     * Flips the pose stack 180 degrees around the given axis.
+     * Flips the given {@link PoseStack} 180 degrees around the given {@link Axis}.
      *
-     * @param poseStack The pose stack to flip.
-     * @param axis      The axis the pose stack should be flipped around.
+     * @param poseStack The {@link PoseStack} to flip.
+     * @param axis      The {@link Axis} the {@link PoseStack} should be flipped around.
      *
-     * @return The applied rotation in form of a Quaternionf
+     * @return The applied rotation in form of a {@link Quaternionf}
      **/
     @CanIgnoreReturnValue
     public static Quaternionf flip(PoseStack poseStack, Axis axis) {
         Quaternionf rotation = axis.rotation((float) Math.PI);
         poseStack.mulPose(rotation);
         return rotation;
+    }
+
+
+    /**
+     * Rotates the given {@link PoseStack} around the given point
+     *
+     * @param poseStack the {@link PoseStack} to rotate
+     * @param rotation  the rotation in form of a {@link Quaternionf} to apply to the {@link PoseStack}
+     * @param anchor    the rotation point in form of a {@link Vector3f}
+     **/
+    public static void rotateAround(PoseStack poseStack, Quaternionf rotation, Vector3f anchor) {
+        rotateAround(poseStack, rotation, anchor.x, anchor.y, anchor.z);
+    }
+
+
+    /**
+     * Rotates the given {@link PoseStack} around the given point
+     *
+     * @param poseStack the {@link PoseStack} to rotate
+     * @param rotation  the rotation in form of a {@link Quaternionf} to apply to the {@link PoseStack}
+     * @param pX        the x coordinate of the rotation point
+     * @param pY        the y coordinate of the rotation point
+     * @param pZ        the z coordinate of the rotation point
+     **/
+    public static void rotateAround(PoseStack poseStack, Quaternionf rotation, float pX, float pY, float pZ) {
+        Matrix4f matrix4f = new Matrix4f();
+        matrix4f.rotateAround(rotation, pX, pY, pZ);
+        poseStack.mulPoseMatrix(matrix4f);
+    }
+
+
+    /**
+     * Rotates the given {@link Matrix4f} around the given point
+     *
+     * @param matrix4f the {@link Matrix4f} to rotate
+     * @param rotation the rotation in form of a {@link Quaternionf} to apply to the {@link PoseStack}
+     * @param anchor   the rotation point in form of a {@link Vector3f}
+     **/
+    public static void rotateAround(Matrix4f matrix4f, Quaternionf rotation, Vector3f anchor) {
+        rotateAround(matrix4f, rotation, anchor.x, anchor.y, anchor.z);
+    }
+
+
+    /**
+     * Rotates the given {@link Matrix4f} around the given point
+     *
+     * @param matrix4f the {@link Matrix4f} to rotate
+     * @param rotation the rotation in form of a {@link Quaternionf} to apply to the {@link PoseStack}
+     * @param pX       the x coordinate of the rotation point
+     * @param pY       the y coordinate of the rotation point
+     * @param pZ       the z coordinate of the rotation point
+     **/
+    public static void rotateAround(Matrix4f matrix4f, Quaternionf rotation, float pX, float pY, float pZ) {
+        matrix4f.rotateAround(rotation, pX, pY, pZ);
+    }
+
+
+    /**
+     * Scales the given {@link PoseStack} around the given point
+     *
+     * @param poseStack the {@link PoseStack} to scale
+     * @param scale     the scaling factor in form of a {@link Vector3f}
+     * @param anchor    the scaling point in form of a {@link Vector3f}
+     **/
+    public static void scaleAround(PoseStack poseStack, Vector3f scale, Vector3f anchor) {
+        scaleAround(poseStack, scale.x, scale.y, scale.z, anchor.x, anchor.y, anchor.z);
+    }
+
+
+    /**
+     * Scales the given {@link PoseStack} around the given point
+     *
+     * @param poseStack the {@link PoseStack} to scale
+     * @param scaleX    the scale factor of the x-axis
+     * @param scaleY    the scale factor of the y-axis
+     * @param scaleZ    the scale factor of the z-axis
+     * @param pX        the x coordinate of the scaling point
+     * @param pY        the y coordinate of the scaling point
+     * @param pZ        the z coordinate of the scaling point
+     **/
+    public static void scaleAround(PoseStack poseStack, float scaleX, float scaleY, float scaleZ, float pX, float pY, float pZ) {
+        Matrix4f matrix4f = new Matrix4f();
+        matrix4f.scaleAround(scaleX, scaleY, scaleZ, pX, pY, pZ);
+        poseStack.mulPoseMatrix(matrix4f);
+    }
+
+
+    /**
+     * Scales the given {@link Matrix4f} around the given point
+     *
+     * @param matrix4f the {@link Matrix4f} to scale
+     * @param scale    the scaling factor in form of a {@link Vector3f}
+     * @param anchor   the scaling point in form of a {@link Vector3f}
+     **/
+    public static void scaleAround(Matrix4f matrix4f, Vector3f scale, Vector3f anchor) {
+        scaleAround(matrix4f, scale.x, scale.y, scale.z, anchor.x, anchor.y, anchor.z);
+    }
+
+
+    /**
+     * Scales the given {@link Matrix4f} around the given point
+     *
+     * @param matrix4f the {@link Matrix4f} to scale
+     * @param scaleX   the scale factor of the x-axis
+     * @param scaleY   the scale factor of the y-axis
+     * @param scaleZ   the scale factor of the z-axis
+     * @param pX       the x coordinate of the scaling point
+     * @param pY       the y coordinate of the scaling point
+     * @param pZ       the z coordinate of the scaling point
+     **/
+    public static void scaleAround(Matrix4f matrix4f, float scaleX, float scaleY, float scaleZ, float pX, float pY, float pZ) {
+        matrix4f.scaleAround(scaleX, scaleY, scaleZ, pX, pY, pZ);
+    }
+
+
+    /**
+     * @param xRot the x rotation
+     * @param yRot the y rotation
+     * @param zRot the z rotation
+     *
+     * @return a {@link Quaternionf} that holds the given x-, y- and z-rotation
+     **/
+    public static Quaternionf rotateDegrees(float xRot, float yRot, float zRot) {
+        return new Quaternionf().rotationX(xRot * ((float) Math.PI / 180F)).rotationY(yRot * ((float) Math.PI / 180F)).rotationZ(zRot * ((float) Math.PI / 180F));
+    }
+
+
+    public static Vector3f getCenter(float xPos, float yPos, float zPos, float objectWidth, float objectHeight) {
+        float a = objectWidth / 2;
+        float b = objectHeight / 2;
+        return new Vector3f(xPos + a, yPos + b, zPos);
     }
 
     public static int changeAlpha(int color, float alphaPercent) {
@@ -167,26 +300,50 @@ public class RenderUtil {
         if(withShadow) {
             font.drawShadow(poseStack, text, startPos.x, startPos.y, color);
         }
-        else font.draw(poseStack, text, startPos.x, startPos.y, color);
+        else {
+            font.draw(poseStack, text, startPos.x, startPos.y, color);
+        }
     }
 
-    public static void renderItem(PoseStack poseStack, float xPos, float yPos, float scale, ItemStack icon) {
-        renderItem(poseStack, xPos, yPos, scale, 0, 0, icon);
+
+    public static void renderItem(ItemStack item, float xPos, float yPos, float zPos, float size) {
+        renderItem(item, xPos, yPos, zPos, size, new Quaternionf());
     }
 
 
-    public static void renderItem(PoseStack poseStack, float xPos, float yPos, float scale, float xRot, float yRot, ItemStack item) {
-        poseStack.pushPose();
+    public static void renderItem(ItemStack item, float xPos, float yPos, float zPos, float size, Quaternionf rotation) {
+        Minecraft minecraft = Minecraft.getInstance();
+        ItemRenderer itemRenderer = minecraft.getItemRenderer();
+        BakedModel bakedModel = itemRenderer.getModel(item, null, null, 0);
+        minecraft.textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).setFilter(false, false);
+        RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
+        RenderSystem.enableBlend();
+        RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        PoseStack modelViewStack = RenderSystem.getModelViewStack();
+        modelViewStack.pushPose();
+        modelViewStack.translate(xPos + (size / 2), yPos + (size / 2), zPos + itemRenderer.blitOffset);
+        modelViewStack.translate(4.0F, 4.0F, 0.0F);
+        modelViewStack.scale(1.0F, -1.0F, 1.0F);
+        modelViewStack.scale(size, size, 1);
+        modelViewStack.mulPose(rotation);
+        RenderSystem.applyModelViewMatrix();
+        PoseStack poseStack = new PoseStack();
+        MultiBufferSource.BufferSource bufferSource = Minecraft.getInstance().renderBuffers().bufferSource();
+        boolean flag = !bakedModel.usesBlockLight();
+        if(flag) {
+            Lighting.setupForFlatItems();
+        }
 
-        poseStack.translate(xPos, yPos, 0);
-        poseStack.scale(scale, -scale, 1);
-        poseStack.mulPose(Axis.XP.rotationDegrees(xRot));
-        poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
+        itemRenderer.render(item, ItemTransforms.TransformType.GUI, false, poseStack, bufferSource, 15728880, OverlayTexture.NO_OVERLAY, bakedModel);
+        bufferSource.endBatch();
+        RenderSystem.enableDepthTest();
+        if(flag) {
+            Lighting.setupFor3DItems();
+        }
 
-        MultiBufferSource.BufferSource multibuffersource$buffersource = Minecraft.getInstance().renderBuffers().bufferSource();
-        Minecraft.getInstance().getItemRenderer().renderStatic(item, ItemTransforms.TransformType.FIXED, 15728880, OverlayTexture.NO_OVERLAY, poseStack, multibuffersource$buffersource, 0);
-        poseStack.popPose();
-        multibuffersource$buffersource.endBatch();
+        modelViewStack.popPose();
+        RenderSystem.applyModelViewMatrix();
     }
 
 
@@ -206,20 +363,6 @@ public class RenderUtil {
     }
 
 
-    public static void drawTexture(ResourceLocation texture, Matrix4f transformationMatrix, Vector2f a, Vector2f d, float z, Vector2f textureA, Vector2f textureD) {
-        RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.setShaderTexture(0, texture);
-
-        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
-        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-        bufferbuilder.vertex(transformationMatrix, a.x, d.y, z).uv(textureA.x, textureD.y).endVertex();
-        bufferbuilder.vertex(transformationMatrix, d.x, d.y, z).uv(textureD.x, textureD.y).endVertex();
-        bufferbuilder.vertex(transformationMatrix, d.x, a.y, z).uv(textureD.x, textureA.x).endVertex();
-        bufferbuilder.vertex(transformationMatrix, a.x, a.y, z).uv(textureA.x, textureA.x).endVertex();
-        BufferUploader.drawWithShader(bufferbuilder.end());
-        RenderSystem.disableBlend();
-    }
 
 
     public static Vector3f getScreenCenter() {
@@ -237,23 +380,11 @@ public class RenderUtil {
     }
 
 
-    public static Vector2i getScreenA() {
-        return new Vector2i(0, 0);
-    }
-
-
-    public static Vector2i getScreenB() {
-        return new Vector2i(Math.round(getScreenWidth()), 0);
-    }
-
-
-    public static Vector2i getScreenC() {
-        return new Vector2i(0, Math.round(getScreenHeight()));
-    }
-
-
-    public static Vector2i getScreenD() {
-        return new Vector2i(Math.round(getScreenWidth()), Math.round(getScreenHeight()));
+    public static Vector2d getMousePos() {
+        Minecraft minecraft = Minecraft.getInstance();
+        double mouseX = (minecraft.mouseHandler.xpos() * minecraft.getWindow().getGuiScaledWidth() / minecraft.getWindow().getScreenWidth());
+        double mouseY = (minecraft.mouseHandler.ypos() * minecraft.getWindow().getGuiScaledHeight() / minecraft.getWindow().getScreenHeight());
+        return new Vector2d(mouseX, mouseY);
     }
 
 
@@ -264,7 +395,7 @@ public class RenderUtil {
 
         renderArea(poseStack, area, Color.RED.getRGB(), Color.GREEN.getRGB());
 
-        renderCross(poseStack, area.getCenterX(), area.getCenterY(), 6, Color.ORANGE.getRGB());
+        renderCross(poseStack, area.getCenterX(), area.getCenterY(), area.getZ(), 6, Color.ORANGE.getRGB());
 
         poseStack.popPose();
     }
@@ -275,33 +406,45 @@ public class RenderUtil {
 
         renderAreaDebug(poseStack, area, Color.RED.getRGB(), Color.GREEN.getRGB());
 
-        renderCross(poseStack, area.getCenterX(), area.getCenterY(), 6, Color.ORANGE.getRGB());
+        renderCrossDebug(poseStack, area.getCenterX(), area.getCenterY(), area.getZ(), 6, Color.ORANGE.getRGB());
 
         poseStack.popPose();
     }
 
 
     public static void renderArea(PoseStack poseStack, Area area, int outerColor, int innerColor) {
-        renderSquareOutline(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), outerColor);
-        renderSquareOutline(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), innerColor);
+        renderSquareOutline(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), area.getZ(), outerColor);
+        renderSquareOutline(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), area.getZ(), innerColor);
     }
+
+
     public static void renderAreaDebug(PoseStack poseStack, Area area, int outerColor, int innerColor) {
-        renderSquareOutlineDebug(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), outerColor);
-        renderSquareOutlineDebug(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), innerColor);
+        renderSquareOutlineDebug(poseStack, area.getX(), area.getXMax(), area.getY(), area.getYMax(), area.getZ(), outerColor);
+        renderSquareOutlineDebug(poseStack, area.getInnerX(), area.getInnerXMax(), area.getInnerY(), area.getInnerYMax(), area.getZ(), innerColor);
     }
 
 
-    public static void renderCross(PoseStack poseStack, float xPos, float yPos, float width, int color) {
-        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, 2, color);
-        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, 2, color);
+    public static void renderCross(PoseStack poseStack, float xPos, float yPos, float zPos, float width, int color) {
+        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 2, color);
+        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 2, color);
     }
 
 
-    public static void renderSquareOutlineDebug(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
-        horizontalLine(poseStack, xMin, xMax, yMin, 2, color);
-        horizontalLine(poseStack, xMin, xMax, yMax, 2, color);
-        verticalLine(poseStack, xMin, yMin, yMax, 2, color);
-        verticalLine(poseStack, xMax, yMin, yMax, 2, color);
+    public static void renderCrossDebug(PoseStack poseStack, float xPos, float yPos, float zPos, float width, int color) {
+        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 2, color);
+        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 2, color);
+
+        Font font = Minecraft.getInstance().font;
+        String text = "x: " + DEBUG_FORMAT.format(xPos) + ", y: " + DEBUG_FORMAT.format(yPos);
+        font.draw(poseStack, text, xPos - (float) font.width(text) / 2, yPos + 2, color);
+    }
+
+
+    public static void renderSquareOutlineDebug(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 2, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 2, color);
+        verticalLine(poseStack, xMin, yMin, yMax, zPos, 2, color);
+        verticalLine(poseStack, xMax, yMin, yMax, zPos, 2, color);
         float height = yMax - yMin;
         float width = xMax - xMin;
         Font font = Minecraft.getInstance().font;
@@ -309,34 +452,75 @@ public class RenderUtil {
         font.draw(poseStack, DEBUG_FORMAT.format(width * scale), xMin + ((width / 2) - ((float) font.width(DEBUG_FORMAT.format(width * scale)) / 2)), yMin - font.lineHeight - 1, color);
         font.draw(poseStack, DEBUG_FORMAT.format(height * scale), xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
     }
-    public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, int color) {
-        horizontalLine(poseStack, xMin, xMax, yMin, 2, color);
-        horizontalLine(poseStack, xMin, xMax, yMax, 2, color);
-        verticalLine(poseStack, xMin, yMin, yMax, 2, color);
-        verticalLine(poseStack, xMax, yMin, yMax, 2, color);
+
+
+    public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 2, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 2, color);
+        verticalLine(poseStack, xMin, yMin, yMax, zPos, 2, color);
+        verticalLine(poseStack, xMax, yMin, yMax, zPos, 2, color);
     }
 
 
-    public static void horizontalLine(PoseStack poseStack, float xMin, float xMax, float yPos, float lineWidth, int color) {
+    public static void horizontalLine(PoseStack poseStack, float xMin, float xMax, float yPos, float zPos, float lineWidth, int color) {
         if(xMax < xMin) {
             float i = xMin;
             xMin = xMax;
             xMax = i;
         }
 
-        fill(poseStack, Math.round(xMin), Math.round(yPos), Math.round(xMax + lineWidth / 2), Math.round(yPos + lineWidth / 2), color);
+        fill(poseStack, xMin, xMax + lineWidth / 2, yPos, yPos + lineWidth / 2, zPos, color);
     }
 
 
-    public static void verticalLine(PoseStack poseStack, float xPos, float yMin, float yMax, float lineWidth, int color) {
+    public static void verticalLine(PoseStack poseStack, float xPos, float yMin, float yMax, float zPos, float lineWidth, int color) {
         if(yMax < yMin) {
             float i = yMin;
             yMin = yMax;
             yMax = i;
         }
 
-        fill(poseStack, Math.round(xPos), Math.round(yMin + lineWidth / 2), Math.round(xPos + lineWidth / 2), Math.round(yMax), color);
+        fill(poseStack, xPos, xPos + lineWidth / 2, yMin + lineWidth / 2, yMax, zPos, color);
     }
+
+
+    public static void fill(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float z, int color) {
+        innerFill(poseStack.last().pose(), xMin, xMax, yMin, yMax, z, color);
+    }
+
+
+    private static void innerFill(Matrix4f matrix, float xMin, float xMax, float yMin, float yMax, float z, int color) {
+        if(xMin < xMax) {
+            float i = xMin;
+            xMin = xMax;
+            xMax = i;
+        }
+
+        if(yMin < yMax) {
+            float j = yMin;
+            yMin = yMax;
+            yMax = j;
+        }
+
+        float alpha = (float) (color >> 24 & 255) / 255.0F;
+        float red = (float) (color >> 16 & 255) / 255.0F;
+        float green = (float) (color >> 8 & 255) / 255.0F;
+        float blue = (float) (color & 255) / 255.0F;
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        RenderSystem.enableBlend();
+        RenderSystem.disableTexture();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        bufferbuilder.vertex(matrix, xMin, yMax, z).color(red, green, blue, alpha).endVertex();
+        bufferbuilder.vertex(matrix, xMax, yMax, z).color(red, green, blue, alpha).endVertex();
+        bufferbuilder.vertex(matrix, xMax, yMin, z).color(red, green, blue, alpha).endVertex();
+        bufferbuilder.vertex(matrix, xMin, yMin, z).color(red, green, blue, alpha).endVertex();
+        BufferUploader.drawWithShader(bufferbuilder.end());
+        RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
+    }
+
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {
         this.blit(pPoseStack, pX, pY, pUOffset, pVOffset, pPadding, pPadding);
         renderRepeating(pPoseStack, pX + pPadding, pY, pWidth - pPadding - pPadding, pPadding, pUOffset + pPadding, pVOffset, pUWidth - pPadding - pPadding, pVHeight);

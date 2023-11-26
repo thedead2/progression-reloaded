@@ -11,17 +11,17 @@ import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Map;
 
 
-public class ProgressionQuest implements IProgressable, Comparable<ProgressionQuest> {
+public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
     private final QuestDisplayInfo displayInfo;
 
@@ -77,8 +77,8 @@ public class ProgressionQuest implements IProgressable, Comparable<ProgressionQu
         ResourceLocation thisId = this.getId();
         ResourceLocation otherId = other.getId();
 
-        ResourceLocation thisPrevious = this.getParentQuest();
-        ResourceLocation otherPrevious = other.getParentQuest();
+        ResourceLocation thisPrevious = this.getParent();
+        ResourceLocation otherPrevious = other.getParent();
 
         ProgressionLevel thisLevel = LevelManager.getInstance().getLevelForQuest(this);
         ProgressionLevel otherLevel = LevelManager.getInstance().getLevelForQuest(other);
@@ -113,13 +113,14 @@ public class ProgressionQuest implements IProgressable, Comparable<ProgressionQu
     }
 
 
-    public boolean isParentDone(QuestManager questManager, KnownPlayer player) {
-        return questManager.isParentDone(this, player);
+    @Nullable
+    public ResourceLocation getParent() {
+        return this.displayInfo.parentQuest();
     }
 
 
-    public boolean isDone(QuestManager questManager, KnownPlayer player) {
-        return questManager.getOrStartProgress(this, player).isDone();
+    public boolean isParentDone(QuestManager questManager, PlayerData player) {
+        return questManager.isParentDone(this, player);
     }
 
 
@@ -161,7 +162,7 @@ public class ProgressionQuest implements IProgressable, Comparable<ProgressionQu
     }
 
 
-    public ResourceLocation getParentQuest() {
-        return this.displayInfo.parentQuest();
+    public boolean isDone(PlayerData player) {
+        return player.getQuestData().getOrStartProgress(this).isDone();
     }
 }

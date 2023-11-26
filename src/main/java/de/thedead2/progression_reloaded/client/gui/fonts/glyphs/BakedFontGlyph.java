@@ -33,6 +33,8 @@ public class BakedFontGlyph {
         this.down = down;
     }
 
+
+    //FIXME: Glyph doesn't get rendered if seen from the back??
     public void render(float x, float y, float z, float scaling, Matrix4f matrix, VertexConsumer buffer, boolean italic, float red, float green, float blue, float alpha, int packedLight) {
         int margin = 3;
         float xLeftWidth = x + this.left * scaling;

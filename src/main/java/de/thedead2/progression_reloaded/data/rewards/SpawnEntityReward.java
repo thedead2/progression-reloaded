@@ -30,7 +30,7 @@ public class SpawnEntityReward implements IReward {
 
     public static SpawnEntityReward fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
-        EntityType<?> entityType1 = EntityType.byString(jsonObject.get("entity_type").getAsString()).orElseThrow(() -> new RuntimeException("Unknown Entity with id: " + jsonObject.get("entity_type").getAsString()));
+        EntityType<?> entityType1 = EntityType.byString(jsonObject.get("entity_type").getAsString()).orElseThrow(() -> new RuntimeException("Unknown Entity with uuid: " + jsonObject.get("entity_type").getAsString()));
         int amount = jsonObject.get("amount").getAsInt();
 
         return new SpawnEntityReward(entityType1, amount);

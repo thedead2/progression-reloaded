@@ -8,7 +8,6 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -16,7 +15,6 @@ import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 
 import java.util.Map;
-import java.util.Set;
 
 
 public abstract class PREventFactory {
@@ -64,8 +62,8 @@ public abstract class PREventFactory {
     }
 
 
-    public static void onQuestStatusUpdate(KnownPlayer player, Set<ProgressionQuest> activeQuests) {
-        EVENT_BUS.post(new QuestEvent.UpdateQuestStatusEvent(player, activeQuests));
+    public static void onQuestStatusUpdate(PlayerData player) {
+        EVENT_BUS.post(new QuestEvent.UpdateQuestStatusEvent(player));
     }
 
 

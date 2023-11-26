@@ -65,7 +65,7 @@ public abstract class MathHelper {
         Vector3f BA = B.sub(A);
         Vector3f SNV = new Vector3f(BC.y, -BC.x, -BC.z);
 
-        float t = BA.dot(SNV) / AD.dot(SNV); //dot --> skalarprodukt
+        float t = BA.dot(SNV) / AD.dot(SNV);
 
         return A.add(AD.mul(t));
     }

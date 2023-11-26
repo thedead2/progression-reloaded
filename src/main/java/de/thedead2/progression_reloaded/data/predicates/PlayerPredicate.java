@@ -73,7 +73,7 @@ public class PlayerPredicate implements ITriggerPredicate<PlayerData> {
         return new PlayerPredicate(
                 MinMax.Ints.exactly(experienceLevel),
                 gameMode,
-                player.getProgressionLevel(),
+                player.getCurrentLevel(),
                 player.getTeam().orElse(null),
                 entity == null ? EntityPredicate.ANY : EntityPredicate.from(entity)
         );

@@ -25,6 +25,7 @@ import java.util.function.BiFunction;
 import java.util.function.Predicate;
 
 
+//TODO: Add support for multiple sub fonts, e.g. bold, italic, etc.
 public class TTFReader implements IFontReader<TTFProvider> {
     private static final FileToIdConverter TTF_ID_CONVERTER = new FileToIdConverter("font", ".ttf");
     private ResourceLocation fileName;

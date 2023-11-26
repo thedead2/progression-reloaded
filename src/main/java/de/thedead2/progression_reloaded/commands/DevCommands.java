@@ -1,9 +1,11 @@
 package de.thedead2.progression_reloaded.commands;
 
+import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.client.ModRenderer;
+import de.thedead2.progression_reloaded.client.gui.GuiFactory;
+import de.thedead2.progression_reloaded.client.gui.components.toasts.ProgressToast;
+import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.CrashReport;
@@ -18,16 +20,7 @@ public class DevCommands {
         }
 
         ModCommand.Builder.builder()
-                .withPath("dev/level/questManager")
-                .withAction(context -> {
-                    PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
-                    var level = player.getProgressionLevel();
-                    context.getSource().sendSuccess(Component.literal("Current questManager for level " + level.getTitle() + ": " + level.getQuests().toString()), true);
-                    return ModCommands.COMMAND_SUCCESS;
-                })
-                .buildAndRegister();
-
-        ModCommand.Builder.builder().withPath("dev/lives/add")
+                          .withPath("dev/lives/add")
                           .withAction(context -> {
                               if(ExtraLifeItem.rewardExtraLife(context.getSource().getPlayerOrException(), true)) {
                                   return ModCommands.COMMAND_SUCCESS;
@@ -59,6 +52,7 @@ public class DevCommands {
                               return ModCommands.COMMAND_SUCCESS;
                           })
                 .buildAndRegister();
+
         ModCommand.Builder.builder()
                 .withPath("dev/gui/debug")
                 .withAction(context -> {
@@ -72,5 +66,14 @@ public class DevCommands {
                     return ModCommands.COMMAND_SUCCESS;
                 })
                 .buildAndRegister();
+
+        ModCommand.Builder.builder()
+                          .withPath("dev/gui/toast")
+                          .withAction(context -> {
+                              ProgressToast toast = GuiFactory.createProgressToast(LevelManager.CREATIVE.getDisplay(), Component.literal("Level complete!"));
+                              ModClientInstance.getInstance().getModRenderer().getToastRenderer().forceDisplayToast(toast);
+                              return ModCommands.COMMAND_SUCCESS;
+                          })
+                          .buildAndRegister();
     }
 }

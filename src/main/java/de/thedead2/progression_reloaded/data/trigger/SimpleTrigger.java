@@ -11,8 +11,7 @@ import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
@@ -35,7 +34,7 @@ public abstract class SimpleTrigger<T> {
 
     protected final String predicateName;
 
-    private final Multimap<KnownPlayer, Listener> playerListeners = HashMultimap.create();
+    private final Multimap<PlayerData, Listener> playerListeners = HashMultimap.create();
 
 
     protected SimpleTrigger(ResourceLocation id, PlayerPredicate player, ITriggerPredicate<T> predicate, String predicateName) {
@@ -66,7 +65,7 @@ public abstract class SimpleTrigger<T> {
 
     protected static <T> void fireTrigger(Class<? extends SimpleTrigger<T>> triggerClass, Entity entity, T toTest, Object... addArgs) {
         if(entity instanceof Player player) {
-            PlayerData playerData = PlayerDataHandler.getActivePlayer(player);
+            PlayerData playerData = PlayerDataManager.getPlayerData(player);
             LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, playerData, toTest, addArgs);
         }
     }
@@ -77,12 +76,12 @@ public abstract class SimpleTrigger<T> {
     }
 
 
-    public final void addListener(KnownPlayer player, Listener listener) {
+    public final void addListener(PlayerData player, Listener listener) {
         this.playerListeners.put(player, listener);
     }
 
 
-    public final void removeListener(KnownPlayer player, Listener listener) {
+    public final void removeListener(PlayerData player, Listener listener) {
         this.playerListeners.remove(player, listener);
     }
 
@@ -90,7 +89,7 @@ public abstract class SimpleTrigger<T> {
     protected boolean trigger(PlayerData player, Predicate<Listener> triggerPredicate) {
         List<Listener> list = Lists.newArrayList();
 
-        for(Listener listener : this.playerListeners.get(KnownPlayer.fromSinglePlayer(player))) {
+        for(Listener listener : this.playerListeners.get(player)) {
             if(triggerPredicate.test(listener) && this.player.matches(player)) {
                 list.add(listener);
             }
@@ -123,6 +122,15 @@ public abstract class SimpleTrigger<T> {
 
     public abstract void toJson(JsonObject data);
 
+    /*@OnlyIn(Dist.CLIENT)
+    public abstract TriggerComponent<? extends SimpleTrigger<T>> getDisplayComponent(Area area);*/
+
+    /**
+     *
+     **/
+    /*@OnlyIn(Dist.CLIENT)
+    public abstract Component getShortDescription();*/
+
     public static class Listener {
 
         private final ProgressionQuest quest;
@@ -137,7 +145,7 @@ public abstract class SimpleTrigger<T> {
 
 
         public boolean award(PlayerData player) {
-            return LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, KnownPlayer.fromSinglePlayer(player));
+            return LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, player);
         }
 
 

@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.animation;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
 import net.minecraft.Util;
 import net.minecraft.client.Timer;
@@ -15,13 +17,16 @@ public class AnimationTimer {
 
     private float timeLeft;
 
-    private float sleepCounter;
+    private float startCounter;
+
+    private float sleepTime;
 
     private boolean inverted;
 
     private boolean paused;
 
     private ILoopType loop;
+
 
 
     public AnimationTimer(float startTime, float duration, ILoopType loop) {
@@ -39,44 +44,16 @@ public class AnimationTimer {
     }
 
 
-    /**
-     * Resets the timer to start again.
-     **/
-    public void reset() {
-        this.timer.advanceTime(Util.getMillis());
-        this.sleepCounter = 0;
-        this.timeLeft = this.inverted ? 0 : this.duration;
-    }
-
-
-    public AnimationTimer invert(boolean invert) {
-        this.inverted = invert;
-        return this;
-    }
-
-
-    public AnimationTimer pause(boolean pause) {
-        if(this.paused != pause) this.timer.advanceTime(Util.getMillis());
-        this.paused = pause;
-        return this;
-    }
-
-
-    public AnimationTimer loop(ILoopType loop) {
-        this.loop = loop;
-        return this;
-    }
-
-
     public void updateTime() {
         int j = this.timer.advanceTime(Util.getMillis());
 
-        if(this.paused) {
+        if(this.paused || this.sleepTime > 0) {
+            this.sleepTime -= j;
             return;
         }
 
         if(!this.isStarted()) {
-            this.sleepCounter += j;
+            this.startCounter += j;
         }
         else if(this.isFinished()) {
             this.loop.loop(this);
@@ -93,12 +70,41 @@ public class AnimationTimer {
 
 
     public boolean isStarted() {
-        return this.sleepCounter >= this.startTime;
+        return this.startCounter > this.startTime;
     }
 
 
     public boolean isFinished() {
-        return this.inverted ? timeLeft > this.duration : timeLeft < 0;
+        return this.inverted ? timeLeft >= this.duration : timeLeft <= 0;
+    }
+
+
+    public AnimationTimer invert(boolean invert) {
+        this.inverted = invert;
+        return this;
+    }
+
+
+    public AnimationTimer loop(ILoopType loop) {
+        this.loop = loop;
+        return this;
+    }
+
+
+    public AnimationTimer start() {
+        this.pause(false);
+        this.reset();
+        this.startCounter = this.startTime + 1;
+        return this;
+    }
+
+
+    public AnimationTimer pause(boolean pause) {
+        if(this.paused != pause) {
+            this.timer.advanceTime(Util.getMillis());
+        }
+        this.paused = pause;
+        return this;
     }
 
 
@@ -139,6 +145,31 @@ public class AnimationTimer {
     }
 
 
+    /**
+     * Resets the timer to start again.
+     **/
+    public void reset() {
+        this.timer.advanceTime(Util.getMillis());
+        this.startCounter = 0;
+        this.sleepTime = -1;
+        this.timeLeft = this.inverted ? 0 : this.duration;
+    }
+
+
+    public AnimationTimer stop() {
+        this.timeLeft = this.inverted ? this.duration + 1 : -1;
+        this.pause(true);
+        return this;
+    }
+
+
+    public AnimationTimer sleep(float time) {
+        if(this.sleepTime < 0) {
+            this.sleepTime = time;
+        }
+        return this;
+    }
+
     public float getTimeLeft() {
         return timeLeft;
     }
@@ -151,5 +182,21 @@ public class AnimationTimer {
 
     public ILoopType getLoopType() {
         return this.loop;
+    }
+
+
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+
+        jsonObject.addProperty("startTime", this.startTime);
+        jsonObject.addProperty("duration", this.duration);
+        jsonObject.addProperty("timeLeft", this.timeLeft);
+        jsonObject.addProperty("startCounter", this.startCounter);
+        jsonObject.addProperty("sleepTime", this.sleepTime);
+        jsonObject.addProperty("inverted", this.inverted);
+        jsonObject.addProperty("paused", this.paused);
+        jsonObject.addProperty("loop", this.loop.loop(this, false));
+
+        return null;
     }
 }

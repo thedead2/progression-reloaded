@@ -2,10 +2,14 @@ package de.thedead2.progression_reloaded.client.gui.fonts.formatting;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
 import de.thedead2.progression_reloaded.api.gui.fonts.ITextEffect;
+import de.thedead2.progression_reloaded.api.gui.fonts.glyphs.IGlyphTransform;
 import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -16,19 +20,25 @@ import static de.thedead2.progression_reloaded.client.gui.util.RenderUtil.storeC
 
 
 public class FontFormatting {
+
+    private ResourceLocation font;
     private float lineHeight, letterSpacing, lineSpacing;
     private Alignment textAlignment;
     @Nullable
-    private IAnimation strikeThroughAnimation, underlineAnimation, bgAnimation;
+    private IAnimation strikethroughAnimation, underlineAnimation, bgAnimation;
+
+    @Nullable
+    private IGlyphTransform glyphTransform;
 
     private final Set<ITextEffect> textEffects = Sets.newHashSet();
 
     private final int[] color = new int[4], bgColor = new int[4];
-    private boolean bold, italic, underlined, strikethrough, obfuscated;
+
+    private boolean bold, italic, underlined, strikethrough, obfuscated, withShadow;
 
 
     private FontFormatting() {
-        this(8, 0, 3, Alignment.DEFAULT, Color.WHITE.getRGB(), 0, false, false, false, false, false);
+        this(new ResourceLocation("default"), 8, 0, 3, Alignment.DEFAULT, Color.WHITE.getRGB(), 0, false, false, false, false, false, false);
     }
 
     /**
@@ -38,7 +48,8 @@ public class FontFormatting {
      * @param textAlignment the alignment of the text inside the drawing area
      * @param color the color of the text
      * **/
-    public FontFormatting(int lineHeight, int letterSpacing, int lineSpacing, Alignment textAlignment, int color, int bgColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated) {
+    public FontFormatting(ResourceLocation font, float lineHeight, float letterSpacing, float lineSpacing, Alignment textAlignment, int color, int bgColor, boolean bold, boolean italic, boolean underlined, boolean strikethrough, boolean obfuscated, boolean withShadow) {
+        this.font = font;
         this.lineHeight = lineHeight;
         this.letterSpacing = letterSpacing;
         this.lineSpacing = lineSpacing;
@@ -48,6 +59,7 @@ public class FontFormatting {
         this.underlined = underlined;
         this.strikethrough = strikethrough;
         this.obfuscated = obfuscated;
+        this.withShadow = withShadow;
 
         storeColorComponents(this.color, color);
         storeColorComponents(this.bgColor, bgColor);
@@ -55,13 +67,14 @@ public class FontFormatting {
 
 
     public static FontFormatting of(Style style) {
-        return new FontFormatting(8, 0, 1, Alignment.DEFAULT, style.getColor() != null ? style.getColor().getValue() : Color.WHITE.getRGB(), 0, style.isBold(), style.isItalic(), style.isUnderlined(), style.isStrikethrough(), style.isObfuscated());
+        return new FontFormatting(style.getFont(), 8, 0, 1, Alignment.DEFAULT, style.getColor() != null ? style.getColor().getValue() : Color.WHITE.getRGB(), 0, style.isBold(), style.isItalic(), style.isUnderlined(), style.isStrikethrough(), style.isObfuscated(), false);
     }
 
 
     public static FontFormatting defaultFormatting() {
         return new FontFormatting();
     }
+
 
     public FontFormatting setObfuscated(boolean obfuscated) {
         this.obfuscated = obfuscated;
@@ -126,6 +139,55 @@ public class FontFormatting {
     }
     public int getBgAlpha() {
         return this.bgColor[3];
+    }
+
+
+    public static FontFormatting fromJson(JsonElement jsonElement) {
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+        ResourceLocation font = new ResourceLocation(jsonObject.get("font").getAsString());
+        float lineHeight = jsonObject.get("lineHeight").getAsFloat();
+        float letterSpacing = jsonObject.get("letterSpacing").getAsFloat();
+        float lineSpacing = jsonObject.get("lineSpacing").getAsFloat();
+        Alignment textAlignment = Alignment.fromJson(jsonObject.get("textAlignment"));
+        int textColor = jsonObject.get("textColor").getAsInt();
+        int bgColor = jsonObject.get("bgColor").getAsInt();
+        boolean bold = jsonObject.get("bold").getAsBoolean();
+        boolean italic = jsonObject.get("italic").getAsBoolean();
+        boolean underline = jsonObject.get("underline").getAsBoolean();
+        boolean strikethrough = jsonObject.get("strikethrough").getAsBoolean();
+        boolean obfuscated = jsonObject.get("obfuscated").getAsBoolean();
+        boolean withShadow = jsonObject.get("withShadow").getAsBoolean();
+
+        IAnimation strikethroughAnimation = null, underlineAnimation = null, bgAnimation = null;
+        if(jsonObject.has("strikethroughAnimation")) {
+            strikethroughAnimation = IAnimation.fromJson(jsonObject.get("strikethroughAnimation"));
+        }
+        if(jsonObject.has("underlineAnimation")) {
+            underlineAnimation = IAnimation.fromJson(jsonObject.get("underlineAnimation"));
+        }
+        if(jsonObject.has("bgAnimation")) {
+            bgAnimation = IAnimation.fromJson(jsonObject.get("bgAnimation"));
+        }
+
+        return new FontFormatting(font, lineHeight, letterSpacing, lineSpacing, textAlignment, textColor, bgColor, bold, italic, underline, strikethrough, obfuscated, withShadow).setStrikethroughAnimation(strikethroughAnimation).setUnderlineAnimation(underlineAnimation).setBgAnimation(bgAnimation);
+    }
+
+
+    public FontFormatting setBgAnimation(@Nullable IAnimation bgAnimation) {
+        this.bgAnimation = bgAnimation;
+        return this;
+    }
+
+
+    public FontFormatting setUnderlineAnimation(@Nullable IAnimation underlineAnimation) {
+        this.underlineAnimation = underlineAnimation;
+        return this;
+    }
+
+
+    public ResourceLocation getFont() {
+        return font;
     }
 
 
@@ -268,13 +330,14 @@ public class FontFormatting {
     }
 
 
-    public @Nullable IAnimation getStrikeThroughAnimation() {
-        return strikeThroughAnimation;
+    public FontFormatting setFont(ResourceLocation font) {
+        this.font = font;
+        return this;
     }
 
 
-    public void setStrikeThroughAnimation(@Nullable IAnimation strikeThroughAnimation) {
-        this.strikeThroughAnimation = strikeThroughAnimation;
+    public boolean isWithShadow() {
+        return withShadow;
     }
 
 
@@ -283,8 +346,9 @@ public class FontFormatting {
     }
 
 
-    public void setUnderlineAnimation(@Nullable IAnimation underlineAnimation) {
-        this.underlineAnimation = underlineAnimation;
+    public FontFormatting setWithShadow(boolean withShadow) {
+        this.withShadow = withShadow;
+        return this;
     }
 
 
@@ -293,8 +357,8 @@ public class FontFormatting {
     }
 
 
-    public void setBgAnimation(@Nullable IAnimation bgAnimation) {
-        this.bgAnimation = bgAnimation;
+    public @Nullable IAnimation getStrikethroughAnimation() {
+        return strikethroughAnimation;
     }
 
     public FontFormatting addTextEffect(ITextEffect effect) {
@@ -305,5 +369,71 @@ public class FontFormatting {
 
     public ImmutableSet<ITextEffect> getTextEffects() {
         return ImmutableSet.copyOf(this.textEffects);
+    }
+
+
+    public FontFormatting setStrikethroughAnimation(@Nullable IAnimation strikethroughAnimation) {
+        this.strikethroughAnimation = strikethroughAnimation;
+        return this;
+    }
+
+
+    public FontFormatting copy() {
+        FontFormatting formatting = new FontFormatting(this.font, this.lineHeight, this.letterSpacing, this.lineSpacing, this.textAlignment, this.getColor(), this.getBgColor(), this.bold, this.italic, this.underlined, this.strikethrough, this.obfuscated, this.withShadow);
+        formatting.setGlyphTransform(this.glyphTransform);
+        formatting.setBgAnimation(this.bgAnimation);
+        formatting.setStrikethroughAnimation(this.strikethroughAnimation);
+        formatting.setUnderlineAnimation(this.underlineAnimation);
+
+        for(ITextEffect effect : this.textEffects) {
+            formatting.addTextEffect(effect);
+        }
+
+        return formatting;
+    }
+
+
+    public JsonElement toJson() {
+        JsonObject jsonObject = new JsonObject();
+
+        jsonObject.addProperty("font", this.font.toString());
+        jsonObject.addProperty("lineHeight", this.lineHeight);
+        jsonObject.addProperty("letterSpacing", this.letterSpacing);
+        jsonObject.addProperty("lineSpacing", this.lineSpacing);
+        jsonObject.add("textAlignment", this.textAlignment.toJson());
+        jsonObject.addProperty("textColor", this.getColor());
+        jsonObject.addProperty("bgColor", this.getBgColor());
+        jsonObject.addProperty("bold", this.bold);
+        jsonObject.addProperty("italic", this.italic);
+        jsonObject.addProperty("underlined", this.underlined);
+        jsonObject.addProperty("strikethrough", this.strikethrough);
+        jsonObject.addProperty("obfuscated", this.obfuscated);
+        jsonObject.addProperty("withShadow", this.withShadow);
+        if(this.strikethroughAnimation != null) {
+            jsonObject.add("strikethroughAnimation", this.strikethroughAnimation.toJson());
+        }
+        if(this.underlineAnimation != null) {
+            jsonObject.add("underlineAnimation", this.underlineAnimation.toJson());
+        }
+        if(this.bgAnimation != null) {
+            jsonObject.add("bgAnimation", this.bgAnimation.toJson());
+        }
+        /*if(!this.textEffects.isEmpty()) {
+            JsonArray jsonArray = new JsonArray(this.textEffects.size());
+            for(ITextEffect textEffect : this.textEffects) jsonArray.add(textEffect.toJson());
+        }*/
+
+        return jsonObject;
+    }
+
+
+    public @Nullable IGlyphTransform getGlyphTransform() {
+        return glyphTransform;
+    }
+
+
+    public FontFormatting setGlyphTransform(IGlyphTransform glyphTransform) {
+        this.glyphTransform = glyphTransform;
+        return this;
     }
 }

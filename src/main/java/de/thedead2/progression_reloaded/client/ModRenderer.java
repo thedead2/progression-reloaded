@@ -4,13 +4,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.api.IProgressInfo;
-import de.thedead2.progression_reloaded.api.gui.IProgressOverlay;
-import de.thedead2.progression_reloaded.client.gui.components.ProgressCompleteToast;
-import de.thedead2.progression_reloaded.client.gui.fonts.FontManager;
+import de.thedead2.progression_reloaded.client.gui.overlays.LevelProgressOverlay;
+import de.thedead2.progression_reloaded.client.gui.overlays.QuestProgressOverlay;
 import de.thedead2.progression_reloaded.client.gui.themes.ThemeManager;
+import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ConfigManager;
-import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
@@ -22,12 +23,12 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.client.event.RenderGuiEvent;
+import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.joml.Quaternionf;
+import org.joml.Vector2d;
 
 import java.awt.*;
-import java.util.ArrayDeque;
-import java.util.Deque;
 
 
 public class ModRenderer {
@@ -36,9 +37,13 @@ public class ModRenderer {
 
     private final ThemeManager themeManager;
 
-    private final Deque<ProgressCompleteToast> progressCompleteToasts = new ArrayDeque<>();
+    private final NotificationToastRenderer toastRenderer;
 
-    private IProgressOverlay progressOverlay;
+
+    private LevelProgressOverlay levelProgressOverlay;
+
+    private QuestProgressOverlay questProgressOverlay;
+
 
     private ItemStack extraLifeItem;
 
@@ -55,6 +60,7 @@ public class ModRenderer {
     ModRenderer() {
         this.minecraft = Minecraft.getInstance();
         this.themeManager = new ThemeManager();
+        this.toastRenderer = new NotificationToastRenderer();
     }
 
 
@@ -76,75 +82,63 @@ public class ModRenderer {
     }
 
 
+    @SubscribeEvent
+    public void onPostScreenRender(final ScreenEvent.Render.Post event) {
+        if(isGuiDebug() && this.minecraft.screen != null) {
+            Vector2d mousePos = RenderUtil.getMousePos();
+            RenderUtil.renderCrossDebug(new PoseStack(), (float) mousePos.x, (float) mousePos.y, 1000000, 5, Color.YELLOW.getRGB());
+        }
+    }
+
+
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        renderProgressOverlayIfNeeded(poseStack, mouseX, mouseY, partialTick);
-        renderProgressCompleteToastsIfNeeded(poseStack, mouseX, mouseY, partialTick);
-        renderExtraLifeAnimation(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight(), partialTick);
+        this.renderProgressOverlayIfNeeded(poseStack, mouseX, mouseY, partialTick);
+        this.toastRenderer.renderToastsIfNeeded(poseStack, mouseX, mouseY, partialTick);
+        this.renderExtraLifeAnimationIfNeeded(minecraft.getWindow().getGuiScaledWidth(), minecraft.getWindow().getGuiScaledHeight(), partialTick);
     }
 
 
     private void renderProgressOverlayIfNeeded(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        if(ConfigManager.SHOULD_RENDER_OVERLAY.get() && this.minecraft.screen == null && this.progressOverlay != null && !this.minecraft.player.isCreative() && !this.minecraft.player.isSpectator()) {
-            this.progressOverlay.render(poseStack, mouseX, mouseY, partialTick);
-        }
-    }
-
-
-    private void renderProgressCompleteToastsIfNeeded(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        if(!this.progressCompleteToasts.isEmpty()) {
-            ProgressCompleteToast toast = this.progressCompleteToasts.peekFirst();
-            if(toast.shouldRender()) {
-                toast.render(poseStack, mouseX, mouseY, partialTick);
+        if(ConfigManager.SHOULD_RENDER_OVERLAY.get() && this.minecraft.screen == null && !this.minecraft.player.isCreative() && !this.minecraft.player.isSpectator()) {
+            if(this.levelProgressOverlay != null) {
+                this.levelProgressOverlay.render(poseStack, mouseX, mouseY, partialTick);
             }
-            else {
-                this.progressCompleteToasts.removeFirst();
+            if(this.questProgressOverlay != null) {
+                this.questProgressOverlay.render(poseStack, mouseX, mouseY, partialTick);
             }
         }
     }
 
 
-    private void renderExtraLifeAnimation(int guiWidth, int guiHeight, float partialTick) {
+    private void renderExtraLifeAnimationIfNeeded(int guiWidth, int guiHeight, float partialTick) {
         if(animationStartTime > 0) {
             float timeLeft = animationTime - animationStartTime;
             float percentDone = (timeLeft + partialTick) / animationTime;
             float quadraticEasing = percentDone * percentDone;
             float cubicEasing = percentDone * quadraticEasing;
-            float f3 = 10.25F * cubicEasing * quadraticEasing - 24.95F * quadraticEasing * quadraticEasing + 25.5F * cubicEasing - 13.8F * quadraticEasing + 4.0F * percentDone;
-            float f4 = f3 * (float) Math.PI;
+            float catMullRom = 10.25F * cubicEasing * quadraticEasing - 24.95F * quadraticEasing * quadraticEasing + 25.5F * cubicEasing - 13.8F * quadraticEasing + 4.0F * percentDone;
+            float f4 = catMullRom * (float) Math.PI;
             float xStartPos = randomActivationOffsetX * (float) (guiWidth / 4);
             float yStartPos = randomActivationOffsetY * (float) (guiHeight / 4);
 
-            //defines the speeding up and slowing down of the animation
+
             float animationCurve = Mth.sin(f4);
 
             RenderSystem.enableDepthTest();
             RenderSystem.disableCull();
             PoseStack poseStack = new PoseStack();
 
-            //Copies the Matrix of the last position of the stack and inserts the copy after this Matrix; Keeps basically a copy of the (un-)modified matrix for later use through popPose()
             poseStack.pushPose();
 
-            //relocates starting setPoint to the given pX and pY setPoint
             float xTrans = (float) (guiWidth / 2) + xStartPos * Mth.abs(Mth.sin(f4 * 2.0F));
             float yTrans = (float) (guiHeight / 2) + yStartPos * Mth.abs(Mth.sin(f4 * 2.0F));
             float zTrans = -50.0F;
 
             poseStack.translate(xTrans, yTrans, zTrans);
 
-            //scales the object to the given dimensions
             float scale = 50.0F + 175.0F * animationCurve;
-
             poseStack.scale(scale, -scale, scale);
 
-            //rotates the matrix in the given direction about the given amount in degrees
-            //x pointing right
-            //y pointing up
-            //z directly pointing at the viewer (depth)
-            /*
-             * y
-             * |
-             * |____ x
-             * */
             Quaternionf xRot = Axis.XP.rotationDegrees(6.0F * Mth.cos(percentDone * 8.0F));
             Quaternionf yRot = Axis.YP.rotationDegrees(900.0F * Mth.abs(animationCurve));
             Quaternionf zRot = Axis.ZP.rotationDegrees(6.0F * Mth.cos(percentDone * 8.0F));
@@ -153,11 +147,9 @@ public class ModRenderer {
             poseStack.mulPose(xRot);
             poseStack.mulPose(zRot);
 
-
             MultiBufferSource.BufferSource multibuffersource$buffersource = minecraft.renderBuffers().bufferSource();
             Minecraft.getInstance().getItemRenderer().renderStatic(extraLifeItem, ItemTransforms.TransformType.FIXED, 15728880, OverlayTexture.NO_OVERLAY, poseStack, multibuffersource$buffersource, 0);
 
-            //Removes the last Matrix from the stack
             poseStack.popPose();
             multibuffersource$buffersource.endBatch();
 
@@ -185,13 +177,13 @@ public class ModRenderer {
     }
 
 
-    public void addProgressCompleteToast(ProgressCompleteToast progressCompleteToast) {
-        this.progressCompleteToasts.add(progressCompleteToast);
+    public void setLevelProgressOverlay(LevelProgressOverlay levelProgressOverlay) {
+        this.levelProgressOverlay = levelProgressOverlay;
     }
 
 
-    public void setProgressOverlay(IProgressOverlay progressOverlay) {
-        this.progressOverlay = progressOverlay;
+    public void setQuestProgressOverlay(QuestProgressOverlay levelProgressOverlay) {
+        this.questProgressOverlay = levelProgressOverlay;
     }
 
 
@@ -210,14 +202,26 @@ public class ModRenderer {
     }
 
 
+    public NotificationToastRenderer getToastRenderer() {
+        return toastRenderer;
+    }
+
+
     public void displayNewLevelInfoScreen(ResourceLocation levelId) {
         //this.minecraft.setScreen(new LevelInformationScreen(levelId));
     }
 
 
-    public void updateProgressOverlay(Class<? extends IProgressOverlay> target, IProgressInfo progressInfo) {
-        if(this.progressOverlay != null) {
-            this.progressOverlay.updateProgress(target, progressInfo);
+    public void updateLevelProgressOverlay(IProgressInfo<ProgressionLevel> progressInfo) {
+        if(this.levelProgressOverlay != null) {
+            this.levelProgressOverlay.updateProgress(progressInfo);
+        }
+    }
+
+
+    public void updateQuestProgressOverlay(IProgressInfo<ProgressionQuest> progressInfo) {
+        if(this.levelProgressOverlay != null) {
+            this.questProgressOverlay.updateProgress(progressInfo);
         }
     }
 }

@@ -1,8 +1,8 @@
 package de.thedead2.progression_reloaded.items.custom;
 
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerPacket;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
@@ -60,14 +60,14 @@ public class ExtraLifeItem extends Item {
 
 
     public static boolean rewardExtraLife(ServerPlayer serverPlayer, boolean isCommand) {
-        PlayerData playerData = PlayerDataHandler.getActivePlayer(serverPlayer);
+        PlayerData playerData = PlayerDataManager.getPlayerData(serverPlayer);
 
         if((!isCommand && serverPlayer.isCreative()) || !playerData.addExtraLife()) {
             return false;
         }
         serverPlayer.addEffect(new MobEffectInstance(MobEffects.REGENERATION, secondsToTicks(15), 1));
         serverPlayer.level.playSound(null, new BlockPos(serverPlayer.getX(), serverPlayer.getY(), serverPlayer.getZ()), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 1F, 1F);
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerPacket(playerData), serverPlayer);
+        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(playerData), serverPlayer);
         return true;
     }
 }

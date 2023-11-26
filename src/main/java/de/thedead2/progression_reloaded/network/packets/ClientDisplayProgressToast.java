@@ -5,6 +5,7 @@ import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
 import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.GuiFactory;
+import de.thedead2.progression_reloaded.client.gui.components.toasts.NotificationToast;
 import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -18,12 +19,12 @@ import java.util.function.Supplier;
 
 public class ClientDisplayProgressToast implements ModNetworkPacket {
 
-    private final IDisplayInfo displayInfo;
+    private final IDisplayInfo<?> displayInfo;
     @Nullable
     private final ResourceLocation levelId;
 
 
-    public ClientDisplayProgressToast(IDisplayInfo displayInfo, @Nullable ResourceLocation levelId) {
+    public ClientDisplayProgressToast(IDisplayInfo<?> displayInfo, @Nullable ResourceLocation levelId) {
         this.displayInfo = displayInfo;
         this.levelId = levelId;
     }
@@ -52,7 +53,7 @@ public class ClientDisplayProgressToast implements ModNetworkPacket {
                     title = Component.literal("Level complete!");
                 }
 
-                modRenderer.addProgressCompleteToast(GuiFactory.createPRToast(ClientDisplayProgressToast.this.displayInfo, title));
+                modRenderer.getToastRenderer().scheduleToastDisplay(NotificationToast.Priority.LOW, GuiFactory.createProgressToast(ClientDisplayProgressToast.this.displayInfo, title));
             }
         };
     }

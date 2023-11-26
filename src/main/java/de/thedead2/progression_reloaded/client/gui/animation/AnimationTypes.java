@@ -4,26 +4,19 @@ import de.thedead2.progression_reloaded.api.gui.animation.IAnimationType;
 
 
 public class AnimationTypes {
-
-    public static final IAnimationType LINEAR = (from, to, duration, timeLeft, interpolation) -> {
-        float amount = (to - from) / duration;
-        float timePassed = duration - timeLeft;
-        return from + amount * timePassed;
-    };
-
     public static final IAnimationType EASE_IN = (from, to, duration, timeLeft, interpolation) -> {
         float dif = to - from;
         float timePassed = duration - timeLeft;
-        float amount = timePassed / duration;
+        float percentDone = timePassed / duration;
 
-        return from + dif * interpolation.apply(amount);
+        return from + dif * interpolation.apply(percentDone);
     };
 
     public static final IAnimationType EASE_OUT = (from, to, duration, timeLeft, interpolation) -> {
         float dif = to - from;
-        float amount = timeLeft / duration;
+        float percentLeft = timeLeft / duration;
 
-        return to - dif * interpolation.apply(amount);
+        return to - dif * interpolation.apply(percentLeft);
     };
 
     public static final IAnimationType EASE_IN_OUT = (from, to, duration, timeLeft, interpolation) -> {
@@ -39,15 +32,32 @@ public class AnimationTypes {
     };
 
 
-    public static IAnimationType STEPS(float steps) {
+    public static IAnimationType STEPS(int steps) {
         return (from, to, duration, timeLeft, interpolation) -> {
             float dif = to - from;
             float amountPerStep = dif / steps;
             float timePerStep = duration / steps;
             int stepsLeft = (int) (timeLeft / timePerStep);
-            int stepsPassed = (int) (steps - stepsLeft);
+            int stepsPassed = steps - stepsLeft;
 
             return from + amountPerStep * stepsPassed;
+        };
+    }
+
+
+    //Es gibt eine gewisse anzahl an schritten die ausgeführt werden müssen
+    //länge eines schrittes hängt von der noch verbleibenden anzahl an schritten und zeit ab
+    public static IAnimationType NATURAL_STEPS(int steps) {
+        return (from, to, duration, timeLeft, interpolation) -> {
+            float dif = to - from;
+            float amountPerStep = dif / steps;
+            float timePerStep = duration / steps;
+            int stepsLeft = (int) (timeLeft / timePerStep);
+            int stepsPassed = steps - stepsLeft;
+
+            float percentStepsDone = (float) stepsPassed / steps;
+
+            return from + dif * percentStepsDone;
         };
     }
 }

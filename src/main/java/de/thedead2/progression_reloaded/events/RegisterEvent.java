@@ -16,7 +16,7 @@ public abstract class RegisterEvent<T> extends PREventFactory.ProgressionEvent {
 
     public void accept(ResourceLocation id, T object) {
         if(this.objects.containsKey(id)) {
-            throw new IllegalArgumentException("Duplicate object registration with id: " + id);
+            throw new IllegalArgumentException("Duplicate object registration with uuid: " + id);
         }
         this.objects.put(id, object);
     }

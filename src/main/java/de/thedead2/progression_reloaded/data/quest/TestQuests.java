@@ -9,7 +9,6 @@ import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
-import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -30,6 +29,7 @@ public class TestQuests {
                                     .withId("quest_test")
                                     .withName("Test Quest")
                                     .withDescription("This is a test quest!")
+                                    .withIcon(Items.ANVIL)
                                     .isMainQuest()
                                     .build(),
             Rewards.Builder.builder()

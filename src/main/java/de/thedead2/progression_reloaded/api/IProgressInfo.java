@@ -6,13 +6,13 @@ import net.minecraft.network.FriendlyByteBuf;
 import java.lang.reflect.InvocationTargetException;
 
 
-public interface IProgressInfo {
+public interface IProgressInfo<T extends IProgressable<T>> {
 
-    static IProgressInfo deserializeFromNetwork(FriendlyByteBuf buf) {
+    static IProgressInfo<?> deserializeFromNetwork(FriendlyByteBuf buf) {
         String className = buf.readUtf();
         try {
             Class<?> clazz = Class.forName(className);
-            return (IProgressInfo) clazz.getDeclaredMethod("fromNetwork", FriendlyByteBuf.class).invoke(null, buf);
+            return (IProgressInfo<?>) clazz.getDeclaredMethod("fromNetwork", FriendlyByteBuf.class).invoke(null, buf);
         }
         catch(ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
@@ -57,4 +57,6 @@ public interface IProgressInfo {
      * @param buf the {@link FriendlyByteBuf} to write data to
      **/
     void toNetwork(FriendlyByteBuf buf);
+
+    T getProgressable();
 }

@@ -4,53 +4,55 @@ import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.Collection;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 
 /**
  * Progress of a level is dependent on the player or the team. Different players or teams can have different progress of a level.
  **/
-public class LevelProgress implements IProgressInfo {
+public class LevelProgress implements IProgressInfo<ProgressionLevel> {
 
+    private final Supplier<PlayerData> player;
     private final ProgressionLevel level;
-
-    private final KnownPlayer player;
 
     private boolean rewarded;
 
 
-    public LevelProgress(ProgressionLevel level, KnownPlayer player) {
-        this(level, player, false);
+    public LevelProgress(Supplier<PlayerData> player, ProgressionLevel level) {
+        this(player, level, false);
     }
 
 
-    public LevelProgress(ProgressionLevel level, KnownPlayer player, boolean rewarded) {
-        this.level = level;
+    public LevelProgress(Supplier<PlayerData> player, ProgressionLevel level, boolean rewarded) {
         this.player = player;
+        this.level = level;
         this.rewarded = rewarded;
     }
 
 
     public static LevelProgress loadFromCompoundTag(CompoundTag tag) {
+        UUID uuid = tag.getUUID("player");
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(new ResourceLocation(tag.getString("level")));
-        KnownPlayer player1 = KnownPlayer.fromCompoundTag(tag.getCompound("player"));
         boolean rewarded = tag.getBoolean("rewarded");
-        return new LevelProgress(level1, player1, rewarded);
+        return new LevelProgress(() -> PlayerDataManager.getPlayerData(uuid), level1, rewarded);
     }
 
 
     public static LevelProgress fromNetwork(FriendlyByteBuf buf) {
+        UUID uuid = buf.readUUID();
         ProgressionLevel level = ModRegistries.LEVELS.get().getValue(buf.readResourceLocation());
-        KnownPlayer player = KnownPlayer.fromNetwork(buf);
         boolean rewarded = buf.readBoolean();
 
-        return new LevelProgress(level, player, rewarded);
+        return new LevelProgress(() -> PlayerDataManager.getPlayerData(uuid), level, rewarded);
     }
 
 
@@ -74,7 +76,7 @@ public class LevelProgress implements IProgressInfo {
     @Override
     public boolean isDone() {
         boolean flag = false;
-        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player)) {
+        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player.get())) {
             if(questProgress != null && questProgress.isDone()) {
                 flag = true;
             }
@@ -89,18 +91,10 @@ public class LevelProgress implements IProgressInfo {
 
 
     @Override
-    public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeResourceLocation(this.level.getId());
-        this.player.toNetwork(buf);
-        buf.writeBoolean(this.rewarded);
-    }
-
-
-    @Override
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();
+        tag.putUUID("player", this.player.get().getUUID());
         tag.putString("level", this.level.getId().toString());
-        tag.put("player", this.player.toCompoundTag());
         tag.putBoolean("rewarded", this.rewarded);
         return tag;
     }
@@ -108,21 +102,35 @@ public class LevelProgress implements IProgressInfo {
 
     @Override
     public void reset() {
-        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().revoke(id, this.player));
+        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().revoke(id, this.player.get()));
         this.rewarded = false;
     }
 
 
     @Override
     public void complete() {
-        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().award(id, this.player));
+        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().award(id, this.player.get()));
+    }
+
+
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeUUID(this.player.get().getUUID());
+        buf.writeResourceLocation(this.level.getId());
+        buf.writeBoolean(this.rewarded);
+    }
+
+
+    @Override
+    public ProgressionLevel getProgressable() {
+        return this.level;
     }
 
 
     private float countCompletedQuestCriteria() {
         float i = 0f;
 
-        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player)) {
+        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player.get())) {
             if(questProgress != null) {
                 i += questProgress.getPercent();
             }

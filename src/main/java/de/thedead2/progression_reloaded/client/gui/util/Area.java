@@ -1,8 +1,11 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
+import org.joml.Vector3f;
+
+
 public class Area {
 
-    private final Padding padding;
+    private Padding padding;
 
     private float xPos;
 
@@ -49,8 +52,8 @@ public class Area {
     }
 
 
-    public void setY(float yPos) {
-        this.yPos = yPos;
+    public Vector3f getCenter() {
+        return new Vector3f(this.getCenterX(), this.getCenterY(), this.getZ());
     }
 
 
@@ -64,8 +67,11 @@ public class Area {
     }
 
 
-    public void setX(float xPos) {
+    public Area setPosition(float xPos, float yPos, float zPos) {
         this.xPos = xPos;
+        this.yPos = yPos;
+        this.zPos = zPos;
+        return this;
     }
 
 
@@ -74,8 +80,8 @@ public class Area {
     }
 
 
-    public void setZ(float zPos) {
-        this.zPos = zPos;
+    public boolean innerContains(float pX, float pY) {
+        return pX >= this.getInnerX() && pX <= this.getInnerXMax() && pY >= this.getInnerY() && pY <= this.getInnerYMax();
     }
 
 
@@ -94,8 +100,14 @@ public class Area {
     }
 
 
-    public void setWidth(float width) {
-        this.width = width;
+    public Area moveX(float amount) {
+        return this.setX(this.xPos + amount);
+    }
+
+
+    public Area setX(float xPos) {
+        this.xPos = xPos;
+        return this;
     }
 
 
@@ -104,15 +116,14 @@ public class Area {
     }
 
 
-    public void setHeight(float height) {
-        this.height = height;
+    public Area moveY(float amount) {
+        return this.setY(this.yPos + amount);
     }
 
 
-    public void setPosition(float xPos, float yPos, float zPos) {
-        this.xPos = xPos;
+    public Area setY(float yPos) {
         this.yPos = yPos;
-        this.zPos = zPos;
+        return this;
     }
 
 
@@ -121,38 +132,46 @@ public class Area {
     }
 
 
-    public void moveX(float amount) {
-        this.setX(this.xPos + amount);
+    public Area moveZ(float amount) {
+        return this.setZ(this.zPos + amount);
     }
 
 
-    public void moveY(float amount) {
-        this.setY(this.yPos + amount);
+    public Area setZ(float zPos) {
+        this.zPos = zPos;
+        return this;
     }
 
 
-    public void moveZ(float amount) {
-        this.setZ(this.zPos + amount);
+    public Area growX(float amount) {
+        return this.setWidth(this.width + amount);
     }
 
 
-    public void growX(float amount) {
-        this.setWidth(this.width + amount);
+    public Area setWidth(float width) {
+        this.width = width;
+        return this;
     }
 
 
-    public void growY(float amount) {
-        this.setHeight(this.height + amount);
+    public Area growY(float amount) {
+        return this.setHeight(this.height + amount);
     }
 
 
-    public void scaleX(float amount) {
-        this.setWidth(this.width * amount);
+    public Area setHeight(float height) {
+        this.height = height;
+        return this;
     }
 
 
-    public void scaleY(float amount) {
-        this.setHeight(this.height * amount);
+    public Area scaleX(float amount) {
+        return this.setWidth(this.width * amount);
+    }
+
+
+    public Area scaleY(float amount) {
+        return this.setHeight(this.height * amount);
     }
 
 
@@ -171,8 +190,8 @@ public class Area {
     }
 
 
-    public void setInnerWidth(float width) {
-        this.setWidth(width + this.padding.getLeft() + this.padding.getRight());
+    public Area setInnerWidth(float width) {
+        return this.setWidth(width + this.padding.getLeft() + this.padding.getRight());
     }
 
 
@@ -191,12 +210,30 @@ public class Area {
     }
 
 
-    public void setInnerHeight(float height) {
-        this.setHeight(height + this.padding.getTop() + this.padding.getBottom());
+    public Area setInnerHeight(float height) {
+        return this.setHeight(height + this.padding.getTop() + this.padding.getBottom());
     }
 
 
     public Area copy() {
         return new Area(this.xPos, this.yPos, this.zPos, this.width, this.height, this.padding);
+    }
+
+
+    public Area setPadding(float padding) {
+        this.padding = new Padding(padding);
+        return this;
+    }
+
+
+    public Area setPadding(float leftRight, float topBottom) {
+        this.padding = new Padding(leftRight, topBottom);
+        return this;
+    }
+
+
+    public Area setPadding(float left, float right, float top, float bottom) {
+        this.padding = new Padding(left, right, top, bottom);
+        return this;
     }
 }

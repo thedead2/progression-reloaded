@@ -3,8 +3,7 @@ package de.thedead2.progression_reloaded.commands;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.player.PlayerDataHandler;
-import de.thedead2.progression_reloaded.player.types.KnownPlayer;
+import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.commands.CommandSourceStack;
@@ -27,7 +26,7 @@ public class AdminCommands {
                           .withSuggestion("[quest]", SUGGEST_QUEST)
                           .withAction(context -> {
                               ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
-                              LevelManager.getInstance().getQuestManager().award(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
+                              LevelManager.getInstance().getQuestManager().award(quest_id, PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException()));
                               context.getSource().sendSuccess(Component.literal("Completed quest: " + quest_id), false);
                               return ModCommands.COMMAND_SUCCESS;
                           })
@@ -39,7 +38,7 @@ public class AdminCommands {
                           .withArgument("[level]", ResourceLocationArgument.id())
                           .withSuggestion("[level]", SUGGEST_LEVEL)
                           .withAction(context -> {
-                              PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+                              PlayerData player = PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException());
                               ResourceLocation levelId = ResourceLocationArgument.getId(context, "level");
                               ProgressionLevel level = ModRegistries.LEVELS.get().getValue(levelId);
                               if(level != null) {
@@ -61,7 +60,7 @@ public class AdminCommands {
                           .withSuggestion("[quest]", SUGGEST_QUEST)
                           .withAction(context -> {
                               ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
-                              LevelManager.getInstance().getQuestManager().revoke(quest_id, KnownPlayer.fromPlayer(context.getSource().getPlayerOrException()));
+                              LevelManager.getInstance().getQuestManager().revoke(quest_id, PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException()));
                               context.getSource().sendSuccess(Component.literal("Revoked quest: " + quest_id), false);
                               return ModCommands.COMMAND_SUCCESS;
                           })
@@ -73,7 +72,7 @@ public class AdminCommands {
                           .withArgument("[level]", ResourceLocationArgument.id())
                           .withSuggestion("[level]", SUGGEST_LEVEL)
                           .withAction(context -> {
-                              PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+                              PlayerData player = PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException());
                               ResourceLocation levelId = ResourceLocationArgument.getId(context, "level");
                               ProgressionLevel level = ModRegistries.LEVELS.get().getValue(levelId);
                               if(level != null) {
@@ -94,7 +93,7 @@ public class AdminCommands {
                           .withArgument("[level]", ResourceLocationArgument.id())
                           .withSuggestion("[level]", SUGGEST_LEVEL)
                           .withAction(context -> {
-                              PlayerData player = PlayerDataHandler.getActivePlayer(context.getSource().getPlayerOrException());
+                              PlayerData player = PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException());
                               LevelManager.getInstance().updateLevel(player, ResourceLocationArgument.getId(context, "level"));
                               context.getSource().sendSuccess(Component.literal("Changed level!"), false);
                               return ModCommands.COMMAND_SUCCESS;
