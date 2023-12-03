@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.api.IProgressable;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
 import java.lang.reflect.InvocationTargetException;
@@ -36,4 +37,6 @@ public interface IDisplayInfo<T extends IProgressable<T>> {
     Component getTitle();
 
     Component getDescription();
+
+    ResourceLocation getId();
 }

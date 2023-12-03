@@ -7,11 +7,15 @@ import de.thedead2.progression_reloaded.client.gui.components.ProgressBar;
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
 import de.thedead2.progression_reloaded.client.gui.components.toasts.ProgressToast;
 import de.thedead2.progression_reloaded.client.gui.overlays.LevelProgressOverlay;
+import de.thedead2.progression_reloaded.client.gui.overlays.QuestProgressOverlay;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
+import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import net.minecraft.network.chat.Component;
 
 import java.util.function.Supplier;
@@ -41,5 +45,14 @@ public abstract class GuiFactory {
         ProgressBar<ProgressionLevel> progressBar = new ProgressBar<>(layout.levelProgressOL(), theme.progressBarEmpty(), theme.progressBarFilled(), levelProgress, false, theme.font());
 
         return new LevelProgressOverlay(layout.levelProgressOL(), levelDisplayInfo, progressBar, theme.backgroundFrame(), theme.font());
+    }
+
+
+    public static QuestProgressOverlay createQuestOverlay(QuestDisplayInfo questDisplayInfo, QuestProgress progress) {
+        var layout = activeLayout.get();
+        var theme = activeTheme.get();
+        ProgressBar<ProgressionQuest> progressBar = new ProgressBar<>(layout.questProgressOL().copy().setInnerHeight(3).growX(-2.5f), theme.progressBarEmpty(), theme.progressBarFilled(), progress, false, theme.font());
+
+        return new QuestProgressOverlay(layout.questProgressOL(), questDisplayInfo, progressBar, theme.backgroundFrame(), theme.font());
     }
 }

@@ -27,15 +27,12 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
 
         private final QuestProgress progress;
 
-        private final String criterionName;
-
         private final PlayerData player;
 
 
-        public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, String criterionName, PlayerData player) {
+        public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, PlayerData player) {
             super(quest);
             this.progress = progress;
-            this.criterionName = criterionName;
             this.player = player;
         }
 
@@ -49,10 +46,6 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
             return progress;
         }
 
-
-        public String getCriterionName() {
-            return criterionName;
-        }
     }
 
     @Cancelable
@@ -60,15 +53,12 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
 
         private final QuestProgress progress;
 
-        private final String criterionName;
-
         private final PlayerData player;
 
 
-        public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, String criterionName, PlayerData activePlayer) {
+        public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, PlayerData activePlayer) {
             super(quest);
             this.progress = questProgress;
-            this.criterionName = criterionName;
             this.player = activePlayer;
         }
 
@@ -82,10 +72,6 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
             return progress;
         }
 
-
-        public String getCriterionName() {
-            return criterionName;
-        }
     }
 
     public static class UpdateQuestStatusEvent extends PREventFactory.ProgressionEvent {

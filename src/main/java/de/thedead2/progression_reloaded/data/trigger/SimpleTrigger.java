@@ -11,10 +11,17 @@ import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.QuestActions;
+import de.thedead2.progression_reloaded.data.quest.QuestProgress;
+import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
+import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -66,13 +73,51 @@ public abstract class SimpleTrigger<T> {
     protected static <T> void fireTrigger(Class<? extends SimpleTrigger<T>> triggerClass, Entity entity, T toTest, Object... addArgs) {
         if(entity instanceof Player player) {
             PlayerData playerData = PlayerDataManager.getPlayerData(player);
-            LevelManager.getInstance().getQuestManager().fireTriggers(triggerClass, playerData, toTest, addArgs);
+
+            PlayerQuests playerQuests = playerData.getQuestData();
+
+            playerQuests.getQuestsByStatus(ProgressionQuest.Status.NOT_STARTED).forEach(quest -> {
+                QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
+                QuestActions.ActionNode actionNode = questProgress.getNodeAtCurrentPos();
+
+                checkTriggers(actionNode, triggerClass, playerData, toTest, addArgs); //TODO: Check also potential starting nodes!
+            });
+
+            playerQuests.getActiveQuests().forEach(quest -> {
+                QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
+
+                questProgress.getChildrenForCurrentNode().forEach(actionNode -> checkTriggers(actionNode, triggerClass, playerData, toTest, addArgs));
+            });
         }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private static <T> void checkTriggers(QuestActions.ActionNode actionNode, Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
+        actionNode.getCriteria()
+                  .values()
+                  .stream()
+                  .filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass))
+                  .forEach(trigger -> {
+                      if(!PREventFactory.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)) {
+                          LevelManager.getInstance().getQuestManager().updateStatus(player, true);
+                      }
+                  });
     }
 
 
     public static ResourceLocation createId(String name) {
         return new ResourceLocation(ModHelper.MOD_ID, name + "_trigger");
+    }
+
+
+    public static <T extends SimpleTrigger<T>> T fromNetwork(FriendlyByteBuf buf) {
+        return loadFromNBT(buf.readNbt());
+    }
+
+
+    public static <T extends SimpleTrigger<T>> T loadFromNBT(CompoundTag tag) {
+        return fromJson(SerializationHelper.convertToJson(tag));
     }
 
 
@@ -97,7 +142,7 @@ public abstract class SimpleTrigger<T> {
 
         boolean flag = false;
         for(Listener listener1 : list) {
-            flag = listener1.award(player);
+            flag = listener1.onComplete(player);
         }
         return flag;
     }
@@ -122,6 +167,16 @@ public abstract class SimpleTrigger<T> {
 
     public abstract void toJson(JsonObject data);
 
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeNbt(this.saveToNBT());
+    }
+
+
+    public CompoundTag saveToNBT() {
+        return (CompoundTag) SerializationHelper.convertToNBT(this.toJson());
+    }
+
     /*@OnlyIn(Dist.CLIENT)
     public abstract TriggerComponent<? extends SimpleTrigger<T>> getDisplayComponent(Area area);*/
 
@@ -135,28 +190,31 @@ public abstract class SimpleTrigger<T> {
 
         private final ProgressionQuest quest;
 
+        private final QuestActions.ActionNode actionNode;
+
         private final String criterion;
 
 
-        public Listener(ProgressionQuest quest, String criterionName) {
+        public Listener(ProgressionQuest quest, QuestActions.ActionNode actionNode, String criterionName) {
             this.quest = quest;
+            this.actionNode = actionNode;
             this.criterion = criterionName;
         }
 
 
-        public boolean award(PlayerData player) {
-            return LevelManager.getInstance().getQuestManager().award(this.quest, this.criterion, player);
+        public boolean onComplete(PlayerData player) {
+            return player.getQuestData().getOrStartProgress(this.quest).award(this.actionNode, this.criterion, player);
         }
 
 
-        public ProgressionQuest getQuest() {
-            return quest;
+        public QuestActions.ActionNode getNode() {
+            return actionNode;
         }
 
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(quest, criterion);
+            return Objects.hashCode(actionNode, criterion);
         }
 
 
@@ -169,7 +227,7 @@ public abstract class SimpleTrigger<T> {
                 return false;
             }
             Listener listener = (Listener) o;
-            return Objects.equal(quest, listener.quest) && Objects.equal(criterion, listener.criterion);
+            return Objects.equal(actionNode, listener.actionNode) && Objects.equal(criterion, listener.criterion);
         }
     }
 }

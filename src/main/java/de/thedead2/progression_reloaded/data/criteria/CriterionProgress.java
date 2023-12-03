@@ -29,20 +29,22 @@ public class CriterionProgress {
     }
 
 
-    public static CriterionProgress fromJson(String pDateTime) {
+    public static CriterionProgress fromJson(JsonElement jsonElement) {
         CriterionProgress criterionprogress = new CriterionProgress();
 
+        String dateTime = jsonElement.getAsString();
+
         try {
-            criterionprogress.obtained = DATE_FORMAT.parse(pDateTime);
+            criterionprogress.obtained = DATE_FORMAT.parse(dateTime);
             return criterionprogress;
         }
         catch(ParseException parseexception) {
-            throw new JsonSyntaxException("Invalid datetime: " + pDateTime, parseexception);
+            throw new JsonSyntaxException("Invalid datetime: " + dateTime, parseexception);
         }
     }
 
 
-    public static CriterionProgress loadFromCompoundTag(CompoundTag tag) {
+    public static CriterionProgress loadFromNBT(CompoundTag tag) {
         CriterionProgress criterionprogress = new CriterionProgress();
         String date = tag.getString("obtained");
         try {

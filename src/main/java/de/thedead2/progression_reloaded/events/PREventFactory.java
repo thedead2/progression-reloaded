@@ -47,13 +47,13 @@ public abstract class PREventFactory {
     }
 
 
-    public static boolean onQuestAward(ProgressionQuest quest, String criterionName, QuestProgress questProgress, PlayerData player) {
-        return EVENT_BUS.post(new QuestEvent.AwardQuestEvent(quest, questProgress, criterionName, player));
+    public static boolean onQuestAward(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
+        return EVENT_BUS.post(new QuestEvent.AwardQuestEvent(quest, questProgress, player));
     }
 
 
-    public static boolean onQuestRevoke(ProgressionQuest quest, String criterionName, QuestProgress questProgress, PlayerData activePlayer) {
-        return EVENT_BUS.post(new QuestEvent.RevokedQuestEvent(quest, questProgress, criterionName, activePlayer));
+    public static boolean onQuestRevoke(ProgressionQuest quest, QuestProgress questProgress, PlayerData activePlayer) {
+        return EVENT_BUS.post(new QuestEvent.RevokedQuestEvent(quest, questProgress, activePlayer));
     }
 
 

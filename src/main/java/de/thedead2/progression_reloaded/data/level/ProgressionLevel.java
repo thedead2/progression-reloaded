@@ -122,7 +122,7 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
 
 
     public ResourceLocation getId() {
-        return this.displayInfo.id();
+        return this.displayInfo.getId();
     }
 
 

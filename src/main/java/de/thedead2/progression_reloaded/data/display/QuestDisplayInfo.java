@@ -110,7 +110,8 @@ public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
     }
 
 
-    public ResourceLocation id() {return id;}
+    @Override
+    public ResourceLocation getId() {return id;}
 
 
     public boolean mainQuest() {
@@ -149,9 +150,9 @@ public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
     @Override
     public String toString() {
         return "QuestDisplayInfo[" +
-                "uuid=" + id + ", " +
-                "title=" + title + ", " +
-                "description=" + description + ", " +
+                "id=" + id + ", " +
+                "title=" + title.getString() + ", " +
+                "description=" + description.getString() + ", " +
                 "icon=" + icon + ", " +
                 "mainQuest=" + mainQuest + ", " +
                 "parentQuest=" + parentQuest + ']';
@@ -251,7 +252,7 @@ public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
 
         public QuestDisplayInfo build() {
             if(!this.canBuild()) {
-                throw new IllegalStateException("Can't build DisplayInfo for quest with missing uuid or title!");
+                throw new IllegalStateException("Can't build DisplayInfo for quest with missing id or title!");
             }
 
             return new QuestDisplayInfo(this.id, this.title, this.description, this.icon, this.isMainQuest, this.parentQuest);

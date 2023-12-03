@@ -10,6 +10,7 @@ import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
 import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
@@ -35,56 +36,63 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "testKill",
-                                         new KillTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new EntityPredicate(
-                                                         EntityTypePredicate.from(EntityType.COW),
-                                                         DistancePredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         EffectsPredicate.ANY,
-                                                         NbtPredicate.ANY,
-                                                         new EntityFlagsPredicate(false, null, null, null, true),
-                                                         EntityEquipmentPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .withCriterion(
-                                         "testKill2",
-                                         new KillTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new EntityPredicate(
-                                                         EntityTypePredicate.from(EntityType.SPIDER),
-                                                         DistancePredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         EffectsPredicate.ANY,
-                                                         NbtPredicate.ANY,
-                                                         EntityFlagsPredicate.ANY,
-                                                         EntityEquipmentPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .withCriterion(
-                                         "testSleep",
-                                         new SleepTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new LocationPredicate(
-                                                         MinMax.Doubles.ANY,
-                                                         MinMax.Doubles.ANY,
-                                                         MinMax.Doubles.ANY,
-                                                         Biomes.DESERT,
-                                                         null,
-                                                         null,
-                                                         BlockPredicate.ANY,
-                                                         FluidPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test1_start", QuestCriteria.empty(), Component.empty(), "test1_end")
+                                .withEnd("test1_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "testKill",
+                                                                                   new KillTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new EntityPredicate(
+                                                                                                   EntityTypePredicate.from(EntityType.COW),
+                                                                                                   DistancePredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   EffectsPredicate.ANY,
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   new EntityFlagsPredicate(false, null, null, null, true),
+                                                                                                   EntityEquipmentPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .withCriterion(
+                                                                                   "testKill2",
+                                                                                   new KillTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new EntityPredicate(
+                                                                                                   EntityTypePredicate.from(EntityType.SPIDER),
+                                                                                                   DistancePredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   EffectsPredicate.ANY,
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   EntityFlagsPredicate.ANY,
+                                                                                                   EntityEquipmentPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .withCriterion(
+                                                                                   "testSleep",
+                                                                                   new SleepTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new LocationPredicate(
+                                                                                                   MinMax.Doubles.ANY,
+                                                                                                   MinMax.Doubles.ANY,
+                                                                                                   MinMax.Doubles.ANY,
+                                                                                                   Biomes.DESERT,
+                                                                                                   null,
+                                                                                                   null,
+                                                                                                   BlockPredicate.ANY,
+                                                                                                   FluidPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
     );
 
     public static final ProgressionQuest TEST2 = new ProgressionQuest(
@@ -99,25 +107,32 @@ public class TestQuests {
                            .withReward(new ExtraLifeReward())
                            .withReward(new WorldBorderReward(25, MathHelper.secondsToMillis(30)))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "testKill2",
-                                         new KillTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new EntityPredicate(
-                                                         EntityTypePredicate.from(EntityType.HORSE),
-                                                         DistancePredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         EffectsPredicate.ANY,
-                                                         NbtPredicate.ANY,
-                                                         EntityFlagsPredicate.ANY,
-                                                         EntityEquipmentPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .withStrategy(CriteriaStrategy.OR)
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test2_start", QuestCriteria.empty(), Component.empty(), "test2_end")
+                                .withEnd("test2_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "testKill2",
+                                                                                   new KillTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new EntityPredicate(
+                                                                                                   EntityTypePredicate.from(EntityType.HORSE),
+                                                                                                   DistancePredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   EffectsPredicate.ANY,
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   EntityFlagsPredicate.ANY,
+                                                                                                   EntityEquipmentPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .withStrategy(CriteriaStrategy.OR)
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
     );
 
     public static final ProgressionQuest TEST3 = new ProgressionQuest(
@@ -130,24 +145,31 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new CommandReward("weather rain"))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test1",
-                                         new KillTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new EntityPredicate(
-                                                         EntityTypePredicate.from(EntityType.CREEPER),
-                                                         DistancePredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         LocationPredicate.ANY,
-                                                         EffectsPredicate.ANY,
-                                                         NbtPredicate.ANY,
-                                                         EntityFlagsPredicate.ANY,
-                                                         EntityEquipmentPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test3_start", QuestCriteria.requiresParentComplete("quest_test2"), Component.empty(), "test3_end")
+                                .withEnd("test3_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test1",
+                                                                                   new KillTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new EntityPredicate(
+                                                                                                   EntityTypePredicate.from(EntityType.CREEPER),
+                                                                                                   DistancePredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   LocationPredicate.ANY,
+                                                                                                   EffectsPredicate.ANY,
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   EntityFlagsPredicate.ANY,
+                                                                                                   EntityEquipmentPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
     );
 
     @SuppressWarnings("unchecked")
@@ -162,20 +184,26 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new TeleportReward(new TeleportReward.TeleportDestination(5, 120, 120, 0, 0, ServerLevel.END)))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test2",
-                                         new PlacedBlockTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new BlockPredicate(
-                                                         null,
-                                                         Blocks.EMERALD_BLOCK,
-                                                         (StatePropertiesPredicate<BlockState>) StatePropertiesPredicate.ANY,
-                                                         NbtPredicate.ANY
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test4_start", QuestCriteria.requiresParentComplete("quest_test3"), Component.empty(), "test4_end")
+                                .withEnd("test4_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test2",
+                                                                                   new PlacedBlockTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new BlockPredicate(
+                                                                                                   null,
+                                                                                                   Blocks.EMERALD_BLOCK,
+                                                                                                   (StatePropertiesPredicate<BlockState>) StatePropertiesPredicate.ANY,
+                                                                                                   NbtPredicate.ANY
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
 
     );
 
@@ -190,23 +218,30 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new EffectReward(new MobEffectInstance(MobEffects.LEVITATION, MathHelper.secondsToTicks(10))))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test34",
-                                         new PlayerInventoryChangedTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new ItemPredicate(
-                                                         Items.ANVIL,
-                                                         MinMax.Ints.ANY,
-                                                         MinMax.Ints.ANY,
-                                                         Collections.emptySet(),
-                                                         Collections.emptySet(),
-                                                         NbtPredicate.ANY,
-                                                         null
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test5_start", QuestCriteria.requiresParentComplete("quest_test4"), Component.empty(), "test5_end")
+                                .withEnd("test5_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test34",
+                                                                                   new PlayerInventoryChangedTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new ItemPredicate(
+                                                                                                   Items.ANVIL,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   Collections.emptySet(),
+                                                                                                   Collections.emptySet(),
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   null
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
 
     );
 
@@ -221,23 +256,30 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new EffectReward(new MobEffectInstance(MobEffects.HEAL, MathHelper.secondsToTicks(10))))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test35",
-                                         new PlayerInventoryChangedTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new ItemPredicate(
-                                                         Items.ACACIA_BUTTON,
-                                                         MinMax.Ints.ANY,
-                                                         MinMax.Ints.ANY,
-                                                         Collections.emptySet(),
-                                                         Collections.emptySet(),
-                                                         NbtPredicate.ANY,
-                                                         null
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test6_start", QuestCriteria.requiresParentComplete("quest_test5"), Component.empty(), "test6_end")
+                                .withEnd("test6_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test35",
+                                                                                   new PlayerInventoryChangedTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new ItemPredicate(
+                                                                                                   Items.ACACIA_BUTTON,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   Collections.emptySet(),
+                                                                                                   Collections.emptySet(),
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   null
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
 
     );
 
@@ -252,23 +294,30 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new EffectReward(new MobEffectInstance(MobEffects.WATER_BREATHING, MathHelper.secondsToTicks(10))))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test36",
-                                         new PlayerInventoryChangedTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new ItemPredicate(
-                                                         Items.STONE,
-                                                         MinMax.Ints.ANY,
-                                                         MinMax.Ints.ANY,
-                                                         Collections.emptySet(),
-                                                         Collections.emptySet(),
-                                                         NbtPredicate.ANY,
-                                                         null
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test7_start", QuestCriteria.requiresParentComplete("quest_test6"), Component.empty(), "test7_end")
+                                .withEnd("test7_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test36",
+                                                                                   new PlayerInventoryChangedTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new ItemPredicate(
+                                                                                                   Items.STONE,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   Collections.emptySet(),
+                                                                                                   Collections.emptySet(),
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   null
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
 
     );
 
@@ -284,23 +333,30 @@ public class TestQuests {
             Rewards.Builder.builder()
                            .withReward(new EffectReward(new MobEffectInstance(MobEffects.HERO_OF_THE_VILLAGE, MathHelper.secondsToTicks(10))))
                            .build(),
-            QuestCriteria.Builder.builder()
-                                 .withCriterion(
-                                         "test37",
-                                         new PlayerInventoryChangedTrigger(
-                                                 PlayerPredicate.ANY,
-                                                 new ItemPredicate(
-                                                         Items.PACKED_ICE,
-                                                         MinMax.Ints.ANY,
-                                                         MinMax.Ints.ANY,
-                                                         Collections.emptySet(),
-                                                         Collections.emptySet(),
-                                                         NbtPredicate.ANY,
-                                                         null
-                                                 )
-                                         )
-                                 )
-                                 .build()
+            QuestActions.Builder.builder()
+                                .withStart("test8_start", QuestCriteria.requiresParentComplete("quest_test7"), Component.empty(), "test8_end")
+                                .withEnd("test8_end", QuestCriteria.Builder.builder()
+                                                                           .withCriterion(
+                                                                                   "test37",
+                                                                                   new PlayerInventoryChangedTrigger(
+                                                                                           PlayerPredicate.ANY,
+                                                                                           new ItemPredicate(
+                                                                                                   Items.PACKED_ICE,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   MinMax.Ints.ANY,
+                                                                                                   Collections.emptySet(),
+                                                                                                   Collections.emptySet(),
+                                                                                                   NbtPredicate.ANY,
+                                                                                                   null
+                                                                                           )
+                                                                                   )
+                                                                           )
+                                                                           .build(),
+                                         Component.empty(),
+                                         true
+                                )
+                                .build()
+
 
     );
 }

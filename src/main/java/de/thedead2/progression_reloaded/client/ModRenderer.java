@@ -220,8 +220,13 @@ public class ModRenderer {
 
 
     public void updateQuestProgressOverlay(IProgressInfo<ProgressionQuest> progressInfo) {
-        if(this.levelProgressOverlay != null) {
+        if(this.questProgressOverlay != null) {
             this.questProgressOverlay.updateProgress(progressInfo);
         }
+    }
+
+
+    public boolean isQuestFollowed(ResourceLocation questId) {
+        return this.questProgressOverlay != null && this.questProgressOverlay.isQuestFollowed(questId);
     }
 }

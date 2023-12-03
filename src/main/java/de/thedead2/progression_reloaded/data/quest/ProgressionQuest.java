@@ -5,12 +5,9 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.IProgressable;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
-import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
-import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Map;
 
 
 public class ProgressionQuest implements IProgressable<ProgressionQuest> {
@@ -27,30 +23,30 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
     private final Rewards rewards;
 
-    private final QuestCriteria criteria;
+    private final QuestActions actions;
 
 
-    public ProgressionQuest(QuestDisplayInfo displayInfo, Rewards rewards, QuestCriteria criteria) {
+    public ProgressionQuest(QuestDisplayInfo displayInfo, Rewards rewards, QuestActions actions) {
         this.displayInfo = displayInfo;
         this.rewards = rewards;
-        this.criteria = criteria;
+        this.actions = actions;
     }
 
 
     public static ProgressionQuest fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         QuestDisplayInfo displayInfo = QuestDisplayInfo.fromJson(jsonObject.get("display"));
-        QuestCriteria criteria = QuestCriteria.fromJson(jsonObject.get("criteria"));
+        QuestActions actionTree = QuestActions.fromJson(jsonObject.getAsJsonObject("actions"));
         Rewards rewards = Rewards.fromJson(jsonObject.get("rewards"));
 
-        return new ProgressionQuest(displayInfo, rewards, criteria);
+        return new ProgressionQuest(displayInfo, rewards, actionTree);
     }
 
 
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("display", this.displayInfo.toJson());
-        jsonObject.add("criteria", this.criteria.toJson());
+        jsonObject.add("actions", this.actions.toJson());
         jsonObject.add("rewards", this.rewards.toJson());
 
         return jsonObject;
@@ -103,13 +99,8 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
     }
 
 
-    public Map<String, SimpleTrigger<?>> getCriteria() {
-        return this.criteria.getCriteria();
-    }
-
-
-    public CriteriaStrategy getCriteriaStrategy() {
-        return this.criteria.getCriteriaStrategy();
+    public ResourceLocation getId() {
+        return this.displayInfo.getId();
     }
 
 
@@ -124,8 +115,8 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
     }
 
 
-    public ResourceLocation getId() {
-        return this.displayInfo.id();
+    public QuestActions getActions() {
+        return actions;
     }
 
 
@@ -164,5 +155,18 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
     public boolean isDone(PlayerData player) {
         return player.getQuestData().getOrStartProgress(this).isDone();
+    }
+
+
+    public boolean isActive(PlayerData player) {
+        return player.getQuestData().getActiveQuests().contains(this);
+    }
+
+
+    public enum Status {
+        NOT_STARTED,
+        ACTIVE,
+        COMPLETE,
+        FAILED
     }
 }

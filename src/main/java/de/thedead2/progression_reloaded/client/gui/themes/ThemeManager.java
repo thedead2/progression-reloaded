@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.client.gui.themes;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import de.thedead2.progression_reloaded.client.gui.util.Padding;
+import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ModHelper;
@@ -20,6 +21,7 @@ public class ThemeManager {
     private final Supplier<ProgressionLayout> activeLayout = () -> ProgressionLayout.Builder.builder()
                                                                                             .withToast(200, 100, 0, 150, 50, Padding.NONE)
                                                                                             .withLevelProgressOL(0, 0, 0, 100, 13, new Padding(5))
+                                                                                            .withQuestProgressOL(RenderUtil.getScreenWidth() - 50, 50, 0, 50, 150, new Padding(5))
                                                                                             .build();
 
     private final Supplier<ProgressionTheme> activeTheme = () -> ProgressionTheme.Builder.builder("textures/gui/themes/futuristic/")

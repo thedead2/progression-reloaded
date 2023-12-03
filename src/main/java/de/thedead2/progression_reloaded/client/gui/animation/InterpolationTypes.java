@@ -7,7 +7,6 @@ import java.util.Random;
 
 
 public class InterpolationTypes {
-
     private static final Random RANDOM_GEN = new Random();
 
     public static final IInterpolationType LINEAR = val -> val;

@@ -228,11 +228,6 @@ public class LevelManager {
     }
 
 
-    public void updateData() {
-        this.questManager.updateData();
-    }
-
-
     public ProgressionLevel getLevelForQuest(ProgressionQuest quest) {
         ResourceLocation id = quest.getId();
         return this.levelOrder.stream()

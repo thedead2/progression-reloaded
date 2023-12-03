@@ -1,9 +1,18 @@
 package de.thedead2.progression_reloaded.data.criteria;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
+import de.thedead2.progression_reloaded.data.predicates.QuestPredicate;
+import de.thedead2.progression_reloaded.data.predicates.TimePredicate;
+import de.thedead2.progression_reloaded.data.trigger.QuestCompleteTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.TickTrigger;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,29 +34,42 @@ public class QuestCriteria {
     public static QuestCriteria fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         CriteriaStrategy criteriaStrategy1 = CriteriaStrategy.valueOf(jsonObject.get("strategy").getAsString());
-
-        Map<String, SimpleTrigger<?>> questCriteria = new HashMap<>();
-        jsonObject.get("criteria").getAsJsonArray().forEach(jsonElement1 -> {
-            JsonObject jsonObject1 = jsonElement1.getAsJsonObject();
-            questCriteria.put(jsonObject1.get("name").getAsString(), SimpleTrigger.fromJson(jsonObject1.get("trigger")));
-        });
+        Map<String, SimpleTrigger<?>> questCriteria = CollectionHelper.loadFromJson(jsonObject.getAsJsonObject("criteria"), s -> s, SimpleTrigger::fromJson);
 
         return new QuestCriteria(questCriteria, criteriaStrategy1);
     }
 
 
+    public static QuestCriteria loadFromNBT(CompoundTag tag) {
+        CriteriaStrategy strategy = CriteriaStrategy.valueOf(tag.getString("strategy"));
+        Map<String, SimpleTrigger<?>> criteria = CollectionHelper.loadFromNBT(tag.getCompound("criteria"), s -> s, tag1 -> SimpleTrigger.loadFromNBT((CompoundTag) tag1));
+
+        return new QuestCriteria(criteria, strategy);
+    }
+
+
+    public static QuestCriteria fromNetwork(FriendlyByteBuf buf) {
+        CriteriaStrategy strategy = buf.readEnum(CriteriaStrategy.class);
+        Map<String, SimpleTrigger<?>> criteria = buf.readMap(FriendlyByteBuf::readUtf, SimpleTrigger::fromNetwork);
+
+        return new QuestCriteria(criteria, strategy);
+    }
+
+
+    public static QuestCriteria empty() {
+        return Builder.builder().build();
+    }
+
+
+    public static QuestCriteria requiresParentComplete(String parentId) {
+        return Builder.builder().withParentComplete(parentId).build();
+    }
+
+
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
-        jsonObject.addProperty("strategy", this.criteriaStrategy.toString());
-
-        JsonArray jsonArray1 = new JsonArray();
-        this.criteria.forEach((s, trigger) -> {
-            JsonObject jsonObject1 = new JsonObject();
-            jsonObject1.addProperty("name", s);
-            jsonObject1.add("trigger", trigger.toJson());
-            jsonArray1.add(jsonObject1);
-        });
-        jsonObject.add("criteria", jsonArray1);
+        jsonObject.addProperty("strategy", this.criteriaStrategy.name());
+        jsonObject.add("criteria", CollectionHelper.saveToJson(this.criteria, s -> s, SimpleTrigger::toJson));
 
         return jsonObject;
     }
@@ -60,6 +82,22 @@ public class QuestCriteria {
 
     public CriteriaStrategy getCriteriaStrategy() {
         return this.criteriaStrategy;
+    }
+
+
+    public CompoundTag saveToNBT() {
+        CompoundTag tag = new CompoundTag();
+
+        tag.putString("strategy", this.criteriaStrategy.name());
+        tag.put("criteria", CollectionHelper.saveToNBT(this.criteria, s -> s, SimpleTrigger::saveToNBT));
+
+        return tag;
+    }
+
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeEnum(this.criteriaStrategy);
+        buf.writeMap(this.criteria, FriendlyByteBuf::writeUtf, (buf1, trigger) -> trigger.toNetwork(buf1));
     }
 
 
@@ -78,6 +116,11 @@ public class QuestCriteria {
         }
 
 
+        public Builder withParentComplete(String questId) {
+            return this.withCriterion("parent_complete", new QuestCompleteTrigger(PlayerPredicate.ANY, new QuestPredicate(new ResourceLocation(ModHelper.MOD_ID, questId))));
+        }
+
+
         public Builder withCriterion(String name, SimpleTrigger<?> criterion) {
             this.criteria.put(name, criterion);
 
@@ -93,6 +136,9 @@ public class QuestCriteria {
 
 
         public QuestCriteria build() {
+            if(this.criteria.isEmpty()) {
+                this.criteria.put("nothing", new TickTrigger(PlayerPredicate.ANY, new TimePredicate(0)));
+            }
             return new QuestCriteria(this.criteria, this.criteriaStrategy);
         }
     }

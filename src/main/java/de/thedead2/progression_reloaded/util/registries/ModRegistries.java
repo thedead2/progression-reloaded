@@ -60,7 +60,7 @@ public abstract class ModRegistries {
 
 
     @SuppressWarnings("unchecked")
-    private static <T extends IProgressable> void load(Path directoryPath, Class<T> type, DeferredRegister<T> deferredRegister) {
+    private static <T extends IProgressable<T>> void load(Path directoryPath, Class<T> type, DeferredRegister<T> deferredRegister) {
         final Map<ResourceLocation, T> temp = new HashMap<>();
         FileHandler.readDirectory(directoryPath.toFile(), directory -> {
             for(File file : Objects.requireNonNull(directory.listFiles(File::isFile))) {
@@ -122,7 +122,7 @@ public abstract class ModRegistries {
     }
 
 
-    private static <T extends IProgressable> void save(Path directoryPath, Collection<T> buildObjects) {
+    private static <T extends IProgressable<T>> void save(Path directoryPath, Collection<T> buildObjects) {
         FileHandler.createDirectory(directoryPath.toFile());
         buildObjects.forEach(t -> {
             ByteArrayInputStream stream = new ByteArrayInputStream(JsonHelper.formatJsonObject(t.toJson()).getBytes());

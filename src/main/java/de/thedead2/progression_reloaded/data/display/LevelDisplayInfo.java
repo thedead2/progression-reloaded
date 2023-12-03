@@ -109,7 +109,8 @@ public final class LevelDisplayInfo implements IDisplayInfo<ProgressionLevel> {
     }
 
 
-    public ResourceLocation id() {
+    @Override
+    public ResourceLocation getId() {
         return id;
     }
 

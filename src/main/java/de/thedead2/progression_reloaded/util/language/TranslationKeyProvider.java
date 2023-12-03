@@ -48,7 +48,7 @@ public abstract class TranslationKeyProvider {
     }
 
 
-    public static String translationKeyFor(TranslationKeyType type, TranslationKeyType.TranslationKeySubType subType, String name) {
+    public static String translationKeyFor(TranslationKeyType type, String subType, String name) {
         String key = (type + "." + (subType != null ? subType + "." : "") + MOD_ID + "." + name).toLowerCase();
         usedTranslationKeys.add(key);
         return key;

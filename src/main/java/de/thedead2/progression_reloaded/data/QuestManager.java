@@ -1,16 +1,13 @@
 package de.thedead2.progression_reloaded.data;
 
-import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
-import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.misc.HashBiSetMultiMap;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
@@ -18,7 +15,10 @@ import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
@@ -40,11 +40,6 @@ public class QuestManager {
 
     QuestManager(LevelManager levelManager) {
         this.levelManager = levelManager;
-        this.loadData();
-    }
-
-
-    private void loadData() {
         this.loadChildren();
     }
 
@@ -108,16 +103,6 @@ public class QuestManager {
     }
 
 
-    public void updateData() {
-        this.loadData();
-    }
-
-
-    public Set<ProgressionQuest> searchQuestsForActive(PlayerData player) {
-        return ModRegistries.QUESTS.get().getValues().stream().filter(progressionQuest -> isQuestActiveForLevel(progressionQuest, player)).collect(Collectors.toSet());
-    }
-
-
     public boolean isQuestActiveForLevel(ProgressionQuest quest, PlayerData player) {
         ProgressionLevel level = player.getCurrentLevel();
         return level.contains(quest) && isQuestActive(quest, player);
@@ -125,29 +110,8 @@ public class QuestManager {
 
 
     public boolean isQuestActive(ProgressionQuest quest, PlayerData player) {
-        return quest.isParentDone(this, player) && !quest.isDone(player);
+        return quest.isActive(player);
     }
-
-
-    public Set<ProgressionQuest> searchQuestsForComplete(PlayerData player) {
-        return ModRegistries.QUESTS.get().getValues().stream().filter(progressionQuest -> !isQuestActiveForLevel(progressionQuest, player) && progressionQuest.isDone(player)).collect(Collectors.toSet());
-    }
-
-
-    @SuppressWarnings("unchecked")
-    public <T> void fireTriggers(Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
-        player.getQuestData().forEachActive(quest -> quest.getCriteria()
-                                                 .values()
-                                                 .stream()
-                                                 .filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass))
-                                                 .forEach(trigger -> {
-                                                     if(!PREventFactory.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)) {
-                                                         this.updateStatus(player, true);
-                                                     }
-                                                 })
-                          );
-    }
-
 
     /**
      * Updates the quests of a player depending on whether the quest has been completed or not.
@@ -155,49 +119,14 @@ public class QuestManager {
     public void updateStatus(PlayerData player, boolean shouldSyncToTeam) {
         LOGGER.debug(MARKER, "Updating quests for player: {}", player.getName());
 
-        PlayerQuests playerQuests = player.getQuestData();
+        player.getQuestData().updateQuestStatus(this);
 
-        playerQuests.updateQuestStatus(this);
-
-        playerQuests.forEachCompleted(quest -> this.unregisterListeners(quest, player));
-        playerQuests.forEachActive(quest -> this.registerListeners(quest, player));
 
         if(shouldSyncToTeam) {
             this.syncQuestProgressToTeam(player);
         }
         this.syncQuestsToClient(player);
         PREventFactory.onQuestStatusUpdate(player);
-    }
-
-
-    public void unregisterListeners(ProgressionQuest quest, PlayerData player) {
-        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-
-        for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
-            CriterionProgress criterionprogress = questProgress.getCriterion(entry.getKey());
-            if(criterionprogress != null && (criterionprogress.isDone() || questProgress.isDone())) {
-                SimpleTrigger<?> trigger = entry.getValue();
-                if(trigger != null) {
-                    trigger.removeListener(player, new SimpleTrigger.Listener(quest, entry.getKey()));
-                }
-            }
-        }
-    }
-
-
-    public void registerListeners(ProgressionQuest quest, PlayerData player) {
-        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-        if(!questProgress.isDone()) {
-            for(Map.Entry<String, SimpleTrigger<?>> entry : quest.getCriteria().entrySet()) {
-                CriterionProgress criterionprogress = questProgress.getCriterion(entry.getKey());
-                if(criterionprogress != null && !criterionprogress.isDone()) {
-                    SimpleTrigger<?> trigger = entry.getValue();
-                    if(trigger != null) {
-                        trigger.addListener(player, new SimpleTrigger.Listener(quest, entry.getKey()));
-                    }
-                }
-            }
-        }
     }
 
 
@@ -212,7 +141,7 @@ public class QuestManager {
 
 
     public void stopListening(PlayerData player) {
-        player.getQuestData().forEachActive(quest -> this.unregisterListeners(quest, player));
+        player.getQuestData().stopListening();
     }
 
 
@@ -242,34 +171,26 @@ public class QuestManager {
     }
 
 
-    public boolean award(ResourceLocation quest, String criterionName, PlayerData player) {
-        return award(findQuest(quest), criterionName, player);
+    public boolean award(ResourceLocation quest, PlayerData player) {
+        return award(findQuest(quest), player);
     }
 
 
     /**
      * Awards the given criterion to the given quest and if the quest is done, the quest to the given player
      **/
-    public boolean award(ProgressionQuest quest, String criterionName, PlayerData player) {
+    public boolean award(ProgressionQuest quest, PlayerData player) {
         boolean flag = false;
         QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-        if(!PREventFactory.onQuestAward(quest, criterionName, questProgress, player)) {
+        if(!PREventFactory.onQuestAward(quest, questProgress, player)) {
             boolean flag1 = questProgress.isDone();
-            if(criterionName == null || questProgress.grantProgress(criterionName)) {
-                if(criterionName == null) {
-                    questProgress.complete();
-                }
-                this.unregisterListeners(quest, player);
-                flag = true;
-                if(!flag1 && questProgress.isDone()) {
-                    quest.rewardPlayer(player); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
-                    ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(quest.getDisplay(), null), player.getServerPlayer());
-                }
+            questProgress.complete();
+            flag = true;
+            if(!flag1 && questProgress.isDone()) {
+                quest.rewardPlayer(player); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
+                ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(quest.getDisplay(), null), player.getServerPlayer());
             }
-
-            if(flag) {
-                this.levelManager.updateStatus();
-            }
+            this.levelManager.updateStatus();
         }
 
         return flag;
@@ -285,46 +206,24 @@ public class QuestManager {
     }
 
 
-    public boolean award(ResourceLocation quest, PlayerData player) {
-        return award(findQuest(quest), null, player);
-    }
-
-
-    public boolean award(ProgressionQuest quest, PlayerData player) {
-        return award(quest, null, player);
-    }
-
-
-    public boolean revoke(ProgressionQuest quest, PlayerData player) {
-        return revoke(quest, null, player);
+    public boolean revoke(ResourceLocation quest, PlayerData player) {
+        return revoke(findQuest(quest), player);
     }
 
 
     /**
      * Revokes the given quest for the given player
      **/
-    public boolean revoke(ProgressionQuest quest, String criterionName, PlayerData player) {
+    public boolean revoke(ProgressionQuest quest, PlayerData player) {
         boolean flag = false;
         QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-        if(!PREventFactory.onQuestRevoke(quest, criterionName, questProgress, player)) {
-            if(criterionName == null || questProgress.revokeProgress(criterionName)) {
-                if(criterionName == null) {
-                    questProgress.reset();
-                }
-                if(quest.isParentDone(this, player)) {
-                    this.registerListeners(quest, player);
-                }
-                this.levelManager.updateStatus();
-                flag = true;
-            }
+        if(!PREventFactory.onQuestRevoke(quest, questProgress, player)) {
+            questProgress.reset();
+            this.levelManager.updateStatus();
+            flag = true;
         }
 
         return flag;
-    }
-
-
-    public boolean revoke(ResourceLocation quest, PlayerData player) {
-        return revoke(findQuest(quest), null, player);
     }
 
 
@@ -339,5 +238,25 @@ public class QuestManager {
 
     public boolean hasChild(ProgressionQuest quest) {
         return questChildren.containsKey(quest);
+    }
+
+
+    public Set<ProgressionQuest> getAllQuestsForLevel(ProgressionLevel level) {
+        Collection<ResourceLocation> questIds = level.getQuests();
+
+        this.checkParents(level, questIds);
+
+        return questIds.stream()
+                       .map(this::findQuest)
+                       .collect(Collectors.toSet());
+    }
+
+
+    private void checkParents(ProgressionLevel level, Collection<ResourceLocation> questIds) {
+        if(level.hasParent()) {
+            ProgressionLevel parent = ModRegistries.LEVELS.get().getValue(level.getParent());
+            questIds.addAll(parent.getQuests());
+            this.checkParents(parent, questIds);
+        }
     }
 }

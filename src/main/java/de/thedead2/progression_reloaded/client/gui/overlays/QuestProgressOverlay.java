@@ -19,6 +19,12 @@ public class QuestProgressOverlay extends ProgressOverlay<ProgressionQuest> {
 
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+        this.backgroundFrame.draw(poseStack);
+        this.progressBar.render(poseStack, mouseX, mouseY, partialTick);
+    }
 
+
+    public boolean isQuestFollowed(ResourceLocation questId) {
+        return this.displayInfo.getId().equals(questId);
     }
 }

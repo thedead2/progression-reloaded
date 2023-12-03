@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded;
 
 import de.thedead2.progression_reloaded.client.ModClientInstance;
+import de.thedead2.progression_reloaded.client.ModKeyMappings;
 import de.thedead2.progression_reloaded.commands.ModCommands;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.RestrictionManager;
@@ -108,6 +109,7 @@ public class ProgressionReloaded {
         ModLootModifiers.register(modEventBus);
 
         modEventBus.addListener(this::setup);
+        modEventBus.addListener(ModKeyMappings::register);
 
         loadingContext.registerConfig(ModConfig.Type.COMMON, ConfigManager.CONFIG_SPEC, MOD_ID + "-common.toml");
 
@@ -179,7 +181,6 @@ public class ProgressionReloaded {
     @SubscribeEvent
     public void onPlayerFileLoad(final PlayerEvent.LoadFromFile event) {
         PlayerDataManager.loadPlayerData(event.getPlayerFile(MOD_ID), (ServerPlayer) event.getEntity());
-        LevelManager.getInstance().updateData();
     }
 
 
