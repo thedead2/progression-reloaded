@@ -4,10 +4,13 @@ import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.rewards.ItemReward;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Items;
 
 import java.util.Set;
+
+import static de.thedead2.progression_reloaded.util.ModHelper.isDevEnv;
 
 
 public class TestLevels {
@@ -25,7 +28,7 @@ public class TestLevels {
             )
     );
 
-    public static final ProgressionLevel TEST2 = new ProgressionLevel(
+    /*public static final ProgressionLevel TEST2 = new ProgressionLevel(
             LevelDisplayInfo.Builder.builder()
                                     .withId("test-level2")
                                     .withName("Test Level 2")
@@ -43,5 +46,13 @@ public class TestLevels {
                     new ResourceLocation(ModHelper.MOD_ID, "quest_test8")
 
             )
-    );
+    );*/
+
+
+    public static void register() {
+        if(isDevEnv()) {
+            ModRegistries.register(TestLevels.TEST1);
+            //ModRegistries.register(TestLevels.TEST2);
+        }
+    }
 }

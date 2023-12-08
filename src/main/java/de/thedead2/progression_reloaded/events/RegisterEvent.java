@@ -4,12 +4,13 @@ import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.eventbus.api.Event;
 
 import java.util.HashMap;
 import java.util.Map;
 
 
-public abstract class RegisterEvent<T> extends PREventFactory.ProgressionEvent {
+public abstract class RegisterEvent<T> extends Event {
 
     private final Map<ResourceLocation, T> objects = new HashMap<>();
 

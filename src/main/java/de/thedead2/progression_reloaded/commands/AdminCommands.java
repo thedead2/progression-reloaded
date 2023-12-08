@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.commands;
 
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
@@ -20,13 +21,15 @@ public class AdminCommands {
 
     public static void register() {
         ModCommand.Builder.builder()
-                          .withPath("award/quest/[quest]") //TODO: Don't execute when command incomplete!
+                          .withPath("award/quest/[quest]/[successful]") //TODO: Don't execute when command incomplete!
                           .withRequirement(commandSourceStack -> commandSourceStack.hasPermission(3))
                           .withArgument("[quest]", ResourceLocationArgument.id())
                           .withSuggestion("[quest]", SUGGEST_QUEST)
+                          .withArgument("[successful]", BoolArgumentType.bool())
                           .withAction(context -> {
                               ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
-                              LevelManager.getInstance().getQuestManager().award(quest_id, PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException()));
+                              boolean successful = BoolArgumentType.getBool(context, "successful");
+                              LevelManager.getInstance().getQuestManager().award(quest_id, successful, PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException()));
                               context.getSource().sendSuccess(Component.literal("Completed quest: " + quest_id), false);
                               return ModCommands.COMMAND_SUCCESS;
                           })
@@ -97,6 +100,25 @@ public class AdminCommands {
                               LevelManager.getInstance().updateLevel(player, ResourceLocationArgument.getId(context, "level"));
                               context.getSource().sendSuccess(Component.literal("Changed level!"), false);
                               return ModCommands.COMMAND_SUCCESS;
+                          })
+                          .buildAndRegister();
+
+        ModCommand.Builder.builder()
+                          .withPath("unlock/quest/[quest]")
+                          .withArgument("[quest]", ResourceLocationArgument.id())
+                          .withSuggestion("[quest]", SUGGEST_QUEST)
+                          .withAction(context -> {
+                              ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
+                              PlayerData playerData = PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException());
+
+                              if(playerData.getQuestData().getOrStartProgress(quest_id).unlock()) {
+                                  context.getSource().sendSuccess(Component.literal("Unlocked quest " + quest_id), false);
+                                  return ModCommands.COMMAND_SUCCESS;
+                              }
+                              else {
+                                  context.getSource().sendFailure(Component.literal("Quest " + quest_id + " has already been unlocked!"));
+                                  return ModCommands.COMMAND_FAILURE;
+                              }
                           })
                           .buildAndRegister();
     }

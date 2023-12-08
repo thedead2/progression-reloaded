@@ -75,5 +75,14 @@ public class DevCommands {
                               return ModCommands.COMMAND_SUCCESS;
                           })
                           .buildAndRegister();
+
+        ModCommand.Builder.builder()
+                          .withPath("dev/updateStatus")
+                          .withAction(context -> {
+                              context.getSource().sendSuccess(Component.literal("Force updating all level and quest status!"), true);
+                              LevelManager.getInstance().updateStatus();
+                              return ModCommands.COMMAND_SUCCESS;
+                          })
+                          .buildAndRegister();
     }
 }

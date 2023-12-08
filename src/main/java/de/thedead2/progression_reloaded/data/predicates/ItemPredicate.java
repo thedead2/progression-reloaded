@@ -89,7 +89,7 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
 
     public static ItemPredicate from(ItemStack itemStack) {
         int count = itemStack.getCount();
-        int damage = itemStack.getDamageValue();
+        int damage = itemStack.getMaxDamage() - itemStack.getDamageValue();
         Map<Enchantment, Integer> map = itemStack.getAllEnchantments();
         Set<EnchantmentPredicate> enchantments = new HashSet<>();
         map.keySet().forEach(enchantment -> enchantments.add(EnchantmentPredicate.from(enchantment)));
@@ -102,7 +102,7 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
         return new ItemPredicate(
                 itemStack.getItem(),
                 MinMax.Ints.exactly(count),
-                MinMax.Ints.exactly(damage),
+                itemStack.isDamageableItem() ? MinMax.Ints.exactly(damage) : MinMax.Ints.ANY,
                 enchantments,
                 storedEnchantments,
                 nbt,

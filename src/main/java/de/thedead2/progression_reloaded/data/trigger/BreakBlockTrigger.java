@@ -16,7 +16,7 @@ public class BreakBlockTrigger extends SimpleTrigger<BlockState> {
     public static final ResourceLocation ID = createId("break_block");
 
 
-    protected BreakBlockTrigger(PlayerPredicate player, BlockPredicate block) {
+    public BreakBlockTrigger(PlayerPredicate player, BlockPredicate block) {
         super(ID, player, block, "block");
     }
 

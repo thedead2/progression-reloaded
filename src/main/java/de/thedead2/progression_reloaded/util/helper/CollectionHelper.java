@@ -192,4 +192,20 @@ public class CollectionHelper {
 
         return map;
     }
+
+
+    @SafeVarargs
+    public static <T> void concatenate(Collection<T> targetCollection, Collection<T>... collections) {
+        for(Collection<T> collection : collections) {
+            targetCollection.addAll(collection);
+        }
+    }
+
+
+    @SafeVarargs
+    public static <T, V> void concatenate(Map<T, V> targetMap, Map<T, V>... maps) {
+        for(Map<T, V> map : maps) {
+            targetMap.putAll(map);
+        }
+    }
 }

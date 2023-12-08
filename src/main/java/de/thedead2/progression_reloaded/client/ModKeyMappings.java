@@ -25,6 +25,11 @@ public class ModKeyMappings {
     }
 
 
+    public static String toString(KeyMapping key) {
+        return key.getTranslatedKeyMessage().getString();
+    }
+
+
     private static KeyMapping create(String name, int key) {
         return create(name, key, KeyConflictContext.UNIVERSAL);
     }

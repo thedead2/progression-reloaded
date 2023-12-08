@@ -7,11 +7,13 @@ import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
@@ -62,7 +64,7 @@ public class LevelManager {
         instance = this;
         this.questManager = new QuestManager(this);
         this.restrictionManager = new RestrictionManager();
-        init();
+        this.loadLevelOrder();
     }
 
 
@@ -142,19 +144,13 @@ public class LevelManager {
     }
 
 
-    private void init() {
-        loadLevelOrder();
-        this.updateStatus();
-    }
-
-
     private void loadLevelOrder() {
         Collections.sort(this.levelOrder);
     }
 
 
     public void updateLevel(PlayerData player, ProgressionLevel nextLevel) {
-        if(nextLevel != null && !PREventFactory.onLevelUpdate(nextLevel, player, player.getCurrentLevel())) {
+        if(nextLevel != null) {
             PlayerDataManager.updateProgressionLevel(player, nextLevel);
         }
         this.updateStatus();
@@ -163,19 +159,18 @@ public class LevelManager {
 
 
     public void updateLevel(PlayerData player, ResourceLocation nextLevel) {
-        if(nextLevel != null) {
-            this.updateLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
-        }
-        else {
-            this.updateStatus();
-        }
+        this.updateLevel(player, ModRegistries.LEVELS.get().getValue(nextLevel));
     }
 
 
     public void updateStatus() {
-        PlayerDataManager.allPlayers().forEach(player -> {
-            LOGGER.debug(MARKER, "Updating level status for player: {}", player.getName());
+        PlayerDataManager.allPlayers().forEach(this::updateStatus);
+    }
 
+
+    public void updateStatus(PlayerData player) {//FIXME: When newly logging in, brief award of level even if not complete!
+        if(!PREventFactory.onStatusUpdatePre(player)) {
+            LOGGER.debug(MARKER, "Updating levels for player: {}", player.getName());
             ProgressionLevel level = player.getCurrentLevel();
             LevelProgress progress = player.getCurrentLevelProgress();
 
@@ -183,6 +178,7 @@ public class LevelManager {
                 level.rewardPlayer(player);
                 progress.setRewarded(true);
                 ProgressionLevel nextLevel = this.getNextLevel(level);
+                ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(level.getDisplay(), Component.literal("Level complete!")), player.getServerPlayer());
                 LOGGER.debug(MARKER, "Player {} completed level {}", player.getName(), level.getId());
                 this.updateLevel(player, nextLevel);
             }
@@ -190,15 +186,15 @@ public class LevelManager {
                 if(!progress.isDone() && progress.hasBeenRewarded()) {
                     progress.setRewarded(false);
                 }
-                this.syncLevelsToClient(player);
-                PREventFactory.onLevelStatusUpdate(level, player, progress);
-                questManager.updateStatus(player, true);
+                this.questManager.updateStatus(player);
+                this.syncWithClient(player);
             }
-        });
+        }
+        PREventFactory.onStatusUpdatePost(player);
     }
 
 
-    private void syncLevelsToClient(PlayerData player) {
+    private void syncWithClient(PlayerData player) {
         ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
     }
     // Bsp. 25 level
@@ -242,18 +238,6 @@ public class LevelManager {
     }
 
 
-    /*private void syncLevelsToClient(KnownPlayer player, ProgressionLevel level) {
-        LOGGER.debug(MARKER, "Attempting to sync level status with client...");
-        PlayerData playerData = PlayerDataManager.getPlayerData(player);
-        if(playerData == null) {
-            LOGGER.debug(MARKER, "No client found to sync level status with! Skipping...");
-            return;
-        }
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(playerData), playerData.getServerPlayer());
-        ModNetworkHandler.sendToPlayer(new ClientSyncLevelsPacket(level, this.levelProgress.get(player)), playerData.getServerPlayer());
-    }*/
-
-
     public void revoke(PlayerData player, ProgressionLevel level) {
         if(!PREventFactory.onLevelRevoke(player, level)) {
             this.resetLevelProgress(player, level);
@@ -288,12 +272,16 @@ public class LevelManager {
     private void onSurvivalChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
         playerData.getLevelData().restoreCachedLevel();
+
+        this.updateStatus();
     }
 
 
     private void onCreativeChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
         playerData.getLevelData().updateAndCacheLevel(CREATIVE);
+
+        this.updateStatus();
     }
 
 

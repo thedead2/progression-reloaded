@@ -30,14 +30,14 @@ public class QuestCompleteTrigger extends SimpleTrigger<ProgressionQuest> {
 
 
     @SubscribeEvent
-    public static void onQuestComplete(QuestEvent.AwardQuestEvent event) {
-        fireTrigger(QuestCompleteTrigger.class, event.getPlayer().getPlayer(), event.getQuest());
+    public static void onQuestComplete(QuestEvent.CompletionEvent event) {
+        fireTrigger(QuestCompleteTrigger.class, event.getPlayer().getPlayer(), event.getQuest(), event.getCompletionStatus());
     }
 
 
     @Override
     public boolean trigger(PlayerData player, ProgressionQuest quest, Object... data) {
-        return this.trigger(player, trigger -> this.predicate.matches(quest, data));
+        return this.trigger(player, trigger -> this.predicate.matches(quest, data[0]));
     }
 
 

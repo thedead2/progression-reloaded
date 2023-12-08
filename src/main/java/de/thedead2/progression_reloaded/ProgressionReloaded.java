@@ -41,6 +41,7 @@ import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.server.ServerAboutToStartEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -89,20 +90,8 @@ public class ProgressionReloaded {
 
         ModItems.register(modEventBus);
 
-        if(isDevEnv()) {
-            ModRegistries.register(TestQuests.TEST1);
-            ModRegistries.register(TestQuests.TEST2);
-            ModRegistries.register(TestQuests.TEST3);
-            ModRegistries.register(TestQuests.TEST4);
-            ModRegistries.register(TestQuests.TEST5);
-            ModRegistries.register(TestQuests.TEST6);
-            ModRegistries.register(TestQuests.TEST7);
-            ModRegistries.register(TestQuests.TEST8);
-
-            ModRegistries.register(TestLevels.TEST1);
-            ModRegistries.register(TestLevels.TEST2);
-        }
-
+        TestQuests.register();
+        TestLevels.register();
         ModRegistries.register(LevelManager.CREATIVE);
 
         ModRegistries.register(modEventBus);
@@ -158,10 +147,14 @@ public class ProgressionReloaded {
 
 
     @SubscribeEvent
-    public void onServerStarting(final ServerStartingEvent event) {
+    public void onServerAboutToStart(final ServerAboutToStartEvent event) {
         GAME_STATE = GameState.ABOUT_TO_START;
-        PlayerDataManager.loadData(event.getServer().overworld());
         LevelManager.create();
+    }
+
+    @SubscribeEvent
+    public void onServerStarting(final ServerStartingEvent event) {
+        PlayerDataManager.loadData(event.getServer().overworld());
     }
 
 

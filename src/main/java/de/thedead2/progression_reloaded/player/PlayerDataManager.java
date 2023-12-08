@@ -47,6 +47,7 @@ public class PlayerDataManager {
         PlayerData playerData = PlayerData.loadFromFile(playerDataFile, player);
         PLAYERS.put(playerData.getUUID(), playerData);
         playerData.getTeam().ifPresent(team -> team.addActivePlayer(playerData));
+        playerData.getQuestData().startListening();
     }
 
 
@@ -88,8 +89,10 @@ public class PlayerDataManager {
         if(level == null) {
             return;
         }
+        ProgressionLevel previousLevel = player.getCurrentLevel();
         player.updateProgressionLevel(level);
         player.getTeam().ifPresent(team -> team.updateProgressionLevel(level, player));
+        ModHelper.LOGGER.debug("Level for player {} changed from {} to {}", player.getName(), previousLevel.getId(), level.getId());
     }
 
 
@@ -158,8 +161,9 @@ public class PlayerDataManager {
 
 
     public static void clearPlayerData(UUID playerId) {
-        var player = PLAYERS.remove(playerId);
+        PlayerData player = PLAYERS.get(playerId);
         LevelManager.getInstance().getQuestManager().stopListening(player);
+        PLAYERS.remove(playerId);
         player.getTeam().ifPresent(team -> team.removeActivePlayer(player));
     }
 
@@ -167,6 +171,7 @@ public class PlayerDataManager {
     public static void ensureQuestsSynced(PlayerData player) {
         PlayerQuests playerQuests = player.getQuestData();
         player.getTeam().ifPresent(team -> {
+            ModHelper.LOGGER.debug("Syncing quest progress of player {} with members of team {}", player.getName(), team.getName());
             team.forEachMember(member -> {
                 PlayerData activeMember = getPlayerData(member);
 

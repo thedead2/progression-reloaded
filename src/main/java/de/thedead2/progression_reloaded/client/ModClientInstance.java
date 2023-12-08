@@ -3,6 +3,8 @@ package de.thedead2.progression_reloaded.client;
 import de.thedead2.progression_reloaded.client.gui.GuiFactory;
 import de.thedead2.progression_reloaded.client.gui.fonts.FontManager;
 import de.thedead2.progression_reloaded.data.RestrictionManager;
+import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -97,6 +99,7 @@ public class ModClientInstance {
 
 
     public void setClientData(PlayerData clientData) {
+        ProgressionLevel previousLevel = this.clientData != null ? this.clientData.getCurrentLevel() : null;
         this.clientData = clientData;
         if(setOverlay) {
             this.modRenderer.setLevelProgressOverlay(GuiFactory.createLevelOverlay(this.clientData.getCurrentLevel().getDisplay(), this.clientData.getCurrentLevelProgress()));
@@ -104,6 +107,12 @@ public class ModClientInstance {
         }
 
         this.modRenderer.updateLevelProgressOverlay(this.clientData.getCurrentLevelProgress());
+
+        if(!this.clientData.getCurrentLevel().equals(previousLevel)) {
+            PREventFactory.onLevelChanged(this.clientData.getCurrentLevel(), this.clientData, previousLevel);
+        }
+
+        PREventFactory.onPlayerSynced(this.clientData);
     }
 
 

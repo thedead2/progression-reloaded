@@ -3,15 +3,14 @@ package de.thedead2.progression_reloaded.events;
 import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
 import de.thedead2.progression_reloaded.client.gui.themes.ProgressionTheme;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
-import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 
 import java.util.Map;
@@ -22,18 +21,13 @@ public abstract class PREventFactory {
     private static final IEventBus EVENT_BUS = MinecraftForge.EVENT_BUS;
 
 
-    public static boolean onLevelUpdate(ProgressionLevel level, PlayerData playerData, ProgressionLevel previousLevel) {
-        return EVENT_BUS.post(new LevelEvent.UpdateLevelEvent(level, playerData, previousLevel));
+    public static void onLevelChanged(ProgressionLevel newLevel, PlayerData playerData, ProgressionLevel oldLevel) {
+        EVENT_BUS.post(new LevelEvent.LevelChangedEvent(newLevel, playerData, oldLevel));
     }
 
 
-    public static void onLevelStatusUpdate(ProgressionLevel level, PlayerData playerData, LevelProgress progress) {
-        EVENT_BUS.post(new LevelEvent.UpdateLevelStatusEvent(level, playerData, progress));
-    }
-
-
-    public static void onLevelsSynced(ProgressionLevel level, Map<ProgressionLevel, LevelProgress> progress) {
-        EVENT_BUS.post(new LevelEvent.LevelsSyncedEvent(level, progress));
+    public static void onPlayerSynced(PlayerData player) {
+        EVENT_BUS.post(new UpdateStatusEvent.PlayerSyncedEvent(player));
     }
 
 
@@ -48,22 +42,27 @@ public abstract class PREventFactory {
 
 
     public static boolean onQuestAward(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
-        return EVENT_BUS.post(new QuestEvent.AwardQuestEvent(quest, questProgress, player));
+        return EVENT_BUS.post(new QuestEvent.QuestAwardEvent(quest, questProgress, player));
     }
 
 
-    public static boolean onQuestRevoke(ProgressionQuest quest, QuestProgress questProgress, PlayerData activePlayer) {
-        return EVENT_BUS.post(new QuestEvent.RevokedQuestEvent(quest, questProgress, activePlayer));
+    public static boolean onQuestRevoke(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
+        return EVENT_BUS.post(new QuestEvent.QuestRevokedEvent(quest, questProgress, player));
     }
 
 
-    public static <T> boolean onTriggerFiring(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data) {
-        return EVENT_BUS.post(new QuestEvent.TriggerEvent(trigger, player, toTest, data));
+    public static <T> boolean onTriggerFiring(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data, boolean triggerTestResult) {
+        return EVENT_BUS.post(new UpdateStatusEvent.TriggerEvent(trigger, player, toTest, data, triggerTestResult));
     }
 
 
-    public static void onQuestStatusUpdate(PlayerData player) {
-        EVENT_BUS.post(new QuestEvent.UpdateQuestStatusEvent(player));
+    public static void onQuestStatusChanged(ProgressionQuest quest, QuestStatus oldStatus, QuestStatus newStatus, PlayerData player) {
+        EVENT_BUS.post(new QuestEvent.StatusChangedEvent(quest, player, oldStatus, newStatus));
+    }
+
+
+    public static void onQuestProgressChanged(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
+        EVENT_BUS.post(new QuestEvent.ProgressChangedEvent(quest, player, questProgress));
     }
 
 
@@ -88,8 +87,17 @@ public abstract class PREventFactory {
     }
 
 
-    public static class ProgressionEvent extends Event {
-
+    public static void onQuestComplete(ProgressionQuest quest, QuestStatus completionStatus, PlayerData player) {
+        EVENT_BUS.post(new QuestEvent.CompletionEvent(quest, player, completionStatus));
     }
 
+
+    public static boolean onStatusUpdatePre(PlayerData player) {
+        return EVENT_BUS.post(new UpdateStatusEvent.Pre(player));
+    }
+
+
+    public static void onStatusUpdatePost(PlayerData player) {
+        EVENT_BUS.post(new UpdateStatusEvent.Post(player));
+    }
 }

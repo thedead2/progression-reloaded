@@ -1,10 +1,13 @@
 package de.thedead2.progression_reloaded.data.predicates;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonObject;
+import net.minecraft.resources.ResourceLocation;
 
 
 public class TimePredicate implements ITriggerPredicate<Void> {
+
+    public static final ResourceLocation ID = ITriggerPredicate.createId("time");
 
     private final long ticks;
 
@@ -12,13 +15,21 @@ public class TimePredicate implements ITriggerPredicate<Void> {
 
 
     public TimePredicate(long ticks) {
+        this(ticks, ticks);
+    }
+
+
+    private TimePredicate(long ticks, long ticksLeft) {
         this.ticks = ticks;
-        this.ticksLeft = ticks;
+        this.ticksLeft = ticksLeft;
     }
 
 
     public static TimePredicate fromJson(JsonElement jsonElement) {
-        return new TimePredicate(jsonElement.getAsLong());
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+        long ticks = jsonObject.get("ticks").getAsLong();
+        long ticksLeft = jsonObject.get("ticksLeft").getAsLong();
+        return new TimePredicate(ticks, ticksLeft);
     }
 
 
@@ -36,6 +47,9 @@ public class TimePredicate implements ITriggerPredicate<Void> {
 
     @Override
     public JsonElement toJson() {
-        return new JsonPrimitive(this.ticks);
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("ticks", this.ticks);
+        jsonObject.addProperty("ticksLeft", this.ticksLeft);
+        return jsonObject;
     }
 }

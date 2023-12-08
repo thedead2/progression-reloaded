@@ -1,12 +1,11 @@
 package de.thedead2.progression_reloaded.data;
 
+import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.events.PREventFactory;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
-import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.misc.HashBiSetMultiMap;
@@ -116,27 +115,12 @@ public class QuestManager {
     /**
      * Updates the quests of a player depending on whether the quest has been completed or not.
      */
-    public void updateStatus(PlayerData player, boolean shouldSyncToTeam) {
+    public void updateStatus(PlayerData player) {
         LOGGER.debug(MARKER, "Updating quests for player: {}", player.getName());
 
-        player.getQuestData().updateQuestStatus(this);
+        this.getAllQuestsForLevel(player.getCurrentLevel()).forEach(quest -> player.getQuestData().updateQuestStatus(quest));
 
-
-        if(shouldSyncToTeam) {
-            this.syncQuestProgressToTeam(player);
-        }
-        this.syncQuestsToClient(player);
-        PREventFactory.onQuestStatusUpdate(player);
-    }
-
-
-    private void syncQuestProgressToTeam(PlayerData player) {
         PlayerDataManager.ensureQuestsSynced(player);
-    }
-
-
-    private void syncQuestsToClient(PlayerData player) {
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
     }
 
 
@@ -171,29 +155,19 @@ public class QuestManager {
     }
 
 
-    public boolean award(ResourceLocation quest, PlayerData player) {
-        return award(findQuest(quest), player);
+    public Set<ProgressionQuest> getAllQuestsForLevel(ProgressionLevel level) {
+        Set<ResourceLocation> questIds = Sets.newHashSet(level.getQuests());
+
+        this.checkParents(level, questIds);
+
+        return questIds.stream()
+                       .map(this::findQuest)
+                       .collect(Collectors.toSet());
     }
 
 
-    /**
-     * Awards the given criterion to the given quest and if the quest is done, the quest to the given player
-     **/
-    public boolean award(ProgressionQuest quest, PlayerData player) {
-        boolean flag = false;
-        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-        if(!PREventFactory.onQuestAward(quest, questProgress, player)) {
-            boolean flag1 = questProgress.isDone();
-            questProgress.complete();
-            flag = true;
-            if(!flag1 && questProgress.isDone()) {
-                quest.rewardPlayer(player); //TODO: Instead of directly rewarding the player, add reward to set --> reward on button press
-                ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(quest.getDisplay(), null), player.getServerPlayer());
-            }
-            this.levelManager.updateStatus();
-        }
-
-        return flag;
+    public boolean award(ResourceLocation quest, boolean successful, PlayerData player) {
+        return award(findQuest(quest), successful, player);
     }
 
 
@@ -212,15 +186,20 @@ public class QuestManager {
 
 
     /**
-     * Revokes the given quest for the given player
+     * Awards the given criterion to the given quest and if the quest is done, the quest to the given player
      **/
-    public boolean revoke(ProgressionQuest quest, PlayerData player) {
+    public boolean award(ProgressionQuest quest, boolean successful, PlayerData player) {
         boolean flag = false;
         QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
-        if(!PREventFactory.onQuestRevoke(quest, questProgress, player)) {
-            questProgress.reset();
-            this.levelManager.updateStatus();
+        if(!PREventFactory.onQuestAward(quest, questProgress, player)) {
+            if(successful) {
+                questProgress.complete();
+            }
+            else {
+                questProgress.fail();
+            }
             flag = true;
+            this.levelManager.updateStatus();
         }
 
         return flag;
@@ -241,14 +220,21 @@ public class QuestManager {
     }
 
 
-    public Set<ProgressionQuest> getAllQuestsForLevel(ProgressionLevel level) {
-        Collection<ResourceLocation> questIds = level.getQuests();
+    /**
+     * Revokes the given quest for the given player
+     **/
+    public boolean revoke(ProgressionQuest quest, PlayerData player) {
+        boolean flag = false;
+        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
+        QuestStatus oldStatus = questProgress.getCurrentQuestStatus();
+        if(!PREventFactory.onQuestRevoke(quest, questProgress, player)) {
+            questProgress.reset();
+            player.getQuestData().onQuestStatusChanged(quest, oldStatus, questProgress.getCurrentQuestStatus());
+            this.levelManager.updateStatus();
+            flag = true;
+        }
 
-        this.checkParents(level, questIds);
-
-        return questIds.stream()
-                       .map(this::findQuest)
-                       .collect(Collectors.toSet());
+        return flag;
     }
 
 

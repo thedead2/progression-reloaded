@@ -36,9 +36,8 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
 
 
     public ItemRestrictionJEIPlugin() {
-
         if(!isRunningOnServerThread()) {
-            MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, LevelEvent.LevelsSyncedEvent.class, e -> this.updateHiddenItems());
+            MinecraftForge.EVENT_BUS.addListener(EventPriority.NORMAL, false, LevelEvent.LevelChangedEvent.class, e -> this.updateHiddenItems());
             MinecraftForge.EVENT_BUS.addListener(EventPriority.LOWEST, false, RecipesUpdatedEvent.class, e -> this.updateHiddenItems());
         }
     }

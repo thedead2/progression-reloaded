@@ -806,8 +806,8 @@ public class TextBox extends ScrollableScreenComponent {
     }
 
 
-    public String value() {
-        return this.value.toString();
+    public FormattedCharSeq value() {
+        return this.value;
     }
 
 

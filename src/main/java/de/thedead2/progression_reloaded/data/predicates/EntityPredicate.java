@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
@@ -114,6 +115,11 @@ public class EntityPredicate implements ITriggerPredicate<Entity> {
                 EntityFlagsPredicate.ANY,
                 EntityEquipmentPredicate.ANY
         );
+    }
+
+
+    public static EntityPredicate from(EntityType<?> entityType) {
+        return new EntityPredicate(EntityTypePredicate.from(entityType), DistancePredicate.ANY, LocationPredicate.ANY, LocationPredicate.ANY, EffectsPredicate.ANY, NbtPredicate.ANY, EntityFlagsPredicate.ANY, EntityEquipmentPredicate.ANY);
     }
 
 

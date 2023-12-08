@@ -78,6 +78,6 @@ public class Tooltip extends ScreenComponent {
 
     @Override
     public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
-        narrationElementOutput.add(NarratedElementType.TITLE, this.textBox.value());
+        narrationElementOutput.add(NarratedElementType.TITLE, this.textBox.value().toString());
     }
 }

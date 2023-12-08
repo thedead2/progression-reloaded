@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 
@@ -23,6 +24,11 @@ public class ItemReward implements IReward {
     }
 
 
+    public ItemReward(Item item, int amount) {
+        this(item.getDefaultInstance(), amount);
+    }
+
+
     public static ItemReward fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         ItemStack item = JsonHelper.itemFromJson(jsonObject.get("item").getAsJsonObject());
@@ -33,8 +39,10 @@ public class ItemReward implements IReward {
 
     @Override
     public void rewardPlayer(ServerPlayer player) {
-        this.item.setCount(this.amount);
-        player.getInventory().add(this.item);
+        this.item.setCount(amount);
+        if(!player.addItem(this.item)) {
+            player.drop(this.item, true, false);
+        }
     }
 
 

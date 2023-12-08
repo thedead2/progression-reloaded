@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.data.level;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -136,8 +137,8 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
     }
 
 
-    public Collection<ResourceLocation> getQuests() {
-        return this.quests;
+    public ImmutableSet<ResourceLocation> getQuests() {
+        return ImmutableSet.copyOf(this.quests);
     }
 
 

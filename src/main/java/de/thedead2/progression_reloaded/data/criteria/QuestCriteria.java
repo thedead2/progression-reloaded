@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.QuestPredicate;
 import de.thedead2.progression_reloaded.data.predicates.TimePredicate;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.data.trigger.QuestCompleteTrigger;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.data.trigger.TickTrigger;
@@ -13,6 +14,7 @@ import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,26 +33,29 @@ public class QuestCriteria {
     }
 
 
+    @SuppressWarnings("RedundantCast")
     public static QuestCriteria fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         CriteriaStrategy criteriaStrategy1 = CriteriaStrategy.valueOf(jsonObject.get("strategy").getAsString());
-        Map<String, SimpleTrigger<?>> questCriteria = CollectionHelper.loadFromJson(jsonObject.getAsJsonObject("criteria"), s -> s, SimpleTrigger::fromJson);
+        Map<String, SimpleTrigger<?>> questCriteria = CollectionHelper.loadFromJson(jsonObject.getAsJsonObject("criteria"), s -> s, jsonElement1 -> (SimpleTrigger<?>) SimpleTrigger.fromJson(jsonElement1));
 
         return new QuestCriteria(questCriteria, criteriaStrategy1);
     }
 
 
+    @SuppressWarnings("RedundantCast")
     public static QuestCriteria loadFromNBT(CompoundTag tag) {
         CriteriaStrategy strategy = CriteriaStrategy.valueOf(tag.getString("strategy"));
-        Map<String, SimpleTrigger<?>> criteria = CollectionHelper.loadFromNBT(tag.getCompound("criteria"), s -> s, tag1 -> SimpleTrigger.loadFromNBT((CompoundTag) tag1));
+        Map<String, SimpleTrigger<?>> criteria = CollectionHelper.loadFromNBT(tag.getCompound("criteria"), s -> s, tag1 -> (SimpleTrigger<?>) SimpleTrigger.loadFromNBT((CompoundTag) tag1));
 
         return new QuestCriteria(criteria, strategy);
     }
 
 
+    @SuppressWarnings("RedundantCast")
     public static QuestCriteria fromNetwork(FriendlyByteBuf buf) {
         CriteriaStrategy strategy = buf.readEnum(CriteriaStrategy.class);
-        Map<String, SimpleTrigger<?>> criteria = buf.readMap(FriendlyByteBuf::readUtf, SimpleTrigger::fromNetwork);
+        Map<String, SimpleTrigger<?>> criteria = buf.readMap(FriendlyByteBuf::readUtf, buf1 -> (SimpleTrigger<?>) SimpleTrigger.fromNetwork(buf1));
 
         return new QuestCriteria(criteria, strategy);
     }
@@ -61,8 +66,8 @@ public class QuestCriteria {
     }
 
 
-    public static QuestCriteria requiresParentComplete(String parentId) {
-        return Builder.builder().withParentComplete(parentId).build();
+    public static QuestCriteria requiresParentComplete(String parentId, @Nullable Boolean successful) {
+        return Builder.builder().withParentComplete(parentId, successful).build();
     }
 
 
@@ -116,8 +121,8 @@ public class QuestCriteria {
         }
 
 
-        public Builder withParentComplete(String questId) {
-            return this.withCriterion("parent_complete", new QuestCompleteTrigger(PlayerPredicate.ANY, new QuestPredicate(new ResourceLocation(ModHelper.MOD_ID, questId))));
+        public Builder withParentComplete(String questId, @Nullable Boolean successful) {
+            return this.withCriterion("parent_complete", new QuestCompleteTrigger(PlayerPredicate.ANY, new QuestPredicate(new ResourceLocation(ModHelper.MOD_ID, questId), successful == null ? null : (successful ? QuestStatus.COMPLETE : QuestStatus.FAILED))));
         }
 
 

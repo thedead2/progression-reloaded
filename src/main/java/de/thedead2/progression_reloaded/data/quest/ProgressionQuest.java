@@ -7,7 +7,6 @@ import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,33 +20,28 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
     private final QuestDisplayInfo displayInfo;
 
-    private final Rewards rewards;
-
-    private final QuestActions actions;
+    private final QuestTasks tasks;
 
 
-    public ProgressionQuest(QuestDisplayInfo displayInfo, Rewards rewards, QuestActions actions) {
+    public ProgressionQuest(QuestDisplayInfo displayInfo, QuestTasks tasks) {
         this.displayInfo = displayInfo;
-        this.rewards = rewards;
-        this.actions = actions;
+        this.tasks = tasks;
     }
 
 
     public static ProgressionQuest fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         QuestDisplayInfo displayInfo = QuestDisplayInfo.fromJson(jsonObject.get("display"));
-        QuestActions actionTree = QuestActions.fromJson(jsonObject.getAsJsonObject("actions"));
-        Rewards rewards = Rewards.fromJson(jsonObject.get("rewards"));
+        QuestTasks tasks = QuestTasks.fromJson(jsonObject.getAsJsonObject("tasks"));
 
-        return new ProgressionQuest(displayInfo, rewards, actionTree);
+        return new ProgressionQuest(displayInfo, tasks);
     }
 
 
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("display", this.displayInfo.toJson());
-        jsonObject.add("actions", this.actions.toJson());
-        jsonObject.add("rewards", this.rewards.toJson());
+        jsonObject.add("tasks", this.tasks.toJson());
 
         return jsonObject;
     }
@@ -55,11 +49,6 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
     public boolean isMainQuest() {
         return this.displayInfo.mainQuest();
-    }
-
-
-    public void rewardPlayer(PlayerData player) {
-        this.rewards.reward(player);
     }
 
 
@@ -115,8 +104,8 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
     }
 
 
-    public QuestActions getActions() {
-        return actions;
+    public QuestTasks getTasks() {
+        return tasks;
     }
 
 
@@ -148,25 +137,13 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
     }
 
 
-    public Rewards getRewards() {
-        return this.rewards;
-    }
-
-
     public boolean isDone(PlayerData player) {
         return player.getQuestData().getOrStartProgress(this).isDone();
     }
 
 
     public boolean isActive(PlayerData player) {
-        return player.getQuestData().getActiveQuests().contains(this);
+        return player.getQuestData().getQuestsByStatus(QuestStatus.ACTIVE).contains(this);
     }
 
-
-    public enum Status {
-        NOT_STARTED,
-        ACTIVE,
-        COMPLETE,
-        FAILED
-    }
 }

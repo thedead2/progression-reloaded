@@ -58,7 +58,7 @@ public class PlayerTeam {
         String level = tag.getString("level");
         String name = tag.getString("name");
         String id = tag.getString("id");
-        Set<KnownPlayer> members = CollectionHelper.loadFromNBT(new HashSet<>(), tag.getList("members", 0), tag1 -> KnownPlayer.fromCompoundTag((CompoundTag) tag1));
+        Set<KnownPlayer> members = CollectionHelper.loadFromNBT(Sets::newHashSetWithExpectedSize, tag.getList("members", 0), tag1 -> KnownPlayer.fromCompoundTag((CompoundTag) tag1));
         Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = CollectionHelper.loadFromNBT(tag.getCompound("pendingQuestSyncs"), KnownPlayer::fromString, tag1 -> PlayerQuests.loadFromNBT((CompoundTag) tag1));
 
         return new PlayerTeam(name, new ResourceLocation(id), members, pendingQuestSyncs, ProgressionLevel.fromKey(new ResourceLocation(level)));

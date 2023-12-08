@@ -8,6 +8,7 @@ import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.LogicalSide;
 
 
 public class TickTrigger extends SimpleTrigger<Void> {
@@ -22,7 +23,9 @@ public class TickTrigger extends SimpleTrigger<Void> {
 
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        fireTrigger(TickTrigger.class, event.player, null);
+        if(event.side == LogicalSide.SERVER) {
+            fireTrigger(TickTrigger.class, event.player, null);
+        }
     }
 
 

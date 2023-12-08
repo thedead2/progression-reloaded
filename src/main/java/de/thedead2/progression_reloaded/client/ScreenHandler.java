@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.client;
 
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
@@ -22,6 +23,7 @@ import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -104,7 +106,9 @@ public class ScreenHandler {
                     if(ConfigManager.MAX_EXTRA_LIVES.get() > 0 || ExtraLifeItem.isUnlimited()) {
                         rightSide.add("Extra Lives: " + (ExtraLifeItem.isUnlimited() ? "Unlimited" : clientData.getExtraLives()) + " [max. " + ConfigManager.MAX_EXTRA_LIVES.get() + "]");
                     }
-                    List<ProgressionQuest> activeQuests = CollectionHelper.convertCollection(clientData.getQuestData().getActiveQuests(), quest -> quest);
+                    List<ProgressionQuest> activeQuests = new ArrayList<>();
+                    CollectionHelper.concatenate(activeQuests, clientData.getQuestData().getQuestsByStatus(QuestStatus.ACTIVE), clientData.getQuestData().getQuestsByStatus(QuestStatus.STARTED));
+
                     rightSide.add("Active Quests:" + (activeQuests.isEmpty() ? " None" : ""));
                     activeQuests.forEach(quest -> {
                         if(activeQuests.indexOf(quest) < maxQuests) {
@@ -115,7 +119,9 @@ public class ScreenHandler {
                         rightSide.add("...");
                     }
 
-                    List<ProgressionQuest> completedQuests = CollectionHelper.convertCollection(clientData.getQuestData().getCompletedQuests(), quest -> quest);
+                    List<ProgressionQuest> completedQuests = new ArrayList<>();
+                    CollectionHelper.concatenate(completedQuests, clientData.getQuestData().getQuestsByStatus(QuestStatus.COMPLETE), clientData.getQuestData().getQuestsByStatus(QuestStatus.FAILED));
+
                     rightSide.add("Complete Quests:" + (completedQuests.isEmpty() ? " None" : ""));
                     completedQuests.forEach(quest -> {
                         if(completedQuests.indexOf(quest) < maxQuests) {

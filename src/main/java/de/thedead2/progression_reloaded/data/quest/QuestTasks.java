@@ -11,7 +11,9 @@ import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
 import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
+import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
@@ -28,90 +30,86 @@ import java.util.*;
 import java.util.function.BiConsumer;
 
 
-public class QuestActions {
+public class QuestTasks {
 
-    private final Map<ResourceLocation, ActionNode> actions = Maps.newHashMap();
+    private final Map<ResourceLocation, Task> tasks = Maps.newHashMap();
 
-    private final Map<NodeType, Set<ActionNode>> nodesByType = Maps.newHashMap();
+    private final Map<Task.Type, Set<Task>> tasksByType = Maps.newHashMap();
 
 
-    private QuestActions(Map<ResourceLocation, ActionNode> actions) {
-        this.actions.putAll(actions);
+    private QuestTasks(Map<ResourceLocation, Task> tasks) {
+        this.tasks.putAll(tasks);
 
-        for(var node : this.actions.values()) {
-            NodeType type = node.getType();
-            this.nodesByType.compute(type, (nodeType, actionNodes) -> (actionNodes == null ? new HashSet<>() : actionNodes)).add(node);
+        for(var node : this.tasks.values()) {
+            Task.Type type = node.getType();
+            this.tasksByType.compute(type, (taskType, actionNodes) -> (actionNodes == null ? new HashSet<>() : actionNodes)).add(node);
         }
     }
 
 
-    public static QuestActions loadFromNBT(CompoundTag tag) {
-        Map<ResourceLocation, ActionNode> actions = CollectionHelper.loadFromNBT(Maps::newHashMapWithExpectedSize, tag, ResourceLocation::tryParse, tag1 -> ActionNode.loadFromNBT((CompoundTag) tag1));
+    public static QuestTasks loadFromNBT(CompoundTag tag) {
+        Map<ResourceLocation, Task> actions = CollectionHelper.loadFromNBT(Maps::newHashMapWithExpectedSize, tag, ResourceLocation::tryParse, tag1 -> Task.loadFromNBT((CompoundTag) tag1));
 
-        return new QuestActions(actions);
+        return new QuestTasks(actions);
     }
 
 
-    public static QuestActions fromNetwork(FriendlyByteBuf buf) {
-        Map<ResourceLocation, ActionNode> actions = buf.readMap(Maps::newHashMapWithExpectedSize, FriendlyByteBuf::readResourceLocation, ActionNode::fromNetwork);
+    public static QuestTasks fromNetwork(FriendlyByteBuf buf) {
+        Map<ResourceLocation, Task> actions = buf.readMap(Maps::newHashMapWithExpectedSize, FriendlyByteBuf::readResourceLocation, Task::fromNetwork);
 
-        return new QuestActions(actions);
+        return new QuestTasks(actions);
     }
 
 
-    public static QuestActions fromJson(JsonObject jsonObject) {
-        Map<ResourceLocation, ActionNode> actions = CollectionHelper.loadFromJson(Maps::newHashMapWithExpectedSize, jsonObject, ResourceLocation::tryParse, jsonElement -> ActionNode.fromJson(jsonElement.getAsJsonObject()));
+    public static QuestTasks fromJson(JsonObject jsonObject) {
+        Map<ResourceLocation, Task> actions = CollectionHelper.loadFromJson(Maps::newHashMapWithExpectedSize, jsonObject, ResourceLocation::tryParse, jsonElement -> Task.fromJson(jsonElement.getAsJsonObject()));
 
-        return new QuestActions(actions);
-    }
-
-
-    @NotNull
-    public QuestActions.ActionNode getNodeForId(ResourceLocation id) {
-        return getNodeForId(this.actions, id);
+        return new QuestTasks(actions);
     }
 
 
     @NotNull
-    public static QuestActions.ActionNode getNodeForId(Map<ResourceLocation, ActionNode> nodes, ResourceLocation id) {
-        ActionNode actionNode = nodes.get(id);
-        if(actionNode == null) {
+    public QuestTasks.Task getTaskForId(ResourceLocation id) {
+        return getTaskForId(this.tasks, id);
+    }
+
+
+    @NotNull
+    public static QuestTasks.Task getTaskForId(Map<ResourceLocation, Task> nodes, ResourceLocation id) {
+        Task task = nodes.get(id);
+        if(task == null) {
             throw new IllegalArgumentException("Unknown node for id: " + id);
         }
-        return actionNode;
+        return task;
     }
 
 
-    public ResourceLocation getIdForNode(ActionNode actionNode) {
-        return actionNode.id;
-    }
-
-
-    public ImmutableSet<ActionNode> getNodesByType(NodeType type) {
-        return ImmutableSet.copyOf(this.nodesByType.get(type));
+    public ImmutableSet<Task> getTasksByType(Task.Type type) {
+        Set<Task> nodes = this.tasksByType.get(type);
+        return nodes != null ? ImmutableSet.copyOf(nodes) : ImmutableSet.of();
     }
 
 
     public @NotNull CompoundTag saveToNBT() {
-        return CollectionHelper.saveToNBT(this.actions, Object::toString, ActionNode::saveToNBT);
+        return CollectionHelper.saveToNBT(this.tasks, Object::toString, Task::saveToNBT);
     }
 
 
     public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeMap(this.actions, FriendlyByteBuf::writeResourceLocation, (buf1, actionNode) -> actionNode.toNetwork(buf1));
+        buf.writeMap(this.tasks, FriendlyByteBuf::writeResourceLocation, (buf1, task) -> task.toNetwork(buf1));
     }
 
 
     public JsonElement toJson() {
-        return CollectionHelper.saveToJson(this.actions, Object::toString, ActionNode::toJson);
+        return CollectionHelper.saveToJson(this.tasks, Object::toString, Task::toJson);
     }
 
 
-    public ResourceLocation getLastNodeId(boolean successful) {
-        for(var entry : this.actions.entrySet()) {
-            ActionNode actionNode = entry.getValue();
-            if(actionNode.getType() == NodeType.END_NODE && actionNode.getQuestStatus() == (successful ? ProgressionQuest.Status.COMPLETE : ProgressionQuest.Status.FAILED)) {
-                return entry.getKey();
+    public Task getEndTask(boolean successful) { //TODO: Potential null if no end_task of that type is present
+        for(var entry : this.tasks.entrySet()) {
+            Task task = entry.getValue();
+            if(task.getType() == Task.Type.END_TASK && task.getQuestStatus() == (successful ? QuestStatus.COMPLETE : QuestStatus.FAILED)) {
+                return entry.getValue();
             }
         }
 
@@ -119,21 +117,14 @@ public class QuestActions {
     }
 
 
-    public void forEach(BiConsumer<ResourceLocation, ActionNode> consumer) {
-        this.actions.forEach(consumer);
+    public void forEach(BiConsumer<ResourceLocation, Task> consumer) {
+        this.tasks.forEach(consumer);
     }
 
-
-    public enum NodeType {
-        START_NODE,
-        POSSIBLE_START_NODE,
-        DEFAULT,
-        END_NODE
-    }
 
     public static class Builder {
 
-        private final Map<ResourceLocation, ActionNode> actions = new HashMap<>();
+        private final Map<ResourceLocation, Task> tasks = new HashMap<>();
 
 
         private Builder() {}
@@ -144,69 +135,71 @@ public class QuestActions {
         }
 
 
-        public Builder withStart(String id, QuestCriteria criteria, Component description, String... children) {
-            return this.addNode(ActionNode.newStartNode(ActionNode.createId(id), criteria, description, CollectionHelper.convertCollection(Sets.newHashSet(children), Sets::newHashSetWithExpectedSize, ActionNode::createId)));
+        public Builder withStartTask(String id, QuestCriteria criteria, Rewards rewards, Component description, String... children) {
+            return this.addTask(Task.newStartTask(Task.createId(id), criteria, rewards, description, CollectionHelper.convertCollection(Sets.newHashSet(children), Sets::newHashSetWithExpectedSize, Task::createId)));
         }
 
 
-        private Builder addNode(ActionNode node) {
-            this.actions.put(node.id, node);
+        private Builder addTask(Task task) {
+            this.tasks.put(task.id, task);
 
             return this;
         }
 
 
-        public Builder withEnd(String id, QuestCriteria criteria, Component description, boolean successful) {
-            return this.addNode(ActionNode.newEndNode(ActionNode.createId(id), criteria, description, Sets.newHashSet(), successful));
+        public Builder withEndTask(String id, QuestCriteria criteria, Rewards rewards, Component description, boolean successful) {
+            return this.addTask(Task.newEndTask(Task.createId(id), criteria, rewards, description, Sets.newHashSet(), successful));
         }
 
 
-        public Builder withAction(String id, QuestCriteria criteria, Component description, boolean optional, boolean possibleStartNode, String... children) {
-            return this.addNode(ActionNode.newActionNode(ActionNode.createId(id), criteria, description, Sets.newHashSet(), CollectionHelper.convertCollection(Sets.newHashSet(children), Sets::newHashSetWithExpectedSize, ActionNode::createId), optional, possibleStartNode));
+        public Builder withTask(String id, QuestCriteria criteria, Rewards rewards, Component description, boolean optional, boolean possibleStartNode, String... children) {
+            return this.addTask(Task.newTask(Task.createId(id), criteria, rewards, description, Sets.newHashSet(), CollectionHelper.convertCollection(Sets.newHashSet(children), Sets::newHashSetWithExpectedSize, Task::createId), optional, possibleStartNode));
         }
 
 
-        public QuestActions build() {
-            this.checkNodes();
-            return new QuestActions(this.actions);
+        public QuestTasks build() {
+            this.checkTasks();
+            return new QuestTasks(this.tasks);
         }
 
 
-        private void checkNodes() {
-            boolean startNode = false, endNode = false;
-            for(ActionNode node : this.actions.values()) {
-                NodeType type = node.getType();
-                if(type == NodeType.START_NODE) {
-                    startNode = true;
+        private void checkTasks() {
+            boolean startTask = false, endTask = false;
+            for(Task task : this.tasks.values()) {
+                Task.Type type = task.getType();
+                if(type == Task.Type.START_TASK) {
+                    startTask = true;
                 }
-                else if(type == NodeType.END_NODE) {
-                    endNode = true;
+                else if(type == Task.Type.END_TASK) {
+                    endTask = true;
                 }
 
-                node.getChildren().forEach(id -> {
-                    ActionNode child = this.actions.get(id);
-                    child.addParent(node.id);
+                task.getChildren().forEach(id -> {
+                    Task child = this.tasks.get(id);
+                    child.addParent(task.id);
                 });
             }
 
-            if(!startNode) {
-                throw new IllegalStateException("Missing start node! Each quest needs to have at least one start node!");
+            if(!startTask) {
+                throw new IllegalStateException("Missing start task! Each quest needs to have at least one start task!");
             }
-            if(!endNode) {
-                throw new IllegalStateException("Missing end node! Each quest needs to have at least one end node!");
+            if(!endTask) {
+                throw new IllegalStateException("Missing end task! Each quest needs to have at least one end task!");
             }
         }
     }
 
-    public static class ActionNode {
+    public static class Task {
 
         private final ResourceLocation id;
 
-        private final NodeType nodeType;
+        private final Type taskType;
 
-        private final ProgressionQuest.Status questStatus;
+        private final QuestStatus questStatus;
 
         private final QuestCriteria criteria;
+
+        private final Rewards rewards;
 
         private final Component description;
 
@@ -217,11 +210,12 @@ public class QuestActions {
         private final boolean optional;
 
 
-        private ActionNode(ResourceLocation id, NodeType nodeType, ProgressionQuest.Status questStatus, QuestCriteria criteria, Component description, Set<ResourceLocation> parents, Set<ResourceLocation> children, boolean optional) {
+        private Task(ResourceLocation id, Type taskType, QuestStatus questStatus, QuestCriteria criteria, Rewards rewards, Component description, Set<ResourceLocation> parents, Set<ResourceLocation> children, boolean optional) {
             this.id = id;
-            this.nodeType = nodeType;
+            this.taskType = taskType;
             this.questStatus = questStatus;
             this.criteria = criteria;
+            this.rewards = rewards;
             this.description = description;
             this.parents.addAll(parents);
             this.children.addAll(children);
@@ -229,90 +223,93 @@ public class QuestActions {
         }
 
 
-        public static ActionNode newStartNode(ResourceLocation id, QuestCriteria criteria, Component description, Set<ResourceLocation> children) {
-            return new ActionNode(id, NodeType.START_NODE, ProgressionQuest.Status.NOT_STARTED, criteria, description, Sets.newHashSet(), children, false);
+        public static Task newStartTask(ResourceLocation id, QuestCriteria criteria, Rewards reward, Component description, Set<ResourceLocation> children) {
+            return new Task(id, Type.START_TASK, QuestStatus.STARTED, criteria, reward, description, Sets.newHashSet(), children, false);
         }
 
 
-        public static ActionNode newEndNode(ResourceLocation id, QuestCriteria criteria, Component description, Set<ResourceLocation> parents, boolean successful) {
-            return new ActionNode(id, NodeType.END_NODE, successful ? ProgressionQuest.Status.COMPLETE : ProgressionQuest.Status.FAILED, criteria, description, parents, Sets.newHashSet(), false);
+        public static Task newEndTask(ResourceLocation id, QuestCriteria criteria, Rewards reward, Component description, Set<ResourceLocation> parents, boolean successful) {
+            return new Task(id, Type.END_TASK, successful ? QuestStatus.COMPLETE : QuestStatus.FAILED, criteria, reward, description, parents, Sets.newHashSet(), false);
         }
 
 
-        public static ActionNode newActionNode(ResourceLocation id, QuestCriteria criteria, Component description, Set<ResourceLocation> parents, Set<ResourceLocation> children, boolean optional, boolean possibleStartNode) {
-            return new ActionNode(id, possibleStartNode ? NodeType.POSSIBLE_START_NODE : NodeType.DEFAULT, ProgressionQuest.Status.ACTIVE, criteria, description, parents, children, optional);
+        public static Task newTask(ResourceLocation id, QuestCriteria criteria, Rewards reward, Component description, Set<ResourceLocation> parents, Set<ResourceLocation> children, boolean optional, boolean possibleStartNode) {
+            return new Task(id, possibleStartNode ? Type.POSSIBLE_START_TASK : Type.DEFAULT, QuestStatus.ACTIVE, criteria, reward, description, parents, children, optional);
         }
 
 
         public static ResourceLocation createId(String id) {
-            return new ResourceLocation(ModHelper.MOD_ID, id + "_node");
+            return new ResourceLocation(ModHelper.MOD_ID, id + "_task");
         }
 
 
-        public static ActionNode fromNetwork(FriendlyByteBuf buf) {
+        public static Task fromNetwork(FriendlyByteBuf buf) {
             ResourceLocation id = buf.readResourceLocation();
-            NodeType nodeType = buf.readEnum(NodeType.class);
-            ProgressionQuest.Status questStatus = buf.readEnum(ProgressionQuest.Status.class);
+            Type taskType = buf.readEnum(Type.class);
+            QuestStatus questStatus = buf.readEnum(QuestStatus.class);
             QuestCriteria criteria = QuestCriteria.fromNetwork(buf);
+            Rewards rewards = Rewards.fromNetwork(buf);
             Component description = buf.readComponent();
             Set<ResourceLocation> children = buf.readNullable(buf1 -> buf1.readCollection(HashSet::new, FriendlyByteBuf::readResourceLocation));
             Set<ResourceLocation> parents = buf.readNullable(buf1 -> buf1.readCollection(HashSet::new, FriendlyByteBuf::readResourceLocation));
             boolean optional = buf.readBoolean();
 
-            return new ActionNode(id, nodeType, questStatus, criteria, description, parents, children, optional);
+            return new Task(id, taskType, questStatus, criteria, rewards, description, parents, children, optional);
         }
 
 
-        public static ActionNode fromJson(JsonObject jsonObject) {
+        public static Task fromJson(JsonObject jsonObject) {
             ResourceLocation id = new ResourceLocation(jsonObject.get("id").getAsString());
-            NodeType nodeType = NodeType.valueOf(jsonObject.get("type").getAsString());
-            ProgressionQuest.Status questStatus = ProgressionQuest.Status.valueOf(jsonObject.get("status").getAsString());
+            Type taskType = Type.valueOf(jsonObject.get("type").getAsString());
+            QuestStatus questStatus = QuestStatus.valueOf(jsonObject.get("status").getAsString());
             QuestCriteria criteria = QuestCriteria.fromJson(jsonObject.get("criteria"));
+            Rewards rewards = Rewards.fromJson(jsonObject.get("rewards"));
             Component description = Component.Serializer.fromJson(jsonObject.get("description"));
             Set<ResourceLocation> children = SerializationHelper.getNullable(jsonObject, "children", jsonElement -> CollectionHelper.loadFromJson(HashSet::new, jsonElement.getAsJsonArray(), jsonElement1 -> new ResourceLocation(jsonElement1.getAsString())));
             Set<ResourceLocation> parents = SerializationHelper.getNullable(jsonObject, "parents", jsonElement -> CollectionHelper.loadFromJson(HashSet::new, jsonElement.getAsJsonArray(), jsonElement1 -> new ResourceLocation(jsonElement1.getAsString())));
             boolean optional = jsonObject.get("optional").getAsBoolean();
 
-            return new ActionNode(id, nodeType, questStatus, criteria, description, parents, children, optional);
+            return new Task(id, taskType, questStatus, criteria, rewards, description, parents, children, optional);
         }
 
 
-        public static ActionNode loadFromNBT(CompoundTag tag) {
+        public static Task loadFromNBT(CompoundTag tag) {
             ResourceLocation id = new ResourceLocation(tag.getString("id"));
-            NodeType nodeType = NodeType.valueOf(tag.getString("type"));
-            ProgressionQuest.Status questStatus = ProgressionQuest.Status.valueOf(tag.getString("status"));
+            Type taskType = Type.valueOf(tag.getString("type"));
+            QuestStatus questStatus = QuestStatus.valueOf(tag.getString("status"));
             QuestCriteria criteria = QuestCriteria.loadFromNBT(tag.getCompound("criteria"));
+            Rewards rewards = Rewards.loadFromNBT(tag.getCompound("rewards"));
             Component description = Component.Serializer.fromJson(tag.getString("description"));
             Set<ResourceLocation> children = SerializationHelper.getNullable(tag, "children", tag1 -> CollectionHelper.loadFromNBT(HashSet::new, (ListTag) tag1, tag2 -> ResourceLocation.tryParse(tag2.getAsString())));
             Set<ResourceLocation> parents = SerializationHelper.getNullable(tag, "parents", tag1 -> CollectionHelper.loadFromNBT(HashSet::new, (ListTag) tag1, tag2 -> ResourceLocation.tryParse(tag2.getAsString())));
             boolean optional = tag.getBoolean("optional");
 
-            return new ActionNode(id, nodeType, questStatus, criteria, description, parents, children, optional);
+            return new Task(id, taskType, questStatus, criteria, rewards, description, parents, children, optional);
         }
 
 
-        public void addChild(ActionNode actionNode) {
-            if(this.nodeType == NodeType.END_NODE) {
+        public void addChild(Task task) {
+            if(this.taskType == Type.END_TASK) {
                 throw new IllegalStateException("A end action can't have any children!");
             }
 
 
-            this.children.add(actionNode.id);
-            actionNode.addParent(this);
+            this.children.add(task.id);
+            task.addParent(this);
         }
 
 
-        public void addParent(ActionNode actionNode) {
-            if(this.nodeType == NodeType.START_NODE) {
+        public void addParent(Task task) {
+            if(this.taskType == Type.START_TASK) {
                 throw new IllegalStateException("A starting action can't have any parents!");
             }
 
-            this.parents.add(actionNode.id);
+            this.parents.add(task.id);
         }
 
 
         public void addChild(ResourceLocation nodeId) {
-            if(this.nodeType == NodeType.END_NODE) {
+            if(this.taskType == Type.END_TASK) {
                 throw new IllegalStateException("An end action can't have any children!");
             }
 
@@ -321,7 +318,7 @@ public class QuestActions {
 
 
         public void addParent(ResourceLocation nodeId) {
-            if(this.nodeType == NodeType.START_NODE) {
+            if(this.taskType == Type.START_TASK) {
                 throw new IllegalStateException("A starting action can't have any parents!");
             }
 
@@ -357,9 +354,10 @@ public class QuestActions {
         public CompoundTag saveToNBT() {
             CompoundTag tag = new CompoundTag();
             tag.putString("id", this.id.toString());
-            tag.putString("type", this.nodeType.name());
+            tag.putString("type", this.taskType.name());
             tag.putString("status", this.questStatus.name());
             tag.put("criteria", this.criteria.saveToNBT());
+            tag.put("rewards", this.rewards.saveToNBT());
             tag.putString("description", Component.Serializer.toJsonTree(this.description).toString());
             SerializationHelper.addNullable(this.children, tag, "children", children -> CollectionHelper.saveToNBT(children, id -> StringTag.valueOf(id.toString())));
             SerializationHelper.addNullable(this.parents, tag, "parents", parents -> CollectionHelper.saveToNBT(parents, id -> StringTag.valueOf(id.toString())));
@@ -371,9 +369,10 @@ public class QuestActions {
 
         public void toNetwork(FriendlyByteBuf buf) {
             buf.writeResourceLocation(this.id);
-            buf.writeEnum(this.nodeType);
+            buf.writeEnum(this.taskType);
             buf.writeEnum(this.questStatus);
             this.criteria.toNetwork(buf);
+            this.rewards.toNetwork(buf);
             buf.writeComponent(this.description);
             buf.writeNullable(this.children, (buf1, children) -> buf1.writeCollection(children, (FriendlyByteBuf::writeResourceLocation)));
             buf.writeNullable(this.parents, (buf1, parents) -> buf1.writeCollection(parents, (FriendlyByteBuf::writeResourceLocation)));
@@ -385,9 +384,10 @@ public class QuestActions {
             JsonObject jsonObject = new JsonObject();
 
             jsonObject.addProperty("id", this.id.toString());
-            jsonObject.addProperty("type", this.nodeType.name());
+            jsonObject.addProperty("type", this.taskType.name());
             jsonObject.addProperty("status", this.questStatus.name());
             jsonObject.add("criteria", this.criteria.toJson());
+            jsonObject.add("rewards", this.rewards.toJson());
             jsonObject.add("description", Component.Serializer.toJsonTree(this.description));
             SerializationHelper.addNullable(this.children, jsonObject, "children", children -> CollectionHelper.saveToJson(children, id -> new JsonPrimitive(id.toString())));
             SerializationHelper.addNullable(this.parents, jsonObject, "parents", parents -> CollectionHelper.saveToJson(parents, id -> new JsonPrimitive(id.toString())));
@@ -407,8 +407,13 @@ public class QuestActions {
         }
 
 
-        public NodeType getType() {
-            return this.nodeType;
+        public Type getType() {
+            return this.taskType;
+        }
+
+
+        public Rewards getRewards() {
+            return rewards;
         }
 
 
@@ -417,7 +422,7 @@ public class QuestActions {
         }
 
 
-        public ProgressionQuest.Status getQuestStatus() {
+        public QuestStatus getQuestStatus() {
             return this.questStatus;
         }
 
@@ -425,47 +430,60 @@ public class QuestActions {
         public ResourceLocation getId() {
             return this.id;
         }
+
+
+        public void rewardPlayer(PlayerData player) {
+            this.rewards.reward(player);
+        }
+
+
+        public enum Type {
+            START_TASK,
+            POSSIBLE_START_TASK,
+            DEFAULT,
+            END_TASK
+        }
     }
 
-    public static class NodeProgress implements Comparable<NodeProgress> {
+    public static class TaskProgress implements Comparable<TaskProgress> {
 
         private final Map<String, CriterionProgress> criteria;
 
         private final CriteriaStrategy criteriaStrategy;
 
 
-        public NodeProgress(ActionNode actionNode) {
-            this(Maps.newHashMap(), actionNode.getCriteriaStrategy());
+        public TaskProgress(Task task) {
+            this(Maps.newHashMap(), task.getCriteriaStrategy());
         }
 
 
-        private NodeProgress(Map<String, CriterionProgress> criteria, CriteriaStrategy strategy) {
+        private TaskProgress(Map<String, CriterionProgress> criteria, CriteriaStrategy strategy) {
             this.criteria = criteria;
             this.criteriaStrategy = strategy;
         }
 
 
-        public static NodeProgress loadFromNBT(CompoundTag tag) {
+        public static TaskProgress loadFromNBT(CompoundTag tag) {
             Map<String, CriterionProgress> criteria = CollectionHelper.loadFromNBT(tag.getCompound("criteria"), s -> s, tag1 -> CriterionProgress.loadFromNBT((CompoundTag) tag1));
             CriteriaStrategy strategy = CriteriaStrategy.valueOf(tag.getString("strategy"));
 
-            return new NodeProgress(criteria, strategy);
+            return new TaskProgress(criteria, strategy);
         }
 
 
-        public static NodeProgress fromNetwork(FriendlyByteBuf buf) {
+        public static TaskProgress fromNetwork(FriendlyByteBuf buf) {
             Map<String, CriterionProgress> map = buf.readMap(FriendlyByteBuf::readUtf, CriterionProgress::fromNetwork);
             CriteriaStrategy strategy = buf.readEnum(CriteriaStrategy.class);
-            return new NodeProgress(map, strategy);
+            return new TaskProgress(map, strategy);
         }
 
 
-        public static NodeProgress fromJson(JsonElement jsonElement) {
+        public static TaskProgress fromJson(JsonElement jsonElement) {
             JsonObject jsonObject = jsonElement.getAsJsonObject();
             Map<String, CriterionProgress> criteria = CollectionHelper.loadFromJson(jsonObject.getAsJsonObject("criteria"), s -> s, CriterionProgress::fromJson);
             CriteriaStrategy strategy = CriteriaStrategy.valueOf(jsonObject.get("strategy").getAsString());
 
-            return new NodeProgress(criteria, strategy);
+            return new TaskProgress(criteria, strategy);
         }
 
 
@@ -485,8 +503,8 @@ public class QuestActions {
         }
 
 
-        public void updateProgress(ActionNode actionNode) {
-            Set<String> set = actionNode.getCriteria().keySet();
+        public void updateProgress(Task task) {
+            Set<String> set = task.getCriteria().keySet();
             this.criteria.entrySet().removeIf((entry) -> !set.contains(entry.getKey()));
 
             for(String s : set) {
@@ -502,9 +520,9 @@ public class QuestActions {
                 return 0.0F;
             }
             else {
-                float f = (float) this.criteria.size();
-                float f1 = (float) this.countCompletedCriteria();
-                return f1 / f;
+                int f = this.criteria.size();
+                int f1 = this.countCompletedCriteria();
+                return (float) f1 / f;
             }
         }
 
@@ -555,9 +573,9 @@ public class QuestActions {
         }
 
 
-        public int compareTo(NodeProgress nodeProgress) {
+        public int compareTo(TaskProgress taskProgress) {
             Date date = this.getFirstProgressDate();
-            Date date1 = nodeProgress.getFirstProgressDate();
+            Date date1 = taskProgress.getFirstProgressDate();
             if(date == null && date1 != null) {
                 return 1;
             }

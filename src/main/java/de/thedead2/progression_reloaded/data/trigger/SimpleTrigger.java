@@ -11,13 +11,15 @@ import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
-import de.thedead2.progression_reloaded.data.quest.QuestActions;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
+import de.thedead2.progression_reloaded.data.quest.QuestTasks;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -27,7 +29,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 
@@ -76,33 +80,37 @@ public abstract class SimpleTrigger<T> {
 
             PlayerQuests playerQuests = playerData.getQuestData();
 
-            playerQuests.getQuestsByStatus(ProgressionQuest.Status.NOT_STARTED).forEach(quest -> {
+            playerQuests.getQuestsByStatus(QuestStatus.NOT_STARTED).forEach(quest -> {
                 QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
-                QuestActions.ActionNode actionNode = questProgress.getNodeAtCurrentPos();
+                Set<QuestTasks.Task> tasks = questProgress.getPotentialStartingTasks();
 
-                checkTriggers(actionNode, triggerClass, playerData, toTest, addArgs); //TODO: Check also potential starting nodes!
+                tasks.forEach(task -> checkTriggers(task, triggerClass, playerData, toTest, addArgs));
             });
 
-            playerQuests.getActiveQuests().forEach(quest -> {
+            Set<ProgressionQuest> activeQuests = new HashSet<>();
+            CollectionHelper.concatenate(activeQuests, playerQuests.getQuestsByStatus(QuestStatus.ACTIVE), playerQuests.getQuestsByStatus(QuestStatus.STARTED));
+
+            activeQuests.forEach(quest -> {
                 QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
 
-                questProgress.getChildrenForCurrentNode().forEach(actionNode -> checkTriggers(actionNode, triggerClass, playerData, toTest, addArgs));
+                questProgress.getChildrenForCurrentTask().forEach(task -> checkTriggers(task, triggerClass, playerData, toTest, addArgs));
             });
         }
     }
 
 
     @SuppressWarnings("unchecked")
-    private static <T> void checkTriggers(QuestActions.ActionNode actionNode, Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
-        actionNode.getCriteria()
-                  .values()
-                  .stream()
-                  .filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass))
-                  .forEach(trigger -> {
-                      if(!PREventFactory.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data) && ((SimpleTrigger<T>) trigger).trigger(player, toTest, data)) {
-                          LevelManager.getInstance().getQuestManager().updateStatus(player, true);
-                      }
-                  });
+    private static <T> void checkTriggers(QuestTasks.Task task, Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
+        task.getCriteria()
+            .values()
+            .stream()
+            .filter(simpleTrigger -> simpleTrigger.getClass().equals(triggerClass))
+            .forEach(trigger -> {
+                boolean triggerTestResult = ((SimpleTrigger<T>) trigger).trigger(player, toTest, data);
+                if(!PREventFactory.onTriggerFiring((SimpleTrigger<T>) trigger, player, toTest, data, triggerTestResult) && triggerTestResult) {
+                    LevelManager.getInstance().updateStatus(player);
+                }
+            });
     }
 
 
@@ -190,31 +198,31 @@ public abstract class SimpleTrigger<T> {
 
         private final ProgressionQuest quest;
 
-        private final QuestActions.ActionNode actionNode;
+        private final QuestTasks.Task task;
 
         private final String criterion;
 
 
-        public Listener(ProgressionQuest quest, QuestActions.ActionNode actionNode, String criterionName) {
+        public Listener(ProgressionQuest quest, QuestTasks.Task task, String criterionName) {
             this.quest = quest;
-            this.actionNode = actionNode;
+            this.task = task;
             this.criterion = criterionName;
         }
 
 
         public boolean onComplete(PlayerData player) {
-            return player.getQuestData().getOrStartProgress(this.quest).award(this.actionNode, this.criterion, player);
+            return player.getQuestData().getOrStartProgress(this.quest).award(this.task, this.criterion, player);
         }
 
 
-        public QuestActions.ActionNode getNode() {
-            return actionNode;
+        public QuestTasks.Task getTask() {
+            return task;
         }
 
 
         @Override
         public int hashCode() {
-            return Objects.hashCode(actionNode, criterion);
+            return Objects.hashCode(task, criterion);
         }
 
 
@@ -227,7 +235,7 @@ public abstract class SimpleTrigger<T> {
                 return false;
             }
             Listener listener = (Listener) o;
-            return Objects.equal(actionNode, listener.actionNode) && Objects.equal(criterion, listener.criterion);
+            return Objects.equal(task, listener.task) && Objects.equal(criterion, listener.criterion);
         }
     }
 }

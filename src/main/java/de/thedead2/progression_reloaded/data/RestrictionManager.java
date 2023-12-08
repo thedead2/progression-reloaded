@@ -4,14 +4,12 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.api.IRestrictionType;
-import de.thedead2.progression_reloaded.data.level.TestLevels;
 import de.thedead2.progression_reloaded.data.restrictions.*;
 import de.thedead2.progression_reloaded.network.ModNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncRestrictionsPacket;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,8 +21,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.TickEvent;
@@ -41,6 +37,8 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -55,15 +53,16 @@ import static de.thedead2.progression_reloaded.data.restrictions.RestrictionType
 
 public class RestrictionManager {
 
+    private static final Marker MARKER = new MarkerManager.Log4jMarker("RestrictionManager");
     public static final BiMap<ResourceLocation, IRestrictionType<?>> RESTRICTION_TYPES = HashBiMap.create();
 
     private final Map<IRestrictionType<?>, Map<RestrictionKey<?>, Restriction<?>>> restrictions = Maps.newHashMap();
 
 
     public RestrictionManager() {
-        this.addRestriction(DIMENSION, Level.NETHER, new DimensionRestriction(TestLevels.TEST2.getId(), Component.literal("You are not allowed to enter the nether yet!")));
-        this.addRestriction(ENTITY, EntityType.SKELETON, new EntityRestriction(TestLevels.TEST2.getId(), null, false, 256, false, null));
-        this.addRestriction(ITEM, Items.DIAMOND, new ItemRestriction(TestLevels.TEST2.getId()));
+        //this.addRestriction(DIMENSION, Level.NETHER, new DimensionRestriction(TestLevels.TEST2.getId(), Component.literal("You are not allowed to enter the nether yet!")));
+        //this.addRestriction(ENTITY, EntityType.SKELETON, new EntityRestriction(TestLevels.TEST2.getId(), null, false, 256, false, null));
+        //this.addRestriction(ITEM, Items.DIAMOND, new ItemRestriction(TestLevels.TEST2.getId()));
     }
 
 
@@ -310,7 +309,7 @@ public class RestrictionManager {
                 Player player = pair.getLeft();
                 if(entity.distanceTo(player) <= restriction.getDistanceToPlayer() && meetsRequirements(entity, player, restriction)) {
                     event.setResult(Event.Result.DENY);
-                    ModHelper.LOGGER.debug("Hindered entity {} to spawn at setPoint {}, {}, {} as it is restricted for player {} in dimension {}", entity.getType(), event.getX(), event.getY(), event.getZ(), player.getDisplayName()
+                    ModHelper.LOGGER.debug(MARKER, "Hindered entity {} to spawn at setPoint {}, {}, {} as it is restricted for player {} in dimension {}", entity.getType(), event.getX(), event.getY(), event.getZ(), player.getDisplayName()
                                                                                                                                                                                                                      .getString(), entity.level.dimension()
                                                                                                                                                                                                                                                .location());
                     if(restriction.getEntityReplacement() != null) {

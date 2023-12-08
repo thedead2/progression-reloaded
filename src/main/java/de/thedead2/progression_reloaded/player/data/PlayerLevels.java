@@ -4,6 +4,7 @@ import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
@@ -97,21 +98,23 @@ public class PlayerLevels {
 
     public void updateAndCacheLevel(ProgressionLevel level) {
         this.cachedLevel = this.currentLevel;
-        this.currentLevel = level;
+        this.updateLevel(level);
     }
 
 
     public void updateLevel(ProgressionLevel level) {
+        ProgressionLevel previousLevel = this.currentLevel;
         this.currentLevel = level;
+        PREventFactory.onLevelChanged(this.currentLevel, this.playerData.get(), previousLevel);
     }
 
 
     public void restoreCachedLevel() {
         if(this.cachedLevel != null) {
-            this.currentLevel = this.cachedLevel;
+            this.updateLevel(this.cachedLevel);
         }
         else {
-            this.currentLevel = ModRegistries.LEVELS.get().getValue(new ResourceLocation(ConfigManager.DEFAULT_STARTING_LEVEL.get()));
+            this.updateLevel(ModRegistries.LEVELS.get().getValue(new ResourceLocation(ConfigManager.DEFAULT_STARTING_LEVEL.get())));
         }
     }
 

@@ -1,26 +1,23 @@
 package de.thedead2.progression_reloaded.data.quest;
 
-import de.thedead2.progression_reloaded.data.criteria.CriteriaStrategy;
+import com.google.common.collect.Sets;
 import de.thedead2.progression_reloaded.data.criteria.QuestCriteria;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.predicates.*;
-import de.thedead2.progression_reloaded.data.rewards.*;
+import de.thedead2.progression_reloaded.data.rewards.ExtraLifeReward;
+import de.thedead2.progression_reloaded.data.rewards.ItemReward;
+import de.thedead2.progression_reloaded.data.rewards.Rewards;
+import de.thedead2.progression_reloaded.data.trigger.BreakBlockTrigger;
+import de.thedead2.progression_reloaded.data.trigger.ItemPickupTrigger;
 import de.thedead2.progression_reloaded.data.trigger.KillTrigger;
-import de.thedead2.progression_reloaded.data.trigger.PlacedBlockTrigger;
-import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
-import de.thedead2.progression_reloaded.data.trigger.SleepTrigger;
-import de.thedead2.progression_reloaded.util.helper.MathHelper;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.Collections;
+import static de.thedead2.progression_reloaded.util.ModHelper.isDevEnv;
 
 
 public class TestQuests {
@@ -33,66 +30,24 @@ public class TestQuests {
                                     .withIcon(Items.ANVIL)
                                     .isMainQuest()
                                     .build(),
-            Rewards.Builder.builder()
-                           .withReward(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50))
-                           .build(),
-            QuestActions.Builder.builder()
-                                .withStart("test1_start", QuestCriteria.empty(), Component.empty(), "test1_end")
-                                .withEnd("test1_end", QuestCriteria.Builder.builder()
-                                                                           .withCriterion(
-                                                                                   "testKill",
-                                                                                   new KillTrigger(
-                                                                                           PlayerPredicate.ANY,
-                                                                                           new EntityPredicate(
-                                                                                                   EntityTypePredicate.from(EntityType.COW),
-                                                                                                   DistancePredicate.ANY,
-                                                                                                   LocationPredicate.ANY,
-                                                                                                   LocationPredicate.ANY,
-                                                                                                   EffectsPredicate.ANY,
-                                                                                                   NbtPredicate.ANY,
-                                                                                                   new EntityFlagsPredicate(false, null, null, null, true),
-                                                                                                   EntityEquipmentPredicate.ANY
-                                                                                           )
-                                                                                   )
-                                                                           )
-                                                                           .withCriterion(
-                                                                                   "testKill2",
-                                                                                   new KillTrigger(
-                                                                                           PlayerPredicate.ANY,
-                                                                                           new EntityPredicate(
-                                                                                                   EntityTypePredicate.from(EntityType.SPIDER),
-                                                                                                   DistancePredicate.ANY,
-                                                                                                   LocationPredicate.ANY,
-                                                                                                   LocationPredicate.ANY,
-                                                                                                   EffectsPredicate.ANY,
-                                                                                                   NbtPredicate.ANY,
-                                                                                                   EntityFlagsPredicate.ANY,
-                                                                                                   EntityEquipmentPredicate.ANY
-                                                                                           )
-                                                                                   )
-                                                                           )
-                                                                           .withCriterion(
-                                                                                   "testSleep",
-                                                                                   new SleepTrigger(
-                                                                                           PlayerPredicate.ANY,
-                                                                                           new LocationPredicate(
-                                                                                                   MinMax.Doubles.ANY,
-                                                                                                   MinMax.Doubles.ANY,
-                                                                                                   MinMax.Doubles.ANY,
-                                                                                                   Biomes.DESERT,
-                                                                                                   null,
-                                                                                                   null,
-                                                                                                   BlockPredicate.ANY,
-                                                                                                   FluidPredicate.ANY
-                                                                                           )
-                                                                                   )
-                                                                           )
-                                                                           .build(),
-                                         Component.empty(),
-                                         true
+            QuestTasks.Builder.builder()
+                              .withStartTask("test1_start", QuestCriteria.Builder.builder().withCriterion("killACreeper", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.CREEPER))).build(), Rewards.empty(), Component.empty(), "test1_a", "test1_b")
+                              .withTask("test1_a", QuestCriteria.Builder.builder().withCriterion("killAHorse", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.HORSE))).build(), Rewards.empty(), Component.literal("Kill a horse!"), false, false, "test1_c")
+                              .withTask("test1_b", QuestCriteria.Builder.builder().withCriterion("killACow", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.COW))).build(), Rewards.empty(), Component.literal("Kill a cow!"), false, false, "test1_end")
+                              .withTask("test1_c", QuestCriteria.Builder.builder().withCriterion("killASpider", new KillTrigger(PlayerPredicate.ANY, EntityPredicate.from(EntityType.SPIDER))).build(), Rewards.empty(), Component.literal("Kill a spider!"), false, true, "test1_end_failed")
+                              .withEndTask("test1_end", QuestCriteria.Builder.builder().withCriterion("findDiamond", new ItemPickupTrigger(PlayerPredicate.ANY, new ItemPredicate(Items.DIAMOND, MinMax.Ints.ANY, MinMax.Ints.ANY, Sets.newHashSet(), Sets.newHashSet(), NbtPredicate.ANY, null))).build(),
+                                           Rewards.Builder.builder().withReward(new ItemReward(Items.DIAMOND.getDefaultInstance(), 50)).build(),
+                                           Component.literal("Find a diamond!"),
+                                           true
                                 )
-                                .build()
-
+                              .withEndTask("test1_end_failed", QuestCriteria.Builder.builder()
+                                                                                    .withCriterion("findStick", new ItemPickupTrigger(PlayerPredicate.ANY, new ItemPredicate(Items.STICK, MinMax.Ints.ANY, MinMax.Ints.ANY, Sets.newHashSet(), Sets.newHashSet(), NbtPredicate.ANY, null)))
+                                                                                    .build(),
+                                           Rewards.Builder.builder().withReward(new ItemReward(Items.STICK.getDefaultInstance(), 50)).build(),
+                                           Component.literal("Find a stick!"),
+                                           false
+                              )
+                              .build()
     );
 
     public static final ProgressionQuest TEST2 = new ProgressionQuest(
@@ -101,15 +56,15 @@ public class TestQuests {
                                     .withName("Test Quest 2")
                                     .withDescription("This is a test quest2!")
                                     .build(),
-            Rewards.Builder.builder()
-                           .withReward(new SpawnEntityReward(EntityType.COMMAND_BLOCK_MINECART))
-                           .withReward(new ItemReward(Items.ACACIA_BUTTON.getDefaultInstance(), 34))
-                           .withReward(new ExtraLifeReward())
-                           .withReward(new WorldBorderReward(25, MathHelper.secondsToMillis(30)))
-                           .build(),
-            QuestActions.Builder.builder()
-                                .withStart("test2_start", QuestCriteria.empty(), Component.empty(), "test2_end")
-                                .withEnd("test2_end", QuestCriteria.Builder.builder()
+            QuestTasks.Builder.builder()
+                              .withStartTask("test2_start", QuestCriteria.requiresParentComplete("quest_test", null), Rewards.Builder.builder().withReward(new ItemReward(Items.STICK, 1)).build(), Component.empty(), "test2_a")
+                              .withTask("test2_a", QuestCriteria.Builder.builder()
+                                                                        .withCriterion("findAnvil", new ItemPickupTrigger(PlayerPredicate.ANY, new ItemPredicate(Items.ANVIL, MinMax.Ints.ANY, MinMax.Ints.ANY, Sets.newHashSet(), Sets.newHashSet(), NbtPredicate.ANY, null)))
+                                                                        .build(), Rewards.empty(), Component.literal("Find an anvil!"), false, false, "test2_b")
+                              .withTask("test2_b", QuestCriteria.Builder.builder()
+                                                                        .withCriterion("breakTheAnvil", new BreakBlockTrigger(PlayerPredicate.ANY, new BlockPredicate(null, Blocks.ANVIL, (StatePropertiesPredicate<BlockState>) StatePropertiesPredicate.ANY, NbtPredicate.ANY)))
+                                                                        .build(), Rewards.empty(), Component.literal("Break the anvil!"), false, false, "test2_end")
+                              .withEndTask("test2_end", QuestCriteria.Builder.builder()
                                                                            .withCriterion(
                                                                                    "testKill2",
                                                                                    new KillTrigger(
@@ -126,14 +81,16 @@ public class TestQuests {
                                                                                            )
                                                                                    )
                                                                            )
-                                                                           .withStrategy(CriteriaStrategy.OR)
                                                                            .build(),
-                                         Component.empty(),
+                                           Rewards.Builder.builder().withReward(new ExtraLifeReward()).build(),
+                                           Component.literal("Kill a horse!"),
                                          true
                                 )
                                 .build()
 
     );
+
+    /*
 
     public static final ProgressionQuest TEST3 = new ProgressionQuest(
             QuestDisplayInfo.Builder.builder()
@@ -358,5 +315,19 @@ public class TestQuests {
                                 .build()
 
 
-    );
+    );*/
+
+
+    public static void register() {
+        if(isDevEnv()) {
+            ModRegistries.register(TestQuests.TEST1);
+            ModRegistries.register(TestQuests.TEST2);
+            //ModRegistries.register(TestQuests.TEST3);
+            //ModRegistries.register(TestQuests.TEST4);
+            //ModRegistries.register(TestQuests.TEST5);
+            //ModRegistries.register(TestQuests.TEST6);
+            //ModRegistries.register(TestQuests.TEST7);
+            //ModRegistries.register(TestQuests.TEST8);
+        }
+    }
 }

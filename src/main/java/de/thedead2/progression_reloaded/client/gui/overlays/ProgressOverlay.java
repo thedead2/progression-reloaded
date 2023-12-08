@@ -30,7 +30,7 @@ public abstract class ProgressOverlay<T extends IProgressable<T>> implements IPr
         this.area = area;
         this.displayInfo = displayInfo;
         this.progressBar = progressBar;
-        this.backgroundFrame = new DrawableTexture(backgroundFrame, this.area);
+        this.backgroundFrame = backgroundFrame != null ? new DrawableTexture(backgroundFrame, this.area) : null;
         this.font = FontManager.getFont(font);
     }
 

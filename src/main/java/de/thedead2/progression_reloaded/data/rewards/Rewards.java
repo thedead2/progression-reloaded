@@ -1,10 +1,15 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
+import com.google.common.collect.Sets;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.display.RewardsDisplayInfo;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -34,6 +39,26 @@ public class Rewards {
     }
 
 
+    public static Rewards empty() {
+        return Builder.builder().build();
+    }
+
+
+    public static Rewards fromNetwork(FriendlyByteBuf buf) {
+        RewardStrategy strategy = buf.readEnum(RewardStrategy.class);
+        Set<IReward> rewards = buf.readCollection(Sets::newHashSetWithExpectedSize, IReward::fromNetwork);
+        return new Rewards(rewards, strategy);
+    }
+
+
+    public static Rewards loadFromNBT(CompoundTag tag) {
+        RewardStrategy strategy = RewardStrategy.valueOf(tag.getString("strategy"));
+        Set<IReward> rewards = CollectionHelper.loadFromNBT(Sets::newHashSetWithExpectedSize, tag.getList("rewards", 0), tag1 -> IReward.fromNBT((CompoundTag) tag1));
+
+        return new Rewards(rewards, strategy);
+    }
+
+
     public void reward(PlayerData player) {
         this.rewardStrategy.reward(this.rewards, player);
     }
@@ -43,9 +68,7 @@ public class Rewards {
         JsonObject jsonObject = new JsonObject();
 
         jsonObject.addProperty("strategy", this.rewardStrategy.toString());
-        JsonArray jsonArray = new JsonArray();
-        this.rewards.forEach(reward -> jsonArray.add(reward.saveToJson()));
-        jsonObject.add("rewards", jsonArray);
+        jsonObject.add("rewards", CollectionHelper.saveToJson(this.rewards, IReward::saveToJson));
 
         return jsonObject;
     }
@@ -53,6 +76,21 @@ public class Rewards {
 
     public RewardsDisplayInfo getDisplay() {
         return null;
+    }
+
+
+    public CompoundTag saveToNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.putString("strategy", this.rewardStrategy.name());
+        tag.put("rewards", CollectionHelper.saveToNBT(this.rewards, IReward::saveToNBT));
+
+        return tag;
+    }
+
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeEnum(this.rewardStrategy);
+        buf.writeCollection(this.rewards, (buf1, reward) -> reward.toNetwork(buf1));
     }
 
 
@@ -78,7 +116,7 @@ public class Rewards {
         }
 
 
-        public Builder withStrategy(RewardStrategy strategy) {
+        public Builder withStrategy(@NotNull RewardStrategy strategy) {
             this.strategy = strategy;
 
             return this;

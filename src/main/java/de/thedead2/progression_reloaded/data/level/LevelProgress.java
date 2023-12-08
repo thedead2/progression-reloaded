@@ -60,12 +60,18 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
     public float getPercent() {
         Collection<ProgressionQuest> levelQuests = LevelManager.getInstance().getQuestManager().getMainQuestsForLevel(this.level);
         if(levelQuests.isEmpty()) {
-            return 0.0F;
+            return 1F;
         }
         else {
-            float quests = (float) levelQuests.size();
-            float completedQuests = this.countCompletedQuestCriteria();
-            return completedQuests / quests;
+            float completedQuestsPercent = 0f;
+            //FIXME: When only on client there is no QuestManager or LevelManager for accessing
+            for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player.get())) {
+                if(questProgress != null) {
+                    completedQuestsPercent += questProgress.getPercent();
+                }
+            }
+
+            return completedQuestsPercent / levelQuests.size();
         }
     }
 
@@ -109,7 +115,7 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
 
     @Override
     public void complete() {
-        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().award(id, this.player.get()));
+        this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().award(id, true, this.player.get()));
     }
 
 
@@ -124,19 +130,6 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
     @Override
     public ProgressionLevel getProgressable() {
         return this.level;
-    }
-
-
-    private float countCompletedQuestCriteria() {
-        float i = 0f;
-
-        for(QuestProgress questProgress : LevelManager.getInstance().getQuestManager().getMainQuestProgress(this.level, this.player.get())) {
-            if(questProgress != null) {
-                i += questProgress.getPercent();
-            }
-        }
-
-        return i;
     }
 
 

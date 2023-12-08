@@ -290,6 +290,24 @@ public class FontFormatting {
     }
 
 
+    public FontFormatting setColor(int red, int green, int blue) {
+        this.setRed(red);
+        this.setGreen(green);
+        this.setBlue(blue);
+
+        return this;
+    }
+
+
+    public FontFormatting setColor(float red, float green, float blue) {
+        this.setRed(red);
+        this.setGreen(green);
+        this.setBlue(blue);
+
+        return this;
+    }
+
+
     public FontFormatting setBgColor(int bgColor) {
         storeColorComponents(this.bgColor, bgColor);
         return this;

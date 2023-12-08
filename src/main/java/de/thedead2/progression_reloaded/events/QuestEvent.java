@@ -2,18 +2,21 @@ package de.thedead2.progression_reloaded.events;
 
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraftforge.eventbus.api.Cancelable;
+import net.minecraftforge.eventbus.api.Event;
 
 
-public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
-
+public abstract class QuestEvent extends Event {
     private final ProgressionQuest quest;
 
+    private final PlayerData player;
 
-    public QuestEvent(ProgressionQuest quest) {
+
+    public QuestEvent(ProgressionQuest quest, PlayerData player) {
         this.quest = quest;
+        this.player = player;
     }
 
 
@@ -22,110 +25,98 @@ public abstract class QuestEvent extends PREventFactory.ProgressionEvent {
     }
 
 
-    @Cancelable
-    public static class AwardQuestEvent extends QuestEvent {
-
-        private final QuestProgress progress;
-
-        private final PlayerData player;
-
-
-        public AwardQuestEvent(ProgressionQuest quest, QuestProgress progress, PlayerData player) {
-            super(quest);
-            this.progress = progress;
-            this.player = player;
-        }
-
-
-        public PlayerData getPlayer() {
-            return player;
-        }
-
-
-        public QuestProgress getProgress() {
-            return progress;
-        }
-
+    public PlayerData getPlayer() {
+        return player;
     }
 
-    @Cancelable
-    public static class RevokedQuestEvent extends QuestEvent {
 
-        private final QuestProgress progress;
+    public static class StatusChangedEvent extends QuestEvent {
 
-        private final PlayerData player;
+        private final QuestStatus oldStatus;
+
+        private final QuestStatus newStatus;
 
 
-        public RevokedQuestEvent(ProgressionQuest quest, QuestProgress questProgress, PlayerData activePlayer) {
-            super(quest);
-            this.progress = questProgress;
-            this.player = activePlayer;
+        public StatusChangedEvent(ProgressionQuest quest, PlayerData player, QuestStatus oldStatus, QuestStatus newStatus) {
+            super(quest, player);
+            this.oldStatus = oldStatus;
+            this.newStatus = newStatus;
         }
 
 
-        public PlayerData getPlayer() {
-            return player;
+        public QuestStatus getOldStatus() {
+            return oldStatus;
         }
 
 
-        public QuestProgress getProgress() {
-            return progress;
+        public QuestStatus getNewStatus() {
+            return newStatus;
         }
-
     }
 
-    public static class UpdateQuestStatusEvent extends PREventFactory.ProgressionEvent {
+    public static class ProgressChangedEvent extends QuestEvent {
 
-        private final PlayerData player;
+        private final QuestProgress questProgress;
 
 
-        public UpdateQuestStatusEvent(PlayerData player) {
-            this.player = player;
+        public ProgressChangedEvent(ProgressionQuest quest, PlayerData player, QuestProgress questProgress) {
+            super(quest, player);
+            this.questProgress = questProgress;
         }
 
 
-        public PlayerData getPlayer() {
-            return player;
+        public QuestProgress getQuestProgress() {
+            return questProgress;
+        }
+    }
+
+    public static class CompletionEvent extends QuestEvent {
+
+        private final QuestStatus completionStatus;
+
+
+        public CompletionEvent(ProgressionQuest quest, PlayerData player, QuestStatus completionStatus) {
+            super(quest, player);
+            this.completionStatus = completionStatus;
+        }
+
+
+        public QuestStatus getCompletionStatus() {
+            return completionStatus;
         }
     }
 
     @Cancelable
-    public static class TriggerEvent extends PREventFactory.ProgressionEvent {
+    public static class QuestAwardEvent extends QuestEvent {
 
-        private final SimpleTrigger<?> trigger;
-
-        private final PlayerData player;
-
-        private final Object toTest;
-
-        private final Object[] addData;
+        private final QuestProgress questProgress;
 
 
-        public <T> TriggerEvent(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data) {
-            this.trigger = trigger;
-            this.player = player;
-            this.toTest = toTest;
-            this.addData = data;
+        public QuestAwardEvent(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
+            super(quest, player);
+            this.questProgress = questProgress;
         }
 
 
-        public PlayerData getPlayer() {
-            return player;
+        public QuestProgress getQuestProgress() {
+            return questProgress;
+        }
+    }
+
+    @Cancelable
+    public static class QuestRevokedEvent extends QuestEvent {
+
+        private final QuestProgress questProgress;
+
+
+        public QuestRevokedEvent(ProgressionQuest quest, QuestProgress questProgress, PlayerData player) {
+            super(quest, player);
+            this.questProgress = questProgress;
         }
 
 
-        public Object[] getAddData() {
-            return addData;
-        }
-
-
-        public SimpleTrigger<?> getTrigger() {
-            return trigger;
-        }
-
-
-        public Object getObjectToTest() {
-            return toTest;
+        public QuestProgress getQuestProgress() {
+            return questProgress;
         }
     }
 }
