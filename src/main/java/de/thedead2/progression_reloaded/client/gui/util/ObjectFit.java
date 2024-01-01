@@ -1,0 +1,245 @@
+package de.thedead2.progression_reloaded.client.gui.util;
+
+import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
+
+
+//TODO: Check if u and v are not 0, if other textures get drawn --> maybe fixable with also fixing texture repetition
+public enum ObjectFit {
+    FILL {
+        @Override
+        public float getUMin(TextureInfo textureInfo, Area area) {
+            return textureInfo.getU() / area.getInnerWidth(); //start-percent of the width of the original image
+        }
+
+
+        @Override
+        public float getUMax(TextureInfo textureInfo, Area area) {
+            return (textureInfo.getU() + area.getInnerWidth()) / area.getInnerWidth();
+        }
+
+
+        @Override
+        public float getVMin(TextureInfo textureInfo, Area area) {
+            return textureInfo.getV() / area.getInnerHeight();
+        }
+
+
+        @Override
+        public float getVMax(TextureInfo textureInfo, Area area) {
+            return (textureInfo.getV() + area.getInnerHeight()) / area.getInnerHeight();
+        }
+    },
+    CONTAIN {
+        @Override
+        public float getUMin(TextureInfo textureInfo, Area area) {
+            float relativeWidth = textureInfo.getRelativeWidth(area.getInnerHeight());
+
+            if(area.getInnerWidth() < relativeWidth) { //width fixed --> use relative height
+                return textureInfo.getU() / area.getInnerWidth();
+            }
+            else { //height fixed --> use relative width
+                float uStart = (area.getInnerWidth() - relativeWidth) / 2;
+                return (textureInfo.getU() - uStart) / relativeWidth;
+            }
+        }
+
+
+        @Override
+        public float getUMax(TextureInfo textureInfo, Area area) {
+            float relativeWidth = textureInfo.getRelativeWidth(area.getInnerHeight());
+
+            if(area.getInnerWidth() < relativeWidth) { //width fixed --> use relative height
+                return (textureInfo.getU() + area.getInnerWidth()) / area.getInnerWidth();
+            }
+            else { //height fixed --> use relative width
+                float uStart = (area.getInnerWidth() - relativeWidth) / 2;
+                return (textureInfo.getU() + (area.getInnerWidth() - uStart)) / relativeWidth;
+            }
+        }
+
+
+        @Override
+        public float getVMin(TextureInfo textureInfo, Area area) {
+            float relativeHeight = textureInfo.getRelativeHeight(area.getInnerWidth());
+
+            if(area.getInnerHeight() < relativeHeight) { //height fixed --> use relative width
+                return textureInfo.getV() / area.getInnerHeight();
+            }
+            else { //width fixed --> use relative height
+                float vStart = (area.getInnerHeight() - relativeHeight) / 2;
+                return (textureInfo.getV() - vStart) / relativeHeight;
+            }
+        }
+
+
+        @Override
+        public float getVMax(TextureInfo textureInfo, Area area) {
+            float relativeHeight = textureInfo.getRelativeHeight(area.getInnerWidth());
+
+            if(area.getInnerHeight() < relativeHeight) { //height fixed --> use relative width
+                return (textureInfo.getV() + area.getInnerHeight()) / area.getInnerHeight();
+            }
+            else { //width fixed --> use relative height
+                float vStart = (area.getInnerHeight() - relativeHeight) / 2;
+                return (textureInfo.getV() + (area.getInnerHeight() - vStart)) / relativeHeight;
+            }
+        }
+    },
+    COVER {
+        @Override
+        public float getUMin(TextureInfo textureInfo, Area area) {
+            float relativeWidth = textureInfo.getRelativeWidth(area.getInnerHeight());
+
+            if(area.getInnerWidth() > relativeWidth) { //width fixed --> use relative height
+                return textureInfo.getU() / area.getInnerWidth();
+            }
+            else { //height fixed --> use relative width
+                float uStart = (area.getInnerWidth() - relativeWidth) / 2;
+                return (textureInfo.getU() - uStart) / relativeWidth;
+            }
+        }
+
+
+        @Override
+        public float getUMax(TextureInfo textureInfo, Area area) {
+            float relativeWidth = textureInfo.getRelativeWidth(area.getInnerHeight());
+
+            if(area.getInnerWidth() > relativeWidth) { //width fixed --> use relative height
+                return (textureInfo.getU() + area.getInnerWidth()) / area.getInnerWidth();
+            }
+            else { //height fixed --> use relative width
+                float uStart = (area.getInnerWidth() - relativeWidth) / 2;
+                return (textureInfo.getU() + (area.getInnerWidth() - uStart)) / relativeWidth;
+            }
+        }
+
+
+        @Override
+        public float getVMin(TextureInfo textureInfo, Area area) {
+            float relativeHeight = textureInfo.getRelativeHeight(area.getInnerWidth());
+
+            if(area.getInnerHeight() > relativeHeight) { //height fixed --> use relative width
+                return textureInfo.getV() / area.getInnerHeight();
+            }
+            else { //width fixed --> use relative height
+                float vStart = (area.getInnerHeight() - relativeHeight) / 2;
+                return (textureInfo.getV() - vStart) / relativeHeight;
+            }
+        }
+
+
+        @Override
+        public float getVMax(TextureInfo textureInfo, Area area) {
+            float relativeHeight = textureInfo.getRelativeHeight(area.getInnerWidth());
+
+            if(area.getInnerHeight() > relativeHeight) { //height fixed --> use relative width
+                return (textureInfo.getV() + area.getInnerHeight()) / area.getInnerHeight();
+            }
+            else { //width fixed --> use relative height
+                float vStart = (area.getInnerHeight() - relativeHeight) / 2;
+                return (textureInfo.getV() + (area.getInnerHeight() - vStart)) / relativeHeight;
+            }
+        }
+    },
+    NONE {
+        @Override
+        public float getUMin(TextureInfo textureInfo, Area area) {
+            float uStart = (area.getInnerWidth() - textureInfo.getTextureWidth()) / 2;
+            return (textureInfo.getU() - uStart) / textureInfo.getTextureWidth(); //start-percent of the width of the original image
+        }
+
+
+        @Override
+        public float getUMax(TextureInfo textureInfo, Area area) {
+            float uStart = (area.getInnerWidth() - textureInfo.getTextureWidth()) / 2;
+            return (textureInfo.getU() + (area.getInnerWidth() - uStart)) / textureInfo.getTextureWidth();
+        }
+
+
+        @Override
+        public float getVMin(TextureInfo textureInfo, Area area) {
+            float vStart = (area.getInnerHeight() - textureInfo.getTextureHeight()) / 2;
+            return (textureInfo.getV() - vStart) / textureInfo.getTextureHeight();
+        }
+
+
+        @Override
+        public float getVMax(TextureInfo textureInfo, Area area) {
+            float vStart = (area.getInnerHeight() - textureInfo.getTextureHeight()) / 2;
+            return (textureInfo.getV() + (area.getInnerHeight() - vStart)) / textureInfo.getTextureHeight();
+        }
+    },
+    SCALE_DOWN {
+        @Override
+        public float getUMin(TextureInfo textureInfo, Area area) {
+            float noneUMin = NONE.getUMin(textureInfo, area);
+            float containUMin = CONTAIN.getUMin(textureInfo, area);
+            float noneUMax = NONE.getUMax(textureInfo, area);
+            float containUMax = CONTAIN.getUMax(textureInfo, area);
+
+            if((noneUMax - noneUMin) > (containUMax - containUMin)) {
+                return noneUMin;
+            }
+            else {
+                return containUMin;
+            }
+        }
+
+
+        @Override
+        public float getUMax(TextureInfo textureInfo, Area area) {
+            float noneUMin = NONE.getUMin(textureInfo, area);
+            float containUMin = CONTAIN.getUMin(textureInfo, area);
+            float noneUMax = NONE.getUMax(textureInfo, area);
+            float containUMax = CONTAIN.getUMax(textureInfo, area);
+
+            if((noneUMax - noneUMin) > (containUMax - containUMin)) {
+                return noneUMax;
+            }
+            else {
+                return containUMax;
+            }
+        }
+
+
+        @Override
+        public float getVMin(TextureInfo textureInfo, Area area) {
+            float noneVMin = NONE.getVMin(textureInfo, area);
+            float containVMin = CONTAIN.getVMin(textureInfo, area);
+            float noneVMax = NONE.getVMax(textureInfo, area);
+            float containVMax = CONTAIN.getVMax(textureInfo, area);
+
+            if((noneVMax - noneVMin) > (containVMax - containVMin)) {
+                return noneVMin;
+            }
+            else {
+                return containVMin;
+            }
+        }
+
+
+        @Override
+        public float getVMax(TextureInfo textureInfo, Area area) {
+            float noneVMin = NONE.getVMin(textureInfo, area);
+            float containVMin = CONTAIN.getVMin(textureInfo, area);
+            float noneVMax = NONE.getVMax(textureInfo, area);
+            float containVMax = CONTAIN.getVMax(textureInfo, area);
+
+            if((noneVMax - noneVMin) > (containVMax - containVMin)) {
+                return noneVMax;
+            }
+            else {
+                return containVMax;
+            }
+        }
+    };
+
+
+    public abstract float getUMin(TextureInfo textureInfo, Area area);
+
+    public abstract float getUMax(TextureInfo textureInfo, Area area);
+
+    public abstract float getVMin(TextureInfo textureInfo, Area area);
+
+    public abstract float getVMax(TextureInfo textureInfo, Area area);
+}

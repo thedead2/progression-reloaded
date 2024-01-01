@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 
@@ -156,21 +157,6 @@ public class FormattedCharSeq {
     }
 
 
-    public int getIndexAtWidth(float maxWidth) {
-        float width = 0;
-        for(int i = 0; i < this.chars.size(); i++) {
-            FormattedChar formattedChar = this.chars.get(i);
-            if(!formattedChar.isLineBreakChar()) {
-                width += formattedChar.getWidth();
-            }
-            if(width >= maxWidth) {
-                return i;
-            }
-        }
-        return this.chars.size() - 1;
-    }
-
-
     public FormattedChar charAt(int index) {
         return this.chars.get(index);
     }
@@ -204,15 +190,17 @@ public class FormattedCharSeq {
     }
 
 
-    //FIXME: Split one char earlier
+
     public void splitLines(float maxWidth, LinePosConsumer consumer) {
+        if(maxWidth <= 0) {
+            throw new IllegalArgumentException("Max width must be positive and greater than zero!");
+        }
         int j = 0;
         int i;
         float width = 0;
         int lastSpacePos = -1;
         for(i = j; i < this.chars.size(); i++) {
             FormattedChar formattedChar = this.chars.get(i);
-            FormattedChar nextChar = this.chars.get(Math.min(i + 1, this.chars.size() - 1));
             char c = formattedChar.character();
 
             if(Character.isWhitespace(c)) {
@@ -221,23 +209,38 @@ public class FormattedCharSeq {
 
             width += formattedChar.getWidth();
 
-            if(width /*+ nextChar.getWidth()*/ >= maxWidth || c == '\n') {
-                int splitPos = lastSpacePos != -1 ? lastSpacePos : i;
+            if(width >= maxWidth || c == '\n') {
+                int splitPos = ((lastSpacePos != -1) ? lastSpacePos : i - 1);
                 consumer.accept(j, splitPos);
 
                 width = 0;
-                //Reset width to the width of the string that has been split
-                for(int k = splitPos; k < i; k++) {
+                //Keep the width of the string that has been split
+                for(int k = splitPos; k < Math.min(i, this.chars.size()); k++) {
                     FormattedChar formattedChar1 = this.chars.get(k);
                     width += formattedChar1.getWidth();
                 }
 
-                i += (lastSpacePos != -1 ? 1 : 0);
-                j = splitPos + (lastSpacePos != -1 ? 1 : 0);
+                //Continue at the next char
+                j = splitPos + 1;
                 lastSpacePos = -1;
             }
         }
         consumer.accept(j, i);
+    }
+
+
+    public int getIndexAtWidth(float maxWidth) {
+        float width = 0;
+        for(int i = 0; i < this.chars.size(); i++) {
+            FormattedChar formattedChar = this.chars.get(i);
+            if(!formattedChar.isLineBreakChar()) {
+                width += formattedChar.getWidth();
+            }
+            if(width >= maxWidth) {
+                return i;
+            }
+        }
+        return this.chars.size();
     }
 
 
@@ -259,9 +262,9 @@ public class FormattedCharSeq {
     }
 
 
-    public void setAlphaForAll(float alpha) {
+    public void setForAll(Consumer<FontFormatting> formatConsumer) {
         for(FormattedChar formattedChar : this.chars) {
-            formattedChar.format().setAlpha(alpha);
+            formatConsumer.accept(formattedChar.format());
         }
     }
 
@@ -280,8 +283,21 @@ public class FormattedCharSeq {
     }
 
 
+    public float getMaxLineSpacing() {
+        float height = 0;
+        for(FormattedChar formattedChar : this.chars) {
+            float lineSpacing = formattedChar.format().getLineSpacing();
+            if(lineSpacing > height) {
+                height = lineSpacing;
+            }
+        }
+        return height;
+    }
+
+
+    @FunctionalInterface
     public interface LinePosConsumer {
 
-        void accept(int pos, int contentWidth);
+        void accept(int beginIndex, int endIndex);
     }
 }

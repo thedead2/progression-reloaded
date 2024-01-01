@@ -13,13 +13,12 @@ import de.thedead2.progression_reloaded.data.predicates.PlayerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.quest.QuestStatus;
-import de.thedead2.progression_reloaded.data.quest.QuestTasks;
+import de.thedead2.progression_reloaded.data.quest.tasks.QuestTask;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import de.thedead2.progression_reloaded.util.registries.TypeRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -29,7 +28,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -82,15 +80,12 @@ public abstract class SimpleTrigger<T> {
 
             playerQuests.getQuestsByStatus(QuestStatus.NOT_STARTED).forEach(quest -> {
                 QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
-                Set<QuestTasks.Task> tasks = questProgress.getPotentialStartingTasks();
+                Set<QuestTask> tasks = questProgress.getPotentialStartingTasks();
 
                 tasks.forEach(task -> checkTriggers(task, triggerClass, playerData, toTest, addArgs));
             });
 
-            Set<ProgressionQuest> activeQuests = new HashSet<>();
-            CollectionHelper.concatenate(activeQuests, playerQuests.getQuestsByStatus(QuestStatus.ACTIVE), playerQuests.getQuestsByStatus(QuestStatus.STARTED));
-
-            activeQuests.forEach(quest -> {
+            playerQuests.getStartedOrActiveQuests().forEach(quest -> {
                 QuestProgress questProgress = playerQuests.getOrStartProgress(quest);
 
                 questProgress.getChildrenForCurrentTask().forEach(task -> checkTriggers(task, triggerClass, playerData, toTest, addArgs));
@@ -100,7 +95,7 @@ public abstract class SimpleTrigger<T> {
 
 
     @SuppressWarnings("unchecked")
-    private static <T> void checkTriggers(QuestTasks.Task task, Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
+    private static <T> void checkTriggers(QuestTask task, Class<? extends SimpleTrigger<T>> triggerClass, PlayerData player, T toTest, Object... data) {
         task.getCriteria()
             .values()
             .stream()
@@ -198,12 +193,12 @@ public abstract class SimpleTrigger<T> {
 
         private final ProgressionQuest quest;
 
-        private final QuestTasks.Task task;
+        private final QuestTask task;
 
         private final String criterion;
 
 
-        public Listener(ProgressionQuest quest, QuestTasks.Task task, String criterionName) {
+        public Listener(ProgressionQuest quest, QuestTask task, String criterionName) {
             this.quest = quest;
             this.task = task;
             this.criterion = criterionName;
@@ -215,7 +210,7 @@ public abstract class SimpleTrigger<T> {
         }
 
 
-        public QuestTasks.Task getTask() {
+        public QuestTask getTask() {
             return task;
         }
 

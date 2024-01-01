@@ -4,6 +4,7 @@ import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
 import de.thedead2.progression_reloaded.api.gui.animation.IAnimationType;
 import de.thedead2.progression_reloaded.api.gui.animation.IInterpolationType;
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
+import de.thedead2.progression_reloaded.util.TickTimer;
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
 
 
@@ -13,7 +14,7 @@ public abstract class AbstractAnimation implements IAnimation {
 
     protected final IInterpolationType interpolationType;
 
-    protected final AnimationTimer timer;
+    protected final TickTimer timer;
 
 
     public AbstractAnimation(float startTime, float duration, ILoopType loop, IAnimationType animationType, IInterpolationType interpolationType) {
@@ -24,7 +25,7 @@ public abstract class AbstractAnimation implements IAnimation {
     public AbstractAnimation(float startTime, float duration, ILoopType loop, IAnimationType animationType, IInterpolationType interpolationType, boolean started) {
         this.animationType = animationType;
         this.interpolationType = interpolationType;
-        this.timer = new AnimationTimer(startTime, duration, false, !started, loop);
+        this.timer = new TickTimer(startTime, duration, false, !started, loop);
     }
 
 

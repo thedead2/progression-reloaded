@@ -50,14 +50,14 @@ public class ProgressBar<T extends IProgressable<T>> extends ScreenComponent {
         this.filled = new DrawableTexture(filled, this.area.copy());
         this.percent = progress.getPercent();
         this.showPercent = showPercent;
-        this.font = FontManager.getFont(font);
+        this.font = FontManager.getInstance().getFont(font);
     }
 
 
     //FIXME: fix this.changed
     public void updateProgress(IProgressInfo<T> progress) {
         T progressable = progress.getProgressable();
-        this.changed = progressable.compareTo(this.progressable) > 0;
+        this.changed = true; //progressable.compareTo(this.progressable) > 0;
         this.progressable = progressable;
         this.previousPercent = this.percent;
         this.percent = progress.getPercent();
@@ -82,7 +82,7 @@ public class ProgressBar<T extends IProgressable<T>> extends ScreenComponent {
         }
         poseStack.pushPose();
         this.animation.animate(this.previousPercent, this.changed ? 1 : this.percent, percent -> {
-            this.drawBar(poseStack, percent);
+            this.drawBar(poseStack, percent, mouseX, mouseY, partialTick);
             if(showPercent) {
                 String string = PERCENT_FORMAT.format(percent);
                 float stringWidth = this.font.width(string);
@@ -94,10 +94,10 @@ public class ProgressBar<T extends IProgressable<T>> extends ScreenComponent {
     }
 
 
-    private void drawBar(PoseStack poseStack, float percentFilled) {
-        this.empty.draw(poseStack);
-        this.filled.setRenderWidth(this.empty.getRenderWidth() * percentFilled);
-        this.filled.draw(poseStack);
+    private void drawBar(PoseStack poseStack, float percentFilled, int mouseX, int mouseY, float partialTick) {
+        this.empty.render(poseStack, mouseX, mouseY, partialTick);
+        this.filled.setInnerWidth(this.empty.getInnerWidth() * percentFilled);
+        this.filled.render(poseStack, mouseX, mouseY, partialTick);
     }
 
 

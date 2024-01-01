@@ -18,6 +18,8 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.client.event.RecipesUpdatedEvent;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.eventbus.api.EventPriority;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ import static de.thedead2.progression_reloaded.util.ModHelper.*;
 @OnlyIn(Dist.CLIENT)
 @SuppressWarnings("unused")
 public class ItemRestrictionJEIPlugin implements IModPlugin {
+
+    private static final Marker MARKER = new MarkerManager.Log4jMarker("RestrictionManagerJEIPlugin");
     private final List<ItemStack> hiddenItems = new ArrayList<>();
 
     private IJeiRuntime runtime;
@@ -51,13 +55,13 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
                 final long syncStart = System.nanoTime();
                 final IIngredientManager ingredients = this.runtime.getIngredientManager();
 
-                LOGGER.debug("Starting to sync JEI with {}.", MOD_NAME);
+                LOGGER.debug(MARKER, "Starting to sync {} with JEI.", MOD_NAME);
 
                 this.restoreRestrictedItems(ingredients);
                 this.collectRestrictedItems(ingredients);
                 this.hideRestrictedItems(ingredients);
 
-                LOGGER.debug("JEI sync complete. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - syncStart) / 1000000));
+                LOGGER.debug(MARKER, "JEI sync complete. Took {} ms.", DECIMAL_FORMAT.format((System.nanoTime() - syncStart) / 1000000));
             }
         });
     }
@@ -65,14 +69,14 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
 
     private void restoreRestrictedItems(IIngredientManager ingredients) {
         final long restoreStart = System.nanoTime();
-        LOGGER.debug("Restoring {} hidden items.", this.hiddenItems.size());
+        LOGGER.debug(MARKER, "Restoring {} hidden items.", this.hiddenItems.size());
 
         if(!this.hiddenItems.isEmpty()) {
             ingredients.addIngredientsAtRuntime(VanillaTypes.ITEM_STACK, this.hiddenItems);
             this.hiddenItems.clear();
         }
 
-        LOGGER.debug("Items list restored. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - restoreStart) / 1000000));
+        LOGGER.debug(MARKER, "Items list restored. Took {} ms.", DECIMAL_FORMAT.format((System.nanoTime() - restoreStart) / 1000000));
     }
 
 
@@ -89,19 +93,19 @@ public class ItemRestrictionJEIPlugin implements IModPlugin {
             }
         }
 
-        LOGGER.debug("Marked {} entries for hiding. Took {} ms.", this.hiddenItems.size(), DECIMAL_FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
+        LOGGER.debug(MARKER, "Marked {} entries for hiding. Took {} ms.", this.hiddenItems.size(), DECIMAL_FORMAT.format((System.nanoTime() - hideCalcStart) / 1000000));
     }
 
 
     private void hideRestrictedItems(IIngredientManager ingredients) {
-        LOGGER.debug("Hiding {} entries from JEI.", this.hiddenItems.size());
+        LOGGER.debug(MARKER, "Hiding {} entries from JEI.", this.hiddenItems.size());
         final long hideStart = System.nanoTime();
 
         if(!this.hiddenItems.isEmpty()) {
             ingredients.removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, this.hiddenItems);
         }
 
-        LOGGER.debug("All entries hidden. Took {}ms.", DECIMAL_FORMAT.format((System.nanoTime() - hideStart) / 1000000));
+        LOGGER.debug(MARKER, "All entries hidden. Took {} ms.", DECIMAL_FORMAT.format((System.nanoTime() - hideStart) / 1000000));
     }
 
 

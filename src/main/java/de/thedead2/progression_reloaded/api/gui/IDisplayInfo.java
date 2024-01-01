@@ -32,11 +32,11 @@ public interface IDisplayInfo<T extends IProgressable<T>> {
 
     JsonElement toJson();
 
-    ItemStack getIcon();
+    ItemStack icon();
 
-    Component getTitle();
+    Component title();
 
-    Component getDescription();
+    Component description();
 
-    ResourceLocation getId();
+    ResourceLocation id();
 }

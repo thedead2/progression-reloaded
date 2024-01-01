@@ -11,6 +11,7 @@ import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 
+//FIXME: Fire only when player really slept and woke up
 public class SleepTrigger extends SimpleTrigger<BlockPos> {
 
     public static final ResourceLocation ID = createId("sleep");

@@ -3,6 +3,7 @@ package de.thedead2.progression_reloaded.client.gui.themes.layouts;
 import com.google.common.base.Preconditions;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.client.gui.util.Padding;
+import de.thedead2.progression_reloaded.util.misc.FloatSupplier;
 
 
 public record ProgressionLayout(Area toast, Area levelProgressOL, Area questProgressOL) {
@@ -35,7 +36,7 @@ public record ProgressionLayout(Area toast, Area levelProgressOL, Area questProg
         }
 
 
-        public Builder withQuestProgressOL(float xPos, float yPos, float zPos, float width, float height, Padding padding) {
+        public Builder withQuestProgressOL(FloatSupplier xPos, FloatSupplier yPos, FloatSupplier zPos, FloatSupplier width, FloatSupplier height, Padding padding) {
             this.questProgressOL = new Area(xPos, yPos, zPos, width, height, padding);
 
             return this;

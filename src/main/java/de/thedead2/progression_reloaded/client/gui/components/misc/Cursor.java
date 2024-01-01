@@ -9,9 +9,11 @@ import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatti
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import it.unimi.dsi.fastutil.ints.Int2ObjectFunction;
+import net.minecraft.client.gui.components.Renderable;
+import org.jetbrains.annotations.NotNull;
 
 
-public class Cursor {
+public class Cursor implements Renderable {
 
     private final SimpleAnimation blinkAnimation = new SimpleAnimation(MathHelper.secondsToTicks(0.65f / 2), MathHelper.secondsToTicks(0.65f), LoopTypes.LOOP, AnimationTypes.STEPS(1), InterpolationTypes.LINEAR);
 
@@ -41,10 +43,15 @@ public class Cursor {
     }
 
 
-    public void render(PoseStack poseStack) {
-        this.blinkAnimation.animate(0, this.alpha, t -> RenderUtil.verticalLine(poseStack, this.xPos, this.yPos - 2, this.yPos + this.getFormat().getLineHeight() + 2, this.zPos, lineWidth, RenderUtil.changeAlpha(this.getFormat().getColor(), t)));
+    @Override
+    public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
+        this.blinkAnimation.animate(0, this.alpha, t -> RenderUtil.verticalLine(poseStack, this.xPos, this.yPos - 2, this.yPos + this.getHeight() - 2, this.zPos, lineWidth, RenderUtil.changeAlpha(this.getFormat().getColor(), t)));
     }
 
+
+    public float getHeight() {
+        return this.getFormat().getLineHeight() + 4;
+    }
 
     public FontFormatting getFormat() {
         return this.format.get(this.charPos - 1);

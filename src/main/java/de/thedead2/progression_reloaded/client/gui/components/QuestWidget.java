@@ -36,8 +36,8 @@ public class QuestWidget extends ScreenComponent {
     public QuestWidget(Area area, TextureInfo frame, QuestDisplayInfo quest, TooltipInfo tooltipInfo) {
         super(area);
         this.frame = new DrawableTexture(frame, this.area);
-        this.item = new DrawableItemTexture(this.area, quest.getIcon());
-        this.tooltip = new Tooltip(tooltipInfo, quest.getDescription(), 100, 300);
+        this.item = new DrawableItemTexture(this.area, quest.icon());
+        this.tooltip = new Tooltip(tooltipInfo, quest.description(), 100, 300);
     }
 
 
@@ -45,9 +45,9 @@ public class QuestWidget extends ScreenComponent {
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         super.render(poseStack, mouseX, mouseY, partialTick);
         poseStack.pushPose();
-        this.item.draw(poseStack);
+        this.item.render(poseStack, mouseX, mouseY, partialTick);
         this.animateHoverEffect(poseStack, mouseX, mouseY);
-        this.frame.draw(poseStack);
+        this.frame.render(poseStack, mouseX, mouseY, partialTick);
         poseStack.popPose();
         if(this.isMouseOver(mouseX, mouseY)) {
             this.tooltip.render(poseStack, mouseX, mouseY, partialTick);

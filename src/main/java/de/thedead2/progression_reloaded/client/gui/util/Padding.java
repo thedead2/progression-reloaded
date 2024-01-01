@@ -1,14 +1,18 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
+import de.thedead2.progression_reloaded.util.misc.FloatSupplier;
+
+
 public class Padding {
     public static final Padding NONE = new Padding(0);
-    private final float paddingLeft;
 
-    private final float paddingRight;
+    private final FloatSupplier paddingLeft;
 
-    private final float paddingTop;
+    private final FloatSupplier paddingRight;
 
-    private final float paddingBottom;
+    private final FloatSupplier paddingTop;
+
+    private final FloatSupplier paddingBottom;
 
 
     public Padding(float padding) {
@@ -16,12 +20,20 @@ public class Padding {
     }
 
 
+    public Padding(FloatSupplier padding) {
+        this(padding, padding);
+    }
+
     public Padding(float paddingLeftRight, float paddingTopBottom) {
         this(paddingLeftRight, paddingLeftRight, paddingTopBottom, paddingTopBottom);
     }
 
 
-    public Padding(float paddingLeft, float paddingRight, float paddingTop, float paddingBottom) {
+    public Padding(FloatSupplier paddingLeftRight, FloatSupplier paddingTopBottom) {
+        this(paddingLeftRight, paddingLeftRight, paddingTopBottom, paddingTopBottom);
+    }
+
+    public Padding(FloatSupplier paddingLeft, FloatSupplier paddingRight, FloatSupplier paddingTop, FloatSupplier paddingBottom) {
         this.paddingLeft = paddingLeft;
         this.paddingRight = paddingRight;
         this.paddingTop = paddingTop;
@@ -29,22 +41,27 @@ public class Padding {
     }
 
 
+    public Padding(float paddingLeft, float paddingRight, float paddingTop, float paddingBottom) {
+        this(() -> paddingLeft, () -> paddingRight, () -> paddingTop, () -> paddingBottom);
+    }
+
+
     public float getLeft() {
-        return paddingLeft;
+        return paddingLeft.getAsFloat();
     }
 
 
     public float getTop() {
-        return paddingTop;
+        return paddingTop.getAsFloat();
     }
 
 
     public float getRight() {
-        return paddingRight;
+        return paddingRight.getAsFloat();
     }
 
 
     public float getBottom() {
-        return paddingBottom;
+        return paddingBottom.getAsFloat();
     }
 }

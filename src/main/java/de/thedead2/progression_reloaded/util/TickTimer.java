@@ -1,4 +1,4 @@
-package de.thedead2.progression_reloaded.client.gui.animation;
+package de.thedead2.progression_reloaded.util;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -7,7 +7,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Timer;
 
 
-public class AnimationTimer {
+public class TickTimer {
 
     private final Timer timer = new Timer(20, Util.getMillis());
 
@@ -28,19 +28,30 @@ public class AnimationTimer {
     private ILoopType loop;
 
 
-
-    public AnimationTimer(float startTime, float duration, ILoopType loop) {
+    public TickTimer(float startTime, float duration, ILoopType loop) {
         this(startTime, duration, false, false, loop);
     }
 
 
-    public AnimationTimer(float startTime, float duration, boolean inverted, boolean paused, ILoopType loop) {
+    public TickTimer(float startTime, float duration, boolean inverted, boolean paused, ILoopType loop) {
         this.startTime = startTime;
         this.duration = duration;
         this.inverted = inverted;
         this.paused = paused;
         this.loop = loop;
         this.reset();
+    }
+
+
+    public TickTimer(float startTime, float duration, float timeLeft, float startCounter, float sleepTime, boolean inverted, boolean paused, ILoopType loop) {
+        this.startTime = startTime;
+        this.duration = duration;
+        this.timeLeft = timeLeft;
+        this.startCounter = startCounter;
+        this.sleepTime = sleepTime;
+        this.inverted = inverted;
+        this.paused = paused;
+        this.loop = loop;
     }
 
 
@@ -69,6 +80,14 @@ public class AnimationTimer {
     }
 
 
+    public TickTimer startIfNeeded() {
+        if(!this.isStarted()) {
+            this.start();
+        }
+        return this;
+    }
+
+
     public boolean isStarted() {
         return this.startCounter > this.startTime;
     }
@@ -79,19 +98,7 @@ public class AnimationTimer {
     }
 
 
-    public AnimationTimer invert(boolean invert) {
-        this.inverted = invert;
-        return this;
-    }
-
-
-    public AnimationTimer loop(ILoopType loop) {
-        this.loop = loop;
-        return this;
-    }
-
-
-    public AnimationTimer start() {
+    public TickTimer start() {
         this.pause(false);
         this.reset();
         this.startCounter = this.startTime + 1;
@@ -99,11 +106,23 @@ public class AnimationTimer {
     }
 
 
-    public AnimationTimer pause(boolean pause) {
+    public TickTimer pause(boolean pause) {
         if(this.paused != pause) {
             this.timer.advanceTime(Util.getMillis());
         }
         this.paused = pause;
+        return this;
+    }
+
+
+    public TickTimer invert(boolean invert) {
+        this.inverted = invert;
+        return this;
+    }
+
+
+    public TickTimer loop(ILoopType loop) {
+        this.loop = loop;
         return this;
     }
 
@@ -128,7 +147,7 @@ public class AnimationTimer {
     }
 
 
-    public AnimationTimer setDuration(float duration) {
+    public TickTimer setDuration(float duration) {
         this.duration = duration;
         return this;
     }
@@ -139,7 +158,7 @@ public class AnimationTimer {
     }
 
 
-    public AnimationTimer setStartTime(float startTime) {
+    public TickTimer setStartTime(float startTime) {
         this.startTime = startTime;
         return this;
     }
@@ -156,14 +175,14 @@ public class AnimationTimer {
     }
 
 
-    public AnimationTimer stop() {
+    public TickTimer stop() {
         this.timeLeft = this.inverted ? this.duration + 1 : -1;
         this.pause(true);
         return this;
     }
 
 
-    public AnimationTimer sleep(float time) {
+    public TickTimer sleep(float time) {
         if(this.sleepTime < 0) {
             this.sleepTime = time;
         }

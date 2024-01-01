@@ -16,7 +16,6 @@ import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
@@ -297,46 +296,20 @@ public class CrashHandler implements ISystemReportExtender {
 
 
     public void handleException(String description, Marker marker, Throwable e, Level level) {
-        if(level.equals(Level.DEBUG)) {
-            LOGGER.debug(marker, description);
-        }
-        else if(level.equals(Level.WARN)) {
-            LOGGER.warn(marker, description);
-        }
-        else if(level.equals(Level.ERROR)) {
-            LOGGER.error(marker, description, e);
-        }
-        else if(level.equals(Level.FATAL)) {
-            LOGGER.fatal(marker, description, e);
-        }
-        else {
-            LOGGER.info(marker, description);
+        switch(level.getStandardLevel()) {
+            case DEBUG -> LOGGER.debug(marker, description);
+            case WARN -> LOGGER.warn(marker, description);
+            case ERROR -> LOGGER.error(marker, description, e);
+            case FATAL -> LOGGER.fatal(marker, description, e);
+            default -> LOGGER.info(marker, description);
         }
 
         this.addCrashDetails(description, level, e);
-        if(activeFile != null) {
-            printFileDataToConsole(activeFile);
-        }
     }
 
 
     public void addCrashDetails(String errorDescription, Level level, Throwable throwable) {
         this.addCrashDetails(errorDescription, level, throwable, false);
-    }
-
-
-    private void printFileDataToConsole(File file) {
-        try {
-            InputStream fileInput = Files.newInputStream(file.toPath());
-            String file_data = new String(ByteStreams.toByteArray(fileInput), StandardCharsets.UTF_8);
-            LOGGER.error("\n" + file_data);
-            fileInput.close();
-        }
-        catch(IOException e) {
-            LOGGER.warn("Unable to read File by InputStream!");
-            this.addCrashDetails("Unable to read File by InputStream!", Level.WARN, e);
-            e.printStackTrace();
-        }
     }
 
 

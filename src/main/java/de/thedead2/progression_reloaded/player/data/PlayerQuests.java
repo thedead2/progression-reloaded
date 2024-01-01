@@ -7,7 +7,7 @@ import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.quest.QuestStatus;
 import de.thedead2.progression_reloaded.events.PREventFactory;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
@@ -113,6 +113,24 @@ public class PlayerQuests {
     }
 
 
+    public ImmutableSet<ProgressionQuest> getStartedOrActiveQuests() {
+        Set<ProgressionQuest> quests = new HashSet<>();
+        quests.addAll(this.getQuestsByStatus(QuestStatus.STARTED));
+        quests.addAll(this.getQuestsByStatus(QuestStatus.ACTIVE));
+
+        return ImmutableSet.copyOf(quests);
+    }
+
+
+    public ImmutableSet<ProgressionQuest> getFinishedQuests() {
+        Set<ProgressionQuest> quests = new HashSet<>();
+        quests.addAll(this.getQuestsByStatus(QuestStatus.COMPLETE));
+        quests.addAll(this.getQuestsByStatus(QuestStatus.FAILED));
+
+        return ImmutableSet.copyOf(quests);
+    }
+
+
     public void updateQuestStatus(ProgressionQuest quest) {
         QuestProgress questProgress = this.getOrStartProgress(quest);
         QuestStatus currentStatus = questProgress.getCurrentQuestStatus();
@@ -135,7 +153,7 @@ public class PlayerQuests {
             throw new IllegalArgumentException("new status null");
         }
 
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(this.playerData.get()), this.playerData.get().getServerPlayer());
+        PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(this.playerData.get()), this.playerData.get().getServerPlayer());
 
         PREventFactory.onQuestStatusChanged(quest, oldStatus, newStatus, this.playerData.get());
     }

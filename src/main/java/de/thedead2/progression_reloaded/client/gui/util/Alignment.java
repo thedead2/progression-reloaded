@@ -1,99 +1,121 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import org.jetbrains.annotations.Nullable;
 
 
-public record Alignment(XAlignment xAlignment, YAlignment yAlignment) {
-
-    public static Alignment DEFAULT = new Alignment(XAlignment.LEFT, YAlignment.TOP);
-
-    public static Alignment CENTERED = new Alignment(XAlignment.CENTER, YAlignment.CENTER);
-
-    public static Alignment LEFT_CENTERED = new Alignment(XAlignment.LEFT, YAlignment.CENTER);
-
-    public static Alignment RIGHT_CENTERED = new Alignment(XAlignment.RIGHT, YAlignment.CENTER);
-
-    public static Alignment TOP_CENTERED = new Alignment(XAlignment.CENTER, YAlignment.TOP);
-
-    public static Alignment BOTTOM_CENTERED = new Alignment(XAlignment.CENTER, YAlignment.BOTTOM);
+public enum Alignment {
+    TOP_LEFT(XAlign.LEFT, YAlign.TOP),
+    TOP_CENTERED(XAlign.CENTER, YAlign.TOP),
+    TOP_RIGHT(XAlign.RIGHT, YAlign.TOP),
+    LEFT_CENTERED(XAlign.LEFT, YAlign.CENTER),
+    CENTERED(XAlign.CENTER, YAlign.CENTER),
+    RIGHT_CENTERED(XAlign.RIGHT, YAlign.CENTER),
+    BOTTOM_LEFT(XAlign.LEFT, YAlign.BOTTOM),
+    BOTTOM_CENTERED(XAlign.CENTER, YAlign.BOTTOM),
+    BOTTOM_RIGHT(XAlign.RIGHT, YAlign.BOTTOM);
 
 
-    public static Alignment fromJson(JsonElement jsonElement) {
-        JsonObject jsonObject = jsonElement.getAsJsonObject();
+    private final XAlign xAlign;
 
-        XAlignment xAlignment = XAlignment.valueOf(jsonObject.get("x").getAsString());
-        YAlignment yAlignment = YAlignment.valueOf(jsonObject.get("y").getAsString());
+    private final YAlign yAlign;
 
-        return new Alignment(xAlignment, yAlignment);
+
+    Alignment(XAlign xAlign, YAlign yAlign) {
+        this.xAlign = xAlign;
+        this.yAlign = yAlign;
     }
 
 
-    public float getXPos(float origin, float screenWidth, float width, float offset) {
-        return this.xAlignment.getXPos(origin, screenWidth, width) + offset;
+    public float getXPos(@Nullable Area area, float objectWidth, float offset) {
+        float x = 0;
+        float width = RenderUtil.getScreenWidth();
+
+        if(area != null) {
+            x = area.getInnerX();
+            width = area.getInnerWidth();
+        }
+
+        return this.getXPos(x, width, objectWidth, offset);
     }
 
 
-    public float getYPos(float origin, float screenHeight, float height, float offset) {
-        return this.yAlignment.getYPos(origin, screenHeight, height) + offset;
+    public float getXPos(float origin, float areaWidth, float objectWidth, float offset) {
+        return this.xAlign.getXPos(origin, areaWidth, objectWidth) + offset;
     }
 
 
-    public JsonElement toJson() {
-        JsonObject jsonObject = new JsonObject();
+    public float getYPos(@Nullable Area area, float objectHeight, float offset) {
+        float y = 0;
+        float height = RenderUtil.getScreenHeight();
 
-        jsonObject.addProperty("x", this.xAlignment.name());
-        jsonObject.addProperty("y", this.yAlignment.name());
-
-        return jsonObject;
+        if(area != null) {
+            y = area.getInnerY();
+            height = area.getInnerHeight();
+        }
+        return this.getYPos(y, height, objectHeight, offset);
     }
 
 
-    public enum XAlignment {
+    public float getYPos(float origin, float areaHeight, float objectHeight, float offset) {
+        return this.yAlign.getYPos(origin, areaHeight, objectHeight) + offset;
+    }
+
+
+    public XAlign getXAlign() {
+        return this.xAlign;
+    }
+
+
+    public YAlign getYAlign() {
+        return yAlign;
+    }
+
+
+    public enum XAlign {
         LEFT {
             @Override
-            public float getXPos(float origin, float screenWidth, float width) {
+            public float getXPos(float origin, float areaWidth, float objectWidth) {
                 return origin;
             }
         },
         RIGHT {
             @Override
-            public float getXPos(float origin, float screenWidth, float width) {
-                return origin + (screenWidth - width);
+            public float getXPos(float origin, float areaWidth, float objectWidth) {
+                return origin + (areaWidth - objectWidth);
             }
         },
         CENTER {
             @Override
-            public float getXPos(float origin, float screenWidth, float width) {
-                return origin + ((screenWidth - width) / 2);
+            public float getXPos(float origin, float areaWidth, float objectWidth) {
+                return origin + ((areaWidth - objectWidth) / 2);
             }
         };
 
 
-        public abstract float getXPos(float origin, float screenWidth, float width);
+        public abstract float getXPos(float origin, float areaWidth, float objectWidth);
     }
 
-    public enum YAlignment {
+    public enum YAlign {
         TOP {
             @Override
-            public float getYPos(float origin, float screenHeight, float height) {
+            public float getYPos(float origin, float areaHeight, float objectHeight) {
                 return origin;
             }
         },
         BOTTOM {
             @Override
-            public float getYPos(float origin, float screenHeight, float height) {
-                return origin + (screenHeight - height);
+            public float getYPos(float origin, float areaHeight, float objectHeight) {
+                return origin + (areaHeight - objectHeight);
             }
         },
         CENTER {
             @Override
-            public float getYPos(float origin, float screenHeight, float height) {
-                return origin + ((screenHeight - height) / 2);
+            public float getYPos(float origin, float areaHeight, float objectHeight) {
+                return origin + ((areaHeight - objectHeight) / 2);
             }
         };
 
 
-        public abstract float getYPos(float origin, float screenHeight, float height);
+        public abstract float getYPos(float origin, float areaHeight, float objectHeight);
     }
 }

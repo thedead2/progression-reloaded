@@ -1,14 +1,19 @@
 package de.thedead2.progression_reloaded.client.gui.fonts;
 
-import com.google.common.collect.*;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
-import de.thedead2.progression_reloaded.client.ModClientInstance;
 import de.thedead2.progression_reloaded.api.gui.fonts.IFontGlyphProvider;
-import de.thedead2.progression_reloaded.client.gui.fonts.readers.*;
+import de.thedead2.progression_reloaded.api.gui.fonts.IFontReader;
+import de.thedead2.progression_reloaded.client.gui.fonts.readers.BitmapFontReader;
+import de.thedead2.progression_reloaded.client.gui.fonts.readers.LegacyUnicodeFontReader;
+import de.thedead2.progression_reloaded.client.gui.fonts.readers.SpecialReaders;
+import de.thedead2.progression_reloaded.client.gui.fonts.readers.TTFReader;
 import de.thedead2.progression_reloaded.client.gui.fonts.types.MissingFont;
 import de.thedead2.progression_reloaded.client.gui.fonts.types.ProgressionFont;
 import de.thedead2.progression_reloaded.events.PREventFactory;
@@ -23,6 +28,10 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -39,14 +48,18 @@ import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 
+@Mod.EventBusSubscriber(modid = MOD_ID, value = Dist.CLIENT, bus = Mod.EventBusSubscriber.Bus.MOD)
 public class FontManager extends SimplePreparableReloadListener<Map<ResourceLocation, Multimap<ResourceLocation, JsonObject>>> implements AutoCloseable {
+
+    private static final FontManager INSTANCE = new FontManager();
     private static final FileToIdConverter FONT_DEFINITIONS = FileToIdConverter.json("font");
     private static final Marker MARKER = new MarkerManager.Log4jMarker("FontManager");
     private final Map<ResourceLocation, IFontReader<?>> fontReaders = new HashMap<>();
     private final Map<ResourceLocation, ProgressionFont> fonts = new HashMap<>();
     private ProgressionFont missingFont;
 
-    public FontManager() {
+
+    private FontManager() {
         this.fontReaders.putAll(PREventFactory.onFontTypeRegistration());
         this.registerDefaultReaders();
     }
@@ -58,6 +71,16 @@ public class FontManager extends SimplePreparableReloadListener<Map<ResourceLoca
         this.fontReaders.put(new ResourceLocation(MOD_ID, "legacy_unicode"), new LegacyUnicodeFontReader());
     }
 
+
+    public static FontManager getInstance() {
+        return INSTANCE;
+    }
+
+
+    @SubscribeEvent
+    public static void onReloadListenerRegister(final RegisterClientReloadListenersEvent event) {
+        event.registerReloadListener(INSTANCE);
+    }
 
     //TODO: support multiple fonts for italic, bold, alt, etc.
     @Override
@@ -167,12 +190,10 @@ public class FontManager extends SimplePreparableReloadListener<Map<ResourceLoca
         return MARKER.getName();
     }
 
-
     @NotNull
-    public static ProgressionFont getFont(ResourceLocation fontId) {
-        FontManager fontManager = ModClientInstance.getInstance().getFontManager();
-        ProgressionFont font = fontManager.fonts.get(fontId);
-        return font == null ? fontManager.missingFont.defaultFormatting() : font.defaultFormatting();
+    public ProgressionFont getFont(ResourceLocation fontId) {
+        ProgressionFont font = this.fonts.get(fontId);
+        return font == null ? this.missingFont.defaultFormatting() : font.defaultFormatting();
     }
 
     @Override

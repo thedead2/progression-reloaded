@@ -3,16 +3,17 @@ package de.thedead2.progression_reloaded.client.gui.animation;
 import com.google.gson.JsonElement;
 import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
+import de.thedead2.progression_reloaded.util.TickTimer;
 import it.unimi.dsi.fastutil.floats.FloatConsumer;
 
 
 public class EmptyAnimation implements IAnimation {
 
-    private final AnimationTimer timer;
+    private final TickTimer timer;
 
 
     public EmptyAnimation(float duration, boolean started) {
-        this.timer = new AnimationTimer(0, duration, false, !started, LoopTypes.NO_LOOP);
+        this.timer = new TickTimer(0, duration, false, !started, LoopTypes.NO_LOOP);
     }
 
 

@@ -87,7 +87,7 @@ public abstract class PREventFactory {
     }
 
 
-    public static void onQuestComplete(ProgressionQuest quest, QuestStatus completionStatus, PlayerData player) {
+    public static void onQuestFinished(ProgressionQuest quest, QuestStatus completionStatus, PlayerData player) {
         EVENT_BUS.post(new QuestEvent.CompletionEvent(quest, player, completionStatus));
     }
 

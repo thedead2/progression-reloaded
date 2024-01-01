@@ -4,12 +4,10 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import de.thedead2.progression_reloaded.api.gui.IDrawableResource;
-import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
-import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.narration.NarratedElementType;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -20,11 +18,9 @@ import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import org.jetbrains.annotations.NotNull;
 
-import java.awt.*;
 
-
-//FIXME: When not in gui debug mode, item always render on top of other components
-public class DrawableItemTexture extends ScreenComponent implements IDrawableResource {
+//FIXME: When not in gui debug mode, item always renders on top of other components
+public class DrawableItemTexture extends ScreenComponent {
 
     private final ItemStack item;
 
@@ -36,20 +32,8 @@ public class DrawableItemTexture extends ScreenComponent implements IDrawableRes
 
 
     @Override
-    @Deprecated
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         super.render(poseStack, mouseX, mouseY, partialTick);
-    }
-
-
-    @Override
-    public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
-
-    }
-
-
-    @Override
-    public void draw(PoseStack poseStack) {
         Minecraft minecraft = Minecraft.getInstance();
         ItemRenderer itemRenderer = minecraft.getItemRenderer();
         BakedModel bakedModel = itemRenderer.getModel(item, null, null, 0);
@@ -77,10 +61,12 @@ public class DrawableItemTexture extends ScreenComponent implements IDrawableRes
 
         modelViewStack.popPose();
         RenderSystem.applyModelViewMatrix();
+    }
 
-        if(ModRenderer.isGuiDebug()) {
-            RenderUtil.renderAreaDebug(poseStack, this.area, Color.BLUE.getRGB(), Color.MAGENTA.getRGB());
-        }
+
+    @Override
+    public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
+        narrationElementOutput.add(NarratedElementType.TITLE, this.item.getDisplayName());
     }
 
 
@@ -95,12 +81,4 @@ public class DrawableItemTexture extends ScreenComponent implements IDrawableRes
         modelViewStack.scale(this.area.getInnerWidth(), this.area.getInnerHeight(), 1);
         return modelViewStack;
     }
-
-
-    @Override
-    public void draw(PoseStack poseStack, float xPos, float yPos, float zPos) {
-        this.area.setPosition(xPos, yPos, zPos);
-        this.draw(poseStack);
-    }
-
 }

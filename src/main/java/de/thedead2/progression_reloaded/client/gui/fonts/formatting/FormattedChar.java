@@ -18,7 +18,7 @@ public record FormattedChar(char character, @NotNull FontFormatting format) {
 
 
     public float getWidth() {
-        ProgressionFont font = FontManager.getFont(this.format.getFont()).format(this.format);
+        ProgressionFont font = FontManager.getInstance().getFont(this.format.getFont()).format(this.format);
         return font.charWidth(character);
     }
 

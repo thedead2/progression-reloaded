@@ -8,6 +8,7 @@ import com.mojang.brigadier.StringReader;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.GsonHelper;
 
@@ -31,30 +32,40 @@ public abstract class MinMax<T extends Number> {
     @Nullable
     protected final T max;
 
+    @Nullable
+    protected final T minSq;
 
-    protected MinMax(@Nullable T pMin, @Nullable T pMax) {
-        this.min = pMin;
-        this.max = pMax;
+    @Nullable
+    protected final T maxSq;
+
+
+    protected MinMax(@Nullable T min, @Nullable T max) {
+        this.min = min;
+        this.max = max;
+        this.minSq = squareOpt(min);
+        this.maxSq = squareOpt(max);
     }
 
 
-    protected static <T extends Number, R extends MinMax<T>> R fromJson(
-            @Nullable JsonElement pJson, R pDefaultValue, BiFunction<JsonElement, String, T> pValueFactory, MinMax.BoundsFactory<T, R> pBoundedFactory
-    ) {
-        if(pJson != null && !pJson.isJsonNull()) {
-            if(GsonHelper.isNumberValue(pJson)) {
-                T t2 = pValueFactory.apply(pJson, "value");
-                return pBoundedFactory.create(t2, t2);
+    @Nullable
+    protected abstract T squareOpt(@Nullable T value);
+
+
+    protected static <T extends Number, R extends MinMax<T>> R fromJson(@Nullable JsonElement jsonElement, R defaultValue, BiFunction<JsonElement, String, T> valueFactory, MinMaxFactory<T, R> minMaxFactory) {
+        if(jsonElement != null && !jsonElement.isJsonNull()) {
+            if(GsonHelper.isNumberValue(jsonElement)) {
+                T value = valueFactory.apply(jsonElement, "value");
+                return minMaxFactory.create(value, value);
             }
             else {
-                JsonObject jsonobject = GsonHelper.convertToJsonObject(pJson, "value");
-                T t = jsonobject.has("min") ? pValueFactory.apply(jsonobject.get("min"), "min") : null;
-                T t1 = jsonobject.has("max") ? pValueFactory.apply(jsonobject.get("max"), "max") : null;
-                return pBoundedFactory.create(t, t1);
+                JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonElement, "value");
+                T min = SerializationHelper.getNullable(jsonobject, "min", jsonElement1 -> valueFactory.apply(jsonElement1, "min"));
+                T max = SerializationHelper.getNullable(jsonobject, "max", jsonElement1 -> valueFactory.apply(jsonElement1, "max"));
+                return minMaxFactory.create(min, max);
             }
         }
         else {
-            return pDefaultValue;
+            return defaultValue;
         }
     }
 
@@ -153,6 +164,18 @@ public abstract class MinMax<T extends Number> {
     }
 
 
+    @Nullable
+    public T getMinSq() {
+        return minSq;
+    }
+
+
+    @Nullable
+    public T getMaxSq() {
+        return maxSq;
+    }
+
+
     public JsonElement serializeToJson() {
         if(this.isAny()) {
             return JsonNull.INSTANCE;
@@ -162,13 +185,8 @@ public abstract class MinMax<T extends Number> {
         }
         else {
             JsonObject jsonobject = new JsonObject();
-            if(this.min != null) {
-                jsonobject.addProperty("min", this.min);
-            }
-
-            if(this.max != null) {
-                jsonobject.addProperty("max", this.max);
-            }
+            SerializationHelper.addNullable(this.min, jsonobject, "min", JsonPrimitive::new);
+            SerializationHelper.addNullable(this.max, jsonobject, "max", JsonPrimitive::new);
 
             return jsonobject;
         }
@@ -181,9 +199,9 @@ public abstract class MinMax<T extends Number> {
 
 
     @FunctionalInterface
-    protected interface BoundsFactory<T extends Number, R extends MinMax<T>> {
+    protected interface MinMaxFactory<T extends Number, R extends MinMax<T>> {
 
-        R create(@Nullable T pMin, @Nullable T pMax);
+        R create(@Nullable T min, @Nullable T max);
     }
 
     @FunctionalInterface
@@ -195,12 +213,6 @@ public abstract class MinMax<T extends Number> {
     public static class Doubles extends MinMax<Double> {
 
         public static final MinMax.Doubles ANY = new MinMax.Doubles((Double) null, (Double) null);
-
-        @Nullable
-        private final Double minSq;
-
-        @Nullable
-        private final Double maxSq;
 
 
         public static MinMax.Doubles exactly(double pValue) {
@@ -223,20 +235,18 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public static MinMax.Doubles fromJson(@Nullable JsonElement pJson) {
-            return fromJson(pJson, ANY, GsonHelper::convertToDouble, MinMax.Doubles::new);
+        public static MinMax.Doubles fromJson(@Nullable JsonElement jsonElement) {
+            return fromJson(jsonElement, ANY, GsonHelper::convertToDouble, MinMax.Doubles::new);
         }
 
 
         private Doubles(@Nullable Double minSqr, @Nullable Double maxSqr) {
             super(minSqr, maxSqr);
-            this.minSq = squareOpt(minSqr);
-            this.maxSq = squareOpt(maxSqr);
         }
 
 
         @Nullable
-        private static Double squareOpt(@Nullable Double pValue) {
+        protected Double squareOpt(@Nullable Double pValue) {
             return pValue == null ? null : pValue * pValue;
         }
 
@@ -261,22 +271,22 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public boolean matches(double pValue) {
-            if(this.min != null && this.min > pValue) {
+        public boolean matches(double value) {
+            if(this.min != null && this.min > value) {
                 return false;
             }
             else {
-                return this.max == null || !(this.max < pValue);
+                return this.max == null || !(this.max < value);
             }
         }
 
 
-        public boolean matchesSqr(double pValue) {
-            if(this.minSq != null && this.minSq > pValue) {
+        public boolean matchesSqr(double value) {
+            if(this.minSq != null && this.minSq > value) {
                 return false;
             }
             else {
-                return this.maxSq == null || !(this.maxSq < pValue);
+                return this.maxSq == null || !(this.maxSq < value);
             }
         }
     }
@@ -284,12 +294,6 @@ public abstract class MinMax<T extends Number> {
     public static class Ints extends MinMax<Integer> {
 
         public static final MinMax.Ints ANY = new MinMax.Ints((Integer) null, (Integer) null);
-
-        @Nullable
-        private final Long minSq;
-
-        @Nullable
-        private final Long maxSq;
 
 
         public static MinMax.Ints exactly(int pValue) {
@@ -312,21 +316,19 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public static MinMax.Ints fromJson(@Nullable JsonElement pJson) {
-            return fromJson(pJson, ANY, GsonHelper::convertToInt, MinMax.Ints::new);
+        public static MinMax.Ints fromJson(@Nullable JsonElement jsonElement) {
+            return fromJson(jsonElement, ANY, GsonHelper::convertToInt, MinMax.Ints::new);
         }
 
 
-        private Ints(@Nullable Integer p_55369_, @Nullable Integer p_55370_) {
-            super(p_55369_, p_55370_);
-            this.minSq = squareOpt(p_55369_);
-            this.maxSq = squareOpt(p_55370_);
+        private Ints(@Nullable Integer min, @Nullable Integer max) {
+            super(min, max);
         }
 
 
         @Nullable
-        private static Long squareOpt(@Nullable Integer pValue) {
-            return pValue == null ? null : pValue.longValue() * pValue.longValue();
+        protected Integer squareOpt(@Nullable Integer value) {
+            return value == null ? null : value * value;
         }
 
 
@@ -350,22 +352,22 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public boolean matches(int pValue) {
-            if(this.min != null && this.min > pValue) {
+        public boolean matches(int value) {
+            if(this.min != null && this.min > value) {
                 return false;
             }
             else {
-                return this.max == null || this.max >= pValue;
+                return this.max == null || this.max >= value;
             }
         }
 
 
-        public boolean matchesSqr(long pValue) {
-            if(this.minSq != null && this.minSq > pValue) {
+        public boolean matchesSqr(int value) {
+            if(this.minSq != null && this.minSq > value) {
                 return false;
             }
             else {
-                return this.maxSq == null || this.maxSq >= pValue;
+                return this.maxSq == null || this.maxSq >= value;
             }
         }
     }

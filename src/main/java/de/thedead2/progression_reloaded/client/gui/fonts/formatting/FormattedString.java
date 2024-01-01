@@ -74,7 +74,7 @@ public class FormattedString {
 
     private void ensureCached() {
         if(this.cachedFont == null) {
-            this.cachedFont = FontManager.getFont(this.font()).format(this.formatting);
+            this.cachedFont = FontManager.getInstance().getFont(this.font()).format(this.formatting);
         }
     }
 

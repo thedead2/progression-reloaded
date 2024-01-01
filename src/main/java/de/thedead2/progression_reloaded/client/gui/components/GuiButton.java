@@ -60,7 +60,7 @@ public class GuiButton extends ScreenComponent {
         super.render(poseStack, mouseX, mouseY, partialTick);
         float xOffset = 0;
         if(this.icon != null) {
-            this.icon.draw(poseStack);
+            this.icon.render(poseStack, mouseX, mouseY, partialTick);
             xOffset = this.icon.getWidth();
         }
         if(this.name != null) {
@@ -69,12 +69,6 @@ public class GuiButton extends ScreenComponent {
         if(this.borderColor != 0) {
             RenderUtil.renderArea(poseStack, this.area, RenderUtil.changeAlpha(this.borderColor, this.alpha), 0);
         }
-    }
-
-
-    @Override
-    public boolean isMouseOver(double mouseX, double mouseY) {
-        return this.area.contains((float) mouseX, (float) mouseY);
     }
 
 

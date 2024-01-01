@@ -4,10 +4,12 @@ import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
+import de.thedead2.progression_reloaded.data.quest.tasks.QuestTask;
+import de.thedead2.progression_reloaded.data.quest.tasks.TaskProgress;
 import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
 import de.thedead2.progression_reloaded.events.PREventFactory;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientOnProgressChangedPacket;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
@@ -41,12 +43,12 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
 
     private final ProgressionQuest quest;
 
-    private final Map<QuestTasks.Task, QuestTasks.TaskProgress> taskProgress;
+    private final Map<QuestTask, TaskProgress> taskProgress;
 
     private QuestStatus previousQuestStatus;
 
     @Nullable
-    private QuestTasks.Task currentTask;
+    private QuestTask currentTask;
 
 
     public QuestProgress(ProgressionQuest quest, Supplier<PlayerData> player) {
@@ -54,7 +56,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    private QuestProgress(Supplier<PlayerData> player, @Nullable QuestTasks.Task currentTask, ProgressionQuest quest, Map<QuestTasks.Task, QuestTasks.TaskProgress> taskProgress) {
+    private QuestProgress(Supplier<PlayerData> player, @Nullable QuestTask currentTask, ProgressionQuest quest, Map<QuestTask, TaskProgress> taskProgress) {
         this.player = player;
         this.currentTask = currentTask;
         this.quest = quest;
@@ -65,8 +67,8 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     public static QuestProgress fromNBT(CompoundTag tag) {
         UUID uuid = tag.getUUID("player");
         ProgressionQuest quest = ModRegistries.QUESTS.get().getValue(new ResourceLocation(tag.getString("quest")));
-        QuestTasks.Task currentTask = SerializationHelper.getNullable(tag, "currentTask", tag1 -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(tag1.getAsString())));
-        Map<QuestTasks.Task, QuestTasks.TaskProgress> nodeProgress = CollectionHelper.loadFromNBT(tag.getCompound("nodeProgress"), s -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(s)), tag1 -> QuestTasks.TaskProgress.loadFromNBT((CompoundTag) tag1));
+        QuestTask currentTask = SerializationHelper.getNullable(tag, "currentTask", tag1 -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(tag1.getAsString())));
+        Map<QuestTask, TaskProgress> nodeProgress = CollectionHelper.loadFromNBT(tag.getCompound("nodeProgress"), s -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(s)), tag1 -> TaskProgress.loadFromNBT((CompoundTag) tag1));
 
         return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, quest, nodeProgress);
     }
@@ -75,8 +77,8 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     public static QuestProgress fromNetwork(FriendlyByteBuf buf) {
         UUID uuid = buf.readUUID();
         ProgressionQuest quest = ModRegistries.QUESTS.get().getValue(buf.readResourceLocation());
-        QuestTasks.Task currentTask = buf.readNullable(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()));
-        Map<QuestTasks.Task, QuestTasks.TaskProgress> nodeProgress = buf.readMap(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()), QuestTasks.TaskProgress::fromNetwork);
+        QuestTask currentTask = buf.readNullable(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()));
+        Map<QuestTask, TaskProgress> nodeProgress = buf.readMap(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()), TaskProgress::fromNetwork);
 
         return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, quest, nodeProgress);
     }
@@ -93,8 +95,8 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public Set<QuestTasks.Task> getChildrenForCurrentTask() {
-        Set<QuestTasks.Task> children = new HashSet<>();
+    public Set<QuestTask> getChildrenForCurrentTask() {
+        Set<QuestTask> children = new HashSet<>();
         if(this.currentTask != null && this.currentTask.hasChildren()) {
             this.currentTask.getChildren().forEach(value -> children.add(this.getTaskForId(value)));
         }
@@ -104,21 +106,55 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
 
 
     @NotNull
-    private QuestTasks.Task getTaskForId(ResourceLocation id) {
+    private QuestTask getTaskForId(ResourceLocation id) {
         return this.quest.getTasks().getTaskForId(id);
     }
 
 
-    public void registerListeners(Collection<QuestTasks.Task> tasks, PlayerData player) {
+    public void registerListeners(Collection<QuestTask> tasks, PlayerData player) {
         tasks.forEach(task -> this.registerListeners(task, player));
     }
 
 
-    public boolean award(QuestTasks.Task task, String criterionName, PlayerData player) {
-        LOGGER.debug(MARKER, "Awarding task {} criterion {} for player {}", task.getId(), criterionName, player.getName());
+    public void registerListeners(QuestTask task, PlayerData player) {
+        LOGGER.debug(MARKER, "Registering listeners for task {} for player {}", task.getId(), player.getName());
+        TaskProgress taskProgress = this.getOrStartProgress(task);
+        if(!taskProgress.isDone()) {
+            for(Map.Entry<String, SimpleTrigger<?>> entry : task.getCriteria().entrySet()) {
+                CriterionProgress criterionprogress = taskProgress.getCriterion(entry.getKey());
+                if(criterionprogress != null && !criterionprogress.isDone()) {
+                    SimpleTrigger<?> trigger = entry.getValue();
+                    if(trigger != null) {
+                        trigger.addListener(player, new SimpleTrigger.Listener(quest, task, entry.getKey()));
+                    }
+                }
+            }
+        }
+    }
+
+
+    public TaskProgress getOrStartProgress(QuestTask task) {
+        TaskProgress taskProgress = this.taskProgress.get(task);
+        if(taskProgress == null) {
+            taskProgress = new TaskProgress(task);
+            this.startProgress(task, taskProgress);
+        }
+        return taskProgress;
+    }
+
+
+    private void startProgress(QuestTask task, TaskProgress taskProgress) {
+        taskProgress.updateProgress(task);
+        this.taskProgress.putIfAbsent(task, taskProgress);
+    }
+
+
+    public boolean award(QuestTask task, String criterionName, PlayerData player) {
+        LOGGER.debug(MARKER, "Awarding criterion {} of task {}  for player {}", criterionName, task.getId(), player.getName());
         boolean flag = false;
-        boolean questComplete = false;
-        QuestTasks.TaskProgress taskProgress = this.getOrStartProgress(task);
+        boolean questFinished = false;
+        ClientOnProgressChangedPacket.Type toastType = null;
+        TaskProgress taskProgress = this.getOrStartProgress(task);
         this.previousQuestStatus = this.getCurrentQuestStatus();
         if(criterionName == null || taskProgress.grantProgress(criterionName)) {
             if(criterionName == null) {
@@ -130,7 +166,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
                         this.unregisterListeners(this.getPotentialStartingTasks(), player);
                         this.registerChildrenListeners(task, player);
 
-                        ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(this.quest.getDisplay(), Component.literal("New Quest!")), player.getServerPlayer());
+                        toastType = ClientOnProgressChangedPacket.Type.NEW_QUEST;
                         break;
                     }
                     case ACTIVE: {
@@ -141,10 +177,10 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
                         this.registerChildrenListeners(task, player);
 
                         if(this.previousQuestStatus != QuestStatus.NOT_STARTED) {
-                            ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(this.quest.getDisplay(), Component.literal("Quest updated!")), player.getServerPlayer());
+                            toastType = ClientOnProgressChangedPacket.Type.QUEST_UPDATED;
                         }
                         else {
-                            ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(this.quest.getDisplay(), Component.literal("New Quest!")), player.getServerPlayer());
+                            toastType = ClientOnProgressChangedPacket.Type.NEW_QUEST;
                         }
                         break;
                     }
@@ -152,12 +188,13 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
                     case FAILED: {
                         this.stopListening();
 
-                        questComplete = true;
+                        questFinished = true;
+                        toastType = task.getQuestStatus() == QuestStatus.COMPLETE ? ClientOnProgressChangedPacket.Type.QUEST_COMPLETE : ClientOnProgressChangedPacket.Type.QUEST_FAILED;
                         break;
                     }
                 }
 
-                this.currentTask = task;
+                this.setCurrentTask(task);
                 this.currentTask.rewardPlayer(player);
 
                 flag = true;
@@ -165,16 +202,19 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         }
 
         PREventFactory.onQuestProgressChanged(this.quest, this, player);
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
+        PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
         PlayerDataManager.ensureQuestsSynced(player);
 
         if(this.previousQuestStatus != this.getCurrentQuestStatus()) {
             player.getQuestData().onQuestStatusChanged(this.quest, this.previousQuestStatus, this.getCurrentQuestStatus());
         }
 
-        if(questComplete) {
-            ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(this.quest.getDisplay(), Component.literal("Quest complete!")), player.getServerPlayer());
-            PREventFactory.onQuestComplete(this.quest, task.getQuestStatus(), player);
+        if(flag) {
+            PRNetworkHandler.sendToPlayer(new ClientOnProgressChangedPacket(this.quest.getDisplay(), toastType), player.getServerPlayer());
+        }
+
+        if(questFinished) {
+            PREventFactory.onQuestFinished(this.quest, task.getQuestStatus(), player);
             LevelManager.getInstance().updateStatus();
         }
 
@@ -182,14 +222,14 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    private void registerChildrenListeners(QuestTasks.Task task, PlayerData player) {
+    private void registerChildrenListeners(QuestTask task, PlayerData player) {
         task.getChildren().forEach(id -> this.registerListeners(this.getTaskForId(id), player));
     }
 
 
-    public void unregisterListeners(QuestTasks.Task task, PlayerData player) {
+    public void unregisterListeners(QuestTask task, PlayerData player) {
         LOGGER.debug(MARKER, "Unregistering listeners for task {} for player {}", task.getId(), player.getName());
-        QuestTasks.TaskProgress taskProgress = this.getOrStartProgress(task);
+        TaskProgress taskProgress = this.getOrStartProgress(task);
 
         for(Map.Entry<String, SimpleTrigger<?>> entry : task.getCriteria().entrySet()) {
             CriterionProgress criterionprogress = taskProgress.getCriterion(entry.getKey());
@@ -200,34 +240,6 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
                 }
             }
         }
-    }
-
-
-    public boolean revoke(QuestTasks.Task task, String criterionName, PlayerData player) {
-        LOGGER.debug(MARKER, "Revoking task {} criterion {} for player {}", task.getId(), criterionName, player.getName());
-        boolean flag = false;
-        QuestTasks.TaskProgress taskProgress = this.getOrStartProgress(task);
-        this.previousQuestStatus = this.getCurrentQuestStatus();
-        if(criterionName == null || taskProgress.revokeProgress(criterionName)) {
-            if(criterionName == null) {
-                taskProgress.reset();
-            }
-            this.registerListeners(task, player);
-            flag = true;
-            LevelManager.getInstance().updateStatus();
-        }
-
-        return flag;
-    }
-
-
-    public QuestTasks.TaskProgress getOrStartProgress(QuestTasks.Task task) {
-        QuestTasks.TaskProgress taskProgress = this.taskProgress.get(task);
-        if(taskProgress == null) {
-            taskProgress = new QuestTasks.TaskProgress(task);
-            this.startProgress(task, taskProgress);
-        }
-        return taskProgress;
     }
 
 
@@ -245,26 +257,21 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public void registerListeners(QuestTasks.Task task, PlayerData player) {
-        LOGGER.debug(MARKER, "Registering listeners for task {} for player {}", task.getId(), player.getName());
-        QuestTasks.TaskProgress taskProgress = this.getOrStartProgress(task);
-        if(!taskProgress.isDone()) {
-            for(Map.Entry<String, SimpleTrigger<?>> entry : task.getCriteria().entrySet()) {
-                CriterionProgress criterionprogress = taskProgress.getCriterion(entry.getKey());
-                if(criterionprogress != null && !criterionprogress.isDone()) {
-                    SimpleTrigger<?> trigger = entry.getValue();
-                    if(trigger != null) {
-                        trigger.addListener(player, new SimpleTrigger.Listener(quest, task, entry.getKey()));
-                    }
-                }
+    public boolean revoke(QuestTask task, String criterionName, PlayerData player) {
+        LOGGER.debug(MARKER, "Revoking task {} criterion {} for player {}", task.getId(), criterionName, player.getName());
+        boolean flag = false;
+        TaskProgress taskProgress = this.getOrStartProgress(task);
+        this.previousQuestStatus = this.getCurrentQuestStatus();
+        if(criterionName == null || taskProgress.revokeProgress(criterionName)) {
+            if(criterionName == null) {
+                taskProgress.reset();
             }
+            this.registerListeners(task, player);
+            flag = true;
+            LevelManager.getInstance().updateStatus();
         }
-    }
 
-
-    private void startProgress(QuestTasks.Task task, QuestTasks.TaskProgress taskProgress) {
-        taskProgress.updateProgress(task);
-        this.taskProgress.putIfAbsent(task, taskProgress);
+        return flag;
     }
 
 
@@ -280,8 +287,8 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
             float percent = 0f;
 
             int counter = 0;
-            for(QuestTasks.Task task : Set.copyOf(this.taskProgress.keySet())) {
-                if(task.getType() != QuestTasks.Task.Type.START_TASK) {
+            for(QuestTask task : Set.copyOf(this.taskProgress.keySet())) {
+                if(task.getType() != QuestTask.Function.START_TASK) {
                     percent += this.getOrStartProgress(task).getPercent();
                     counter++;
                 }
@@ -293,21 +300,21 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
 
 
     @Override
-    public boolean isDone() {
-        QuestStatus currentStatus = this.getCurrentQuestStatus();
-        return currentStatus == QuestStatus.COMPLETE || currentStatus == QuestStatus.FAILED;
-    }
-
-
-    @Override
     public CompoundTag saveToCompoundTag() {
         CompoundTag tag = new CompoundTag();
         tag.putUUID("player", this.player.get().getUUID());
         tag.putString("quest", this.quest.getId().toString());
         SerializationHelper.addNullable(this.currentTask, tag, "currentTask", task -> StringTag.valueOf(task.getId().toString()));
-        tag.put("progress", CollectionHelper.saveToNBT(this.taskProgress, task -> task.getId().toString(), QuestTasks.TaskProgress::saveToNBT));
+        tag.put("progress", CollectionHelper.saveToNBT(this.taskProgress, task -> task.getId().toString(), TaskProgress::saveToNBT));
 
         return tag;
+    }
+
+
+    @Override
+    public boolean isDone() {
+        QuestStatus currentStatus = this.getCurrentQuestStatus();
+        return currentStatus == QuestStatus.COMPLETE || currentStatus == QuestStatus.FAILED;
     }
 
 
@@ -316,8 +323,13 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         LOGGER.debug(MARKER, "Resetting progress for quest {} for player {}", this.quest.getId(), this.player.get().getName());
         this.stopListening();
         this.taskProgress.clear();
-        this.currentTask = null;
+        this.setCurrentTask(null);
         this.startListening();
+    }
+
+
+    private void setCurrentTask(@Nullable QuestTask task) {
+        this.currentTask = task;
     }
 
 
@@ -353,11 +365,11 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         });
 
         this.stopListening();
-        this.currentTask = this.getEndTask(successful);
+        this.setCurrentTask(this.getEndTask(successful));
     }
 
 
-    public QuestTasks.Task getEndTask(boolean successful) {
+    public QuestTask getEndTask(boolean successful) {
         return this.quest.getTasks().getEndTask(successful);
     }
 
@@ -368,7 +380,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public void unregisterListeners(Collection<QuestTasks.Task> tasks, PlayerData player) {
+    public void unregisterListeners(Collection<QuestTask> tasks, PlayerData player) {
         tasks.forEach(task -> this.unregisterListeners(task, player));
     }
 
@@ -385,7 +397,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         if(this.getCurrentQuestStatus() == QuestStatus.NOT_STARTED) {
             this.getPotentialStartingTasks()
                 .stream()
-                .map(QuestTasks.Task::getDescription)
+                .map(QuestTask::getDescription)
                 .forEach(set::add);
         }
         else {
@@ -397,7 +409,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
                     .getChildren()
                     .stream()
                     .map(this::getTaskForId)
-                    .map(QuestTasks.Task::getDescription)
+                    .map(QuestTask::getDescription)
                     .forEach(set::add);
         }
 
@@ -405,11 +417,11 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public Set<QuestTasks.Task> getPotentialStartingTasks() {
-        Set<QuestTasks.Task> nodes = new HashSet<>();
+    public Set<QuestTask> getPotentialStartingTasks() {
+        Set<QuestTask> nodes = new HashSet<>();
         QuestTasks tasks = this.quest.getTasks();
-        nodes.addAll(tasks.getTasksByType(QuestTasks.Task.Type.START_TASK));
-        nodes.addAll(tasks.getTasksByType(QuestTasks.Task.Type.POSSIBLE_START_TASK));
+        nodes.addAll(tasks.getTasksByType(QuestTask.Function.START_TASK));
+        nodes.addAll(tasks.getTasksByType(QuestTask.Function.POSSIBLE_START_TASK));
 
         return nodes;
     }
@@ -420,7 +432,7 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
             return false;
         }
         else {
-            QuestTasks.Task task = this.getPotentialStartingTasks().stream().findFirst().orElseThrow();
+            QuestTask task = this.getPotentialStartingTasks().stream().findFirst().orElseThrow();
             return this.award(task, null, this.player.get());
         }
     }

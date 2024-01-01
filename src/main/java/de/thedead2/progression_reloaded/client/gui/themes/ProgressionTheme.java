@@ -3,8 +3,10 @@ package de.thedead2.progression_reloaded.client.gui.themes;
 import com.google.common.base.Preconditions;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
 import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
+import de.thedead2.progression_reloaded.client.gui.util.ObjectFit;
 import de.thedead2.progression_reloaded.client.gui.util.TooltipInfo;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 
@@ -35,8 +37,8 @@ public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast,
         }
 
 
-        public Builder withLogo(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.logo = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withLogo(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.logo = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
@@ -46,32 +48,32 @@ public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast,
         }
 
 
-        public Builder withToast(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.toast = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withToast(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.toast = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
 
-        public Builder withProgressBarEmpty(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.progressBarEmpty = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withProgressBarEmpty(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.progressBarEmpty = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
 
-        public Builder withProgressBarFilled(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.progressBarFilled = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withProgressBarFilled(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.progressBarFilled = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
 
-        public Builder withBackgroundFrame(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.backgroundFrame = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withBackgroundFrame(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.backgroundFrame = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
 
-        public Builder withQuestWidget(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
-            this.questWidget = new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio);
+        public Builder withQuestWidget(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
+            this.questWidget = new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit);
             return this;
         }
 
@@ -82,8 +84,8 @@ public record ProgressionTheme(int ordinal, TextureInfo logo, TextureInfo toast,
         }
 
 
-        public Builder withTooltip(String fileName, float u, float v, float textureWidth, float textureHeight, boolean keepRatio, FontFormatting formatting) {
-            this.tooltip = new TooltipInfo(new TextureInfo(createId(fileName), u, v, textureWidth, textureHeight, keepRatio), formatting.setFont(this.font));
+        public Builder withTooltip(String fileName, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit, FontFormatting formatting) {
+            this.tooltip = new TooltipInfo(new TextureInfo(createId(fileName), altText, u, v, textureWidth, textureHeight, objectFit), formatting.setFont(this.font));
             return this;
         }
 

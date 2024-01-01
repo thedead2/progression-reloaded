@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.textures;
 
+import de.thedead2.progression_reloaded.client.gui.util.ObjectFit;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 
@@ -9,6 +11,8 @@ public class TextureInfo {
      * The location for the texture
      */
     private final ResourceLocation textureLocation;
+
+    private final Component altText;
 
     /**
      * The u start position inside the texture file
@@ -26,23 +30,24 @@ public class TextureInfo {
 
     private final float aspectRatio;
 
-    private final boolean keepRatio;
+    private final ObjectFit objectFit;
 
     private final float[] colorShift = new float[]{1.0f, 1.0f, 1.0f, 1.0f};
 
 
-    public TextureInfo(ResourceLocation textureLocation, float textureWidth, float textureHeight, boolean keepRatio) {
-        this(textureLocation, 0, 0, textureWidth, textureHeight, keepRatio);
+    public TextureInfo(ResourceLocation textureLocation, Component altText, float textureWidth, float textureHeight, ObjectFit objectFit) {
+        this(textureLocation, altText, 0, 0, textureWidth, textureHeight, objectFit);
     }
 
 
-    public TextureInfo(ResourceLocation textureLocation, float u, float v, float textureWidth, float textureHeight, boolean keepRatio) {
+    public TextureInfo(ResourceLocation textureLocation, Component altText, float u, float v, float textureWidth, float textureHeight, ObjectFit objectFit) {
         this.textureLocation = textureLocation;
+        this.altText = altText;
         this.u = u;
         this.v = v;
         this.textureWidth = textureWidth;
         this.textureHeight = textureHeight;
-        this.keepRatio = keepRatio;
+        this.objectFit = objectFit;
         this.aspectRatio = textureWidth / textureHeight;
     }
 
@@ -77,8 +82,8 @@ public class TextureInfo {
     }
 
 
-    public boolean shouldKeepRatio() {
-        return keepRatio;
+    public ObjectFit getObjectFit() {
+        return objectFit;
     }
 
 
@@ -100,5 +105,10 @@ public class TextureInfo {
 
     public float[] getColorShift() {
         return colorShift;
+    }
+
+
+    public Component getAltText() {
+        return this.altText;
     }
 }

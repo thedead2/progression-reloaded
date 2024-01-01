@@ -8,6 +8,7 @@ import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
 import de.thedead2.progression_reloaded.api.gui.fonts.ITextEffect;
 import de.thedead2.progression_reloaded.api.gui.fonts.glyphs.IGlyphTransform;
 import de.thedead2.progression_reloaded.client.gui.util.Alignment;
+import de.thedead2.progression_reloaded.util.helper.JsonHelper;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
@@ -38,7 +39,7 @@ public class FontFormatting {
 
 
     private FontFormatting() {
-        this(new ResourceLocation("default"), 8, 0, 3, Alignment.DEFAULT, Color.WHITE.getRGB(), 0, false, false, false, false, false, false);
+        this(new ResourceLocation("default"), 8, 0, 3, Alignment.TOP_LEFT, Color.WHITE.getRGB(), 0, false, false, false, false, false, false);
     }
 
     /**
@@ -67,7 +68,7 @@ public class FontFormatting {
 
 
     public static FontFormatting of(Style style) {
-        return new FontFormatting(style.getFont(), 8, 0, 1, Alignment.DEFAULT, style.getColor() != null ? style.getColor().getValue() : Color.WHITE.getRGB(), 0, style.isBold(), style.isItalic(), style.isUnderlined(), style.isStrikethrough(), style.isObfuscated(), false);
+        return new FontFormatting(style.getFont(), 8, 0, 1, Alignment.TOP_LEFT, style.getColor() != null ? style.getColor().getValue() : Color.WHITE.getRGB(), 0, style.isBold(), style.isItalic(), style.isUnderlined(), style.isStrikethrough(), style.isObfuscated(), false);
     }
 
 
@@ -149,7 +150,7 @@ public class FontFormatting {
         float lineHeight = jsonObject.get("lineHeight").getAsFloat();
         float letterSpacing = jsonObject.get("letterSpacing").getAsFloat();
         float lineSpacing = jsonObject.get("lineSpacing").getAsFloat();
-        Alignment textAlignment = Alignment.fromJson(jsonObject.get("textAlignment"));
+        Alignment textAlignment = JsonHelper.getEnum(Alignment.class, "textAlignment", jsonObject);
         int textColor = jsonObject.get("textColor").getAsInt();
         int bgColor = jsonObject.get("bgColor").getAsInt();
         boolean bold = jsonObject.get("bold").getAsBoolean();
@@ -290,19 +291,21 @@ public class FontFormatting {
     }
 
 
-    public FontFormatting setColor(int red, int green, int blue) {
+    public FontFormatting setColor(int red, int green, int blue, int alpha) {
         this.setRed(red);
         this.setGreen(green);
         this.setBlue(blue);
+        this.setAlpha(alpha);
 
         return this;
     }
 
 
-    public FontFormatting setColor(float red, float green, float blue) {
+    public FontFormatting setColor(float red, float green, float blue, float alpha) {
         this.setRed(red);
         this.setGreen(green);
         this.setBlue(blue);
+        this.setAlpha(alpha);
 
         return this;
     }
@@ -418,7 +421,7 @@ public class FontFormatting {
         jsonObject.addProperty("lineHeight", this.lineHeight);
         jsonObject.addProperty("letterSpacing", this.letterSpacing);
         jsonObject.addProperty("lineSpacing", this.lineSpacing);
-        jsonObject.add("textAlignment", this.textAlignment.toJson());
+        JsonHelper.writeEnum(this.textAlignment, "textAlignment", jsonObject);
         jsonObject.addProperty("textColor", this.getColor());
         jsonObject.addProperty("bgColor", this.getBgColor());
         jsonObject.addProperty("bold", this.bold);

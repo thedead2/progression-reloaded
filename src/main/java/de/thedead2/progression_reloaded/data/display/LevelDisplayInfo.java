@@ -93,24 +93,24 @@ public final class LevelDisplayInfo implements IDisplayInfo<ProgressionLevel> {
 
 
     @Override
-    public ItemStack getIcon() {
+    public ItemStack icon() {
         return icon;
     }
 
 
-    public Component getTitle() {
+    public Component title() {
         return title;
     }
 
 
     @Override
-    public Component getDescription() {
+    public Component description() {
         return description;
     }
 
 
     @Override
-    public ResourceLocation getId() {
+    public ResourceLocation id() {
         return id;
     }
 

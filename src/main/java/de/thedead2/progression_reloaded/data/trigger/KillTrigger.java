@@ -13,6 +13,7 @@ import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 
+//TODO: Add MinMaxInt for count/amount
 public class KillTrigger extends SimpleTrigger<Entity> {
 
     public static final ResourceLocation ID = createId("kill");

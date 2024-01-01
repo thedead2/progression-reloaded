@@ -2,12 +2,14 @@ package de.thedead2.progression_reloaded.client.gui.themes;
 
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
 import de.thedead2.progression_reloaded.client.gui.themes.layouts.ProgressionLayout;
+import de.thedead2.progression_reloaded.client.gui.util.ObjectFit;
 import de.thedead2.progression_reloaded.client.gui.util.Padding;
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import javax.annotation.Nullable;
@@ -21,19 +23,19 @@ public class ThemeManager {
     private final Supplier<ProgressionLayout> activeLayout = () -> ProgressionLayout.Builder.builder()
                                                                                             .withToast(200, 100, 0, 150, 50, Padding.NONE)
                                                                                             .withLevelProgressOL(0, 0, 0, 100, 13, new Padding(5))
-                                                                                            .withQuestProgressOL(RenderUtil.getScreenWidth() - 50, 50, 0, 50, 150, new Padding(5))
+                                                                                            .withQuestProgressOL(() -> RenderUtil.getScreenWidth() - 50, () -> 50, () -> 0, () -> 50, () -> 150, new Padding(5))
                                                                                             .build();
 
     private final Supplier<ProgressionTheme> activeTheme = () -> ProgressionTheme.Builder.builder("textures/gui/themes/futuristic/")
                                                                                          .withOrdinal(0)
-                                                                                         .withToast("futuristic_toast.png", 0, 0, 3072, 382, true)
+                                                                                         .withToast("futuristic_toast.png", Component.empty(), 0, 0, 3072, 382, ObjectFit.CONTAIN)
                                                                                          .withFont(new ResourceLocation(ModHelper.MOD_ID, "expansiva"))
-                                                                                         .withLogo("pr_logo_futuristic_no_bg.png", 0, 0, 3072, 2069, true)
-                                                                                         .withBackgroundFrame("bg_frame.png", 0, 0, 3072, 1381, true)
-                                                                                         .withQuestWidget("quest_widget_hovered.png", 0, 0, 3072, 3091, true)
-                                                                                         .withProgressBarEmpty("progress_bar_empty.png", 0, 0, 3072, 105, true)
-                                                                                         .withProgressBarFilled("progress_bar_filled.png", 0, 0, 3072, 247, true)
-                                                                                         .withTooltip("tooltip_frame.png", 0, 0, 3072, 895, true, FontFormatting.defaultFormatting().setLineHeight(3))
+                                                                                         .withLogo("pr_logo_futuristic_no_bg.png", Component.empty(), 0, 0, 3072, 2069, ObjectFit.CONTAIN)
+                                                                                         .withBackgroundFrame("bg_frame.png", Component.empty(), 0, 0, 3072, 1956, ObjectFit.FILL)
+                                                                                         .withQuestWidget("quest_widget_hovered.png", Component.empty(), 0, 0, 3072, 3091, ObjectFit.CONTAIN)
+                                                                                         .withProgressBarEmpty("progress_bar_empty.png", Component.empty(), 0, 0, 3072, 105, ObjectFit.COVER)
+                                                                                         .withProgressBarFilled("progress_bar_filled.png", Component.empty(), 0, 0, 3072, 247, ObjectFit.COVER)
+                                                                                         .withTooltip("tooltip_frame.png", Component.empty(), 0, 0, 3072, 895, ObjectFit.FILL, FontFormatting.defaultFormatting().setLineHeight(3))
                                                                                          .withLayout(new ResourceLocation(ModHelper.MOD_ID, "futuristic_layout"))
                                                                                          .build();
 

@@ -89,7 +89,7 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
 
     public ResourceLocation getId() {
-        return this.displayInfo.getId();
+        return this.displayInfo.id();
     }
 
 
@@ -128,7 +128,7 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
 
     public Component getTitle() {
-        return this.displayInfo.getTitle();
+        return this.displayInfo.title();
     }
 
 
@@ -143,7 +143,7 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
 
     public boolean isActive(PlayerData player) {
-        return player.getQuestData().getQuestsByStatus(QuestStatus.ACTIVE).contains(this);
+        return player.getQuestData().getStartedOrActiveQuests().contains(this);
     }
 
 }

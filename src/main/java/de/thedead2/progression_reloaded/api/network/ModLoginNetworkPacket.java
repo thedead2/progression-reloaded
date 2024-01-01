@@ -4,6 +4,5 @@ import java.util.function.IntSupplier;
 
 
 public interface ModLoginNetworkPacket extends ModNetworkPacket, IntSupplier {
-
     void setLoginIndex(int i);
 }

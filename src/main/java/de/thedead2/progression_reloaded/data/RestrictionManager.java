@@ -5,7 +5,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.api.IRestrictionType;
 import de.thedead2.progression_reloaded.data.restrictions.*;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncRestrictionsPacket;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
@@ -114,7 +114,7 @@ public class RestrictionManager {
 
     public void syncRestrictions(ServerPlayer player) {
         if(ModHelper.isRunningOnServerThread()) {
-            ModNetworkHandler.sendToPlayer(new ClientSyncRestrictionsPacket(this.restrictions), player);
+            PRNetworkHandler.sendToPlayer(new ClientSyncRestrictionsPacket(this.restrictions), player);
         }
     }
 

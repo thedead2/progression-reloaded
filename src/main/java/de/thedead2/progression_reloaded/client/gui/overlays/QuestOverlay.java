@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.overlays;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import de.thedead2.progression_reloaded.client.ModClientInstance;
+import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.client.gui.components.TextBox;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FormattedCharSeq;
@@ -21,20 +21,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class QuestProgressOverlay extends ProgressOverlay<ProgressionQuest> {
-
-    private final QuestProgress questProgress;
-
+public class QuestOverlay extends ProgressOverlay<ProgressionQuest> {
     private final TextBox textBox;
 
 
-    public QuestProgressOverlay(Area area, QuestDisplayInfo displayInfo, @Nullable TextureInfo backgroundFrame, ResourceLocation font) {
-        super(area, displayInfo, null, backgroundFrame, font);
-        this.questProgress = ModClientInstance.getInstance().getClientData().getQuestData().getOrStartProgress(displayInfo.getId());
+    public QuestOverlay(Area area, QuestDisplayInfo displayInfo, QuestProgress questProgress, @Nullable TextureInfo backgroundFrame, ResourceLocation font) {
+        super(area, displayInfo, backgroundFrame, font);
         this.textBox = new TextBox(this.area);
 
-        FormattedString title = new FormattedString(this.displayInfo.getTitle(), this.font.getName(), FontFormatting.defaultFormatting().setLineHeight(4).setTextAlignment(Alignment.CENTERED).setBgColor(Color.BLACK.getRGB()).setBgAlpha(0.25f).setColor(153, 102, 51), false);
-        List<FormattedString> list = this.questProgress.getCurrentDescriptions()
+        this.updateProgress(questProgress);
+    }
+
+
+    @Override
+    public void updateProgress(IProgressInfo<ProgressionQuest> progressInfo) {
+        FormattedString title = new FormattedString(this.displayInfo.title(), this.font.getName(), FontFormatting.defaultFormatting().setLineHeight(4).setTextAlignment(Alignment.CENTERED).setBgColor(Color.BLACK.getRGB()).setBgAlpha(0.25f).setColor(153, 102, 51, 255), false);
+        List<FormattedString> list = ((QuestProgress) progressInfo).getCurrentDescriptions()
                                                        .stream()
                                                        .map(component -> new FormattedString(component, this.font.getName(), FontFormatting.defaultFormatting().setLineHeight(3).setTextAlignment(Alignment.CENTERED).setBgColor(Color.BLACK.getRGB()).setBgAlpha(0.25f), false))
                                                        .toList();
@@ -49,7 +51,7 @@ public class QuestProgressOverlay extends ProgressOverlay<ProgressionQuest> {
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         if(this.backgroundFrame != null) {
-            this.backgroundFrame.draw(poseStack);
+            this.backgroundFrame.render(poseStack, mouseX, mouseY, partialTick);
         }
 
         this.textBox.render(poseStack, mouseX, mouseY, partialTick);
@@ -57,6 +59,11 @@ public class QuestProgressOverlay extends ProgressOverlay<ProgressionQuest> {
 
 
     public boolean isQuestFollowed(ResourceLocation questId) {
-        return this.displayInfo.getId().equals(questId);
+        return this.displayInfo.id().equals(questId);
+    }
+
+
+    public ResourceLocation getFollowedQuest() {
+        return this.displayInfo.id();
     }
 }

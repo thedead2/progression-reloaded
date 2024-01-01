@@ -72,7 +72,7 @@ public class Tooltip extends ScreenComponent {
         this.textBox.render(poseStack, mouseX, mouseY, partialTick);
 
         this.area.setPadding(0);
-        this.background.draw(poseStack, mouseX, mouseY, -10);
+        this.background.render(poseStack, mouseX, mouseY, partialTick);
     }
 
 

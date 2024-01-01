@@ -20,7 +20,7 @@ public interface IProgressInfo<T extends IProgressable<T>> {
     }
 
     /**
-     * @return the progress of this {@link IProgressInfo} in percent
+     * @return the progress of this {@link IProgressInfo} in stopPercent
      **/
     float getPercent();
 

@@ -4,45 +4,55 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.api.IProgressInfo;
-import de.thedead2.progression_reloaded.client.gui.overlays.LevelProgressOverlay;
-import de.thedead2.progression_reloaded.client.gui.overlays.QuestProgressOverlay;
+import de.thedead2.progression_reloaded.client.gui.GuiFactory;
+import de.thedead2.progression_reloaded.client.gui.overlays.LevelOverlay;
+import de.thedead2.progression_reloaded.client.gui.overlays.QuestOverlay;
 import de.thedead2.progression_reloaded.client.gui.themes.ThemeManager;
-import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
+import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ConfigManager;
+import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.client.event.RenderGuiEvent;
-import net.minecraftforge.client.event.ScreenEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import org.apache.logging.log4j.Level;
 import org.joml.Quaternionf;
-import org.joml.Vector2d;
 
+import javax.annotation.Nullable;
 import java.awt.*;
+import java.io.IOException;
+import java.nio.file.Path;
 
 
 public class ModRenderer {
 
+    private static final Path CLIENT_DATA = ModHelper.DIR_PATH.resolve("client.dat");
     private final Minecraft minecraft;
 
     private final ThemeManager themeManager;
 
-    private final NotificationToastRenderer toastRenderer;
+    private final ToastRenderer toastRenderer;
 
+    @Nullable
+    private LevelOverlay levelOverlay;
 
-    private LevelProgressOverlay levelProgressOverlay;
-
-    private QuestProgressOverlay questProgressOverlay;
+    @Nullable
+    private QuestOverlay questOverlay;
 
 
     private ItemStack extraLifeItem;
@@ -60,7 +70,7 @@ public class ModRenderer {
     ModRenderer() {
         this.minecraft = Minecraft.getInstance();
         this.themeManager = new ThemeManager();
-        this.toastRenderer = new NotificationToastRenderer();
+        this.toastRenderer = new ToastRenderer();
     }
 
 
@@ -73,23 +83,6 @@ public class ModRenderer {
         return guiDebug;
     }
 
-    @SubscribeEvent
-    public void onRender(final RenderGuiEvent.Pre event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        int mouseX = (int) (minecraft.mouseHandler.xpos() * (double) event.getWindow().getGuiScaledWidth() / (double) event.getWindow().getScreenWidth());
-        int mouseY = (int) (minecraft.mouseHandler.ypos() * (double) event.getWindow().getGuiScaledHeight() / (double) event.getWindow().getScreenHeight());
-        render(event.getPoseStack(), mouseX, mouseY, event.getPartialTick());
-    }
-
-
-    @SubscribeEvent
-    public void onPostScreenRender(final ScreenEvent.Render.Post event) {
-        if(isGuiDebug() && this.minecraft.screen != null) {
-            Vector2d mousePos = RenderUtil.getMousePos();
-            RenderUtil.renderCrossDebug(new PoseStack(), (float) mousePos.x, (float) mousePos.y, 1000000, 5, Color.YELLOW.getRGB());
-        }
-    }
-
 
     public void render(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         this.renderProgressOverlayIfNeeded(poseStack, mouseX, mouseY, partialTick);
@@ -100,11 +93,11 @@ public class ModRenderer {
 
     private void renderProgressOverlayIfNeeded(PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         if(ConfigManager.SHOULD_RENDER_OVERLAY.get() && this.minecraft.screen == null && !this.minecraft.player.isCreative() && !this.minecraft.player.isSpectator()) {
-            if(this.levelProgressOverlay != null) {
-                this.levelProgressOverlay.render(poseStack, mouseX, mouseY, partialTick);
+            if(this.levelOverlay != null) {
+                this.levelOverlay.render(poseStack, mouseX, mouseY, partialTick);
             }
-            if(this.questProgressOverlay != null) {
-                this.questProgressOverlay.render(poseStack, mouseX, mouseY, partialTick);
+            if(this.questOverlay != null) {
+                this.questOverlay.render(poseStack, mouseX, mouseY, partialTick);
             }
         }
     }
@@ -177,13 +170,13 @@ public class ModRenderer {
     }
 
 
-    public void setLevelProgressOverlay(LevelProgressOverlay levelProgressOverlay) {
-        this.levelProgressOverlay = levelProgressOverlay;
+    public ToastRenderer getToastRenderer() {
+        return toastRenderer;
     }
 
 
-    public void setQuestProgressOverlay(QuestProgressOverlay levelProgressOverlay) {
-        this.questProgressOverlay = levelProgressOverlay;
+    public boolean isQuestFollowed(ResourceLocation questId) {
+        return this.questOverlay != null && this.questOverlay.isQuestFollowed(questId);
     }
 
 
@@ -202,8 +195,16 @@ public class ModRenderer {
     }
 
 
-    public NotificationToastRenderer getToastRenderer() {
-        return toastRenderer;
+    public void pinLastFollowedQuest() {
+        try {
+            CompoundTag tag = NbtIo.readCompressed(CLIENT_DATA.toFile());
+            ResourceLocation questId = SerializationHelper.getNullable(tag, "lastFollowedQuest", tag1 -> new ResourceLocation(tag1.getAsString()));
+
+            this.updateQuestProgressOverlay(ModClientInstance.getInstance().getClientData().getQuestData().getOrStartProgress(questId));
+        }
+        catch(IOException e) {
+            CrashHandler.getInstance().handleException("Failed to read client data!", e, Level.ERROR);
+        }
     }
 
 
@@ -212,21 +213,47 @@ public class ModRenderer {
     }
 
 
-    public void updateLevelProgressOverlay(IProgressInfo<ProgressionLevel> progressInfo) {
-        if(this.levelProgressOverlay != null) {
-            this.levelProgressOverlay.updateProgress(progressInfo);
-        }
-    }
-
-
     public void updateQuestProgressOverlay(IProgressInfo<ProgressionQuest> progressInfo) {
-        if(this.questProgressOverlay != null) {
-            this.questProgressOverlay.updateProgress(progressInfo);
+        if(this.questOverlay != null) {
+            this.questOverlay.updateProgress(progressInfo);
+        }
+        else {
+            this.setQuestProgressOverlay(GuiFactory.createQuestOverlay(progressInfo.getProgressable().getDisplay(), (QuestProgress) progressInfo));
+        }
+
+        this.updateLevelProgressOverlay(ModClientInstance.getInstance().getClientData().getCurrentLevelProgress());
+    }
+
+
+    public void setQuestProgressOverlay(@Nullable QuestOverlay levelProgressOverlay) {
+        this.questOverlay = levelProgressOverlay;
+    }
+
+
+    //TODO: create LevelOverlay and QuestOverlay when logging into new world and save which quest was pinned when logging out + re-pin this quest when logging in!
+    public void updateLevelProgressOverlay(IProgressInfo<ProgressionLevel> progressInfo) {
+        if(this.levelOverlay != null) {
+            this.levelOverlay.updateProgress(progressInfo);
+        }
+        else {
+            this.setLevelProgressOverlay(GuiFactory.createLevelOverlay(progressInfo.getProgressable().getDisplay(), (LevelProgress) progressInfo));
         }
     }
 
 
-    public boolean isQuestFollowed(ResourceLocation questId) {
-        return this.questProgressOverlay != null && this.questProgressOverlay.isQuestFollowed(questId);
+    public void setLevelProgressOverlay(@Nullable LevelOverlay levelOverlay) {
+        this.levelOverlay = levelOverlay;
+    }
+
+
+    public void saveLastFollowedQuest() {
+        try {
+            CompoundTag tag = new CompoundTag();
+            SerializationHelper.addNullable(this.questOverlay, tag, "lastFollowedQuest", questOverlay -> StringTag.valueOf(questOverlay.getFollowedQuest().toString()));
+            NbtIo.writeCompressed(tag, CLIENT_DATA.toFile());
+        }
+        catch(IOException e) {
+            CrashHandler.getInstance().handleException("Failed to save client data to file!", e, Level.ERROR);
+        }
     }
 }

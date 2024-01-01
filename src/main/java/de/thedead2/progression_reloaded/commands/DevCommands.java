@@ -5,7 +5,9 @@ import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.GuiFactory;
 import de.thedead2.progression_reloaded.client.gui.components.toasts.ProgressToast;
 import de.thedead2.progression_reloaded.data.LevelManager;
+import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.items.custom.ExtraLifeItem;
+import de.thedead2.progression_reloaded.network.packets.ClientOnProgressChangedPacket;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.CrashReport;
@@ -70,7 +72,7 @@ public class DevCommands {
         ModCommand.Builder.builder()
                           .withPath("dev/gui/toast")
                           .withAction(context -> {
-                              ProgressToast toast = GuiFactory.createProgressToast(LevelManager.CREATIVE.getDisplay(), Component.literal("Level complete!"));
+                              ProgressToast toast = GuiFactory.createProgressToast(TestQuests.TEST2.getDisplay(), ClientOnProgressChangedPacket.Type.QUEST_COMPLETE);
                               ModClientInstance.getInstance().getModRenderer().getToastRenderer().forceDisplayToast(toast);
                               return ModCommands.COMMAND_SUCCESS;
                           })

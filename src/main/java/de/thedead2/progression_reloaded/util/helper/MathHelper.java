@@ -54,7 +54,12 @@ public abstract class MathHelper {
      * Reduces the given angle to an angle between 0 and 360 degrees.
      */
     public static float wrapDegrees(float deg) {
-        return deg % 360;
+        return clampTo(deg, 360);
+    }
+
+
+    public static float clampTo(float val, float max) {
+        return val % max;
     }
 
 
@@ -86,8 +91,8 @@ public abstract class MathHelper {
     }
 
 
-    public static long ticksToSeconds(long ticks) {
-        return ticks / 20;
+    public static long ticksToMillis(float ticks) {
+        return secondsToMillis(ticksToSeconds(ticks));
     }
 
 
@@ -95,6 +100,10 @@ public abstract class MathHelper {
         return secondsToTicks(Math.toIntExact(millisToSeconds(millis)));
     }
 
+
+    public static long ticksToSeconds(float ticks) {
+        return (long) (ticks / 20);
+    }
 
     public static long secondsToMillis(long seconds) {
         return seconds * 1000L;

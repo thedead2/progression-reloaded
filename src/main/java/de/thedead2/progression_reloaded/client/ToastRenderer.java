@@ -9,7 +9,7 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 
-public class NotificationToastRenderer {
+public class ToastRenderer {
 
     private static final int maxSize = 10; //TODO: Add config option
 

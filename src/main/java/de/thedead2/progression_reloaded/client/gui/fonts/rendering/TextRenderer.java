@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import de.thedead2.progression_reloaded.api.gui.fonts.ITextEffect;
 import de.thedead2.progression_reloaded.api.gui.fonts.glyphs.IGlyphTransform;
 import de.thedead2.progression_reloaded.api.gui.fonts.glyphs.IUnbakedGlyph;
+import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.fonts.FontManager;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
 import de.thedead2.progression_reloaded.client.gui.fonts.formatting.TextCharIterator;
@@ -60,10 +61,10 @@ public class TextRenderer implements TextCharIterator.ICharVisitor {
 
     @Override
     public boolean visit(int charPos, FontFormatting formatting, int codePoint) {
-        if(codePoint == '\n') {
+        if(codePoint == '\n' && !ModRenderer.isGuiDebug()) {
             return true;
         }
-        ProgressionFont font = FontManager.getFont(formatting.getFont());
+        ProgressionFont font = FontManager.getInstance().getFont(formatting.getFont());
         IUnbakedGlyph unbakedGlyph = font.getUnbakedGlyph(codePoint);
         BakedFontGlyph bakedFontGlyph = formatting.isObfuscated() && codePoint != 32 ? font.getRandomGlyph(unbakedGlyph) : font.getGlyph(codePoint);
         boolean bold = formatting.isBold();

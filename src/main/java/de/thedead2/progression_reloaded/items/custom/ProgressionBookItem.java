@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.items.custom;
 
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientOpenProgressionBookPacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.Screen;
@@ -30,7 +30,7 @@ public class ProgressionBookItem extends Item {
     @Override
     public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level pLevel, @NotNull Player pPlayer, @NotNull InteractionHand pUsedHand) {
         if(!pLevel.isClientSide() && pPlayer instanceof ServerPlayer serverPlayer) {
-            ModNetworkHandler.sendToPlayer(new ClientOpenProgressionBookPacket(), serverPlayer);
+            PRNetworkHandler.sendToPlayer(new ClientOpenProgressionBookPacket(), serverPlayer);
         }
         return super.use(pLevel, pPlayer, pUsedHand);
     }

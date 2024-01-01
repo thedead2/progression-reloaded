@@ -25,7 +25,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
-                Minecraft.getInstance().setScreen(new ProgressionBookGUI(Minecraft.getInstance().player));
+                Minecraft.getInstance().setScreen(new ProgressionBookGUI());
             }
         };
     }

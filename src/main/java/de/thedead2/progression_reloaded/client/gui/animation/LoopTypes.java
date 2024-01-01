@@ -1,6 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.animation;
 
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
+import de.thedead2.progression_reloaded.util.TickTimer;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
@@ -59,7 +60,7 @@ public class LoopTypes {
      * Creates a {@link ILoopType} that loops while the given {@link Predicate} returns true.
      * @param predicate the predicate to test
      * **/
-    public static ILoopType LOOP_WHILE(Predicate<AnimationTimer> predicate) {
+    public static ILoopType LOOP_WHILE(Predicate<TickTimer> predicate) {
         return (timer, shouldRun) -> {
             if(predicate.test(timer)) {
                 LOOP.loop(timer, true);
@@ -71,7 +72,7 @@ public class LoopTypes {
     /**
      * Same as {@link #LOOP_WHILE(Predicate)} but in inverse direction
      * **/
-    public static ILoopType LOOP_INVERSE_WHILE(Predicate<AnimationTimer> predicate) {
+    public static ILoopType LOOP_INVERSE_WHILE(Predicate<TickTimer> predicate) {
         return (timer, shouldRun) -> {
             if(predicate.test(timer)) {
                 LOOP_INVERSE.loop(timer, true);
@@ -82,7 +83,7 @@ public class LoopTypes {
     }
 
 
-    public static ILoopType LOOP_UNTIL(Predicate<AnimationTimer> predicate) {
+    public static ILoopType LOOP_UNTIL(Predicate<TickTimer> predicate) {
         final boolean[] bool = {true};
         return (timer, shouldRun) -> {
             if(predicate.test(timer) && bool[0]) {
@@ -94,7 +95,8 @@ public class LoopTypes {
         };
     }
 
-    public static ILoopType LOOP_INVERSE_UNTIL(Predicate<AnimationTimer> predicate) {
+
+    public static ILoopType LOOP_INVERSE_UNTIL(Predicate<TickTimer> predicate) {
         final boolean[] bool = {true};
         return (timer, shouldRun) -> {
             if(predicate.test(timer) && bool[0]) {

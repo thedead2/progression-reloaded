@@ -85,6 +85,15 @@ public class JsonHelper {
     }
 
 
+    public static <T extends Enum<T>> void writeEnum(T enumValue, String memberName, JsonObject jsonObject) {
+        jsonObject.addProperty(memberName, enumValue.name());
+    }
+
+
+    public static <T extends Enum<T>> T getEnum(Class<T> enumClass, String memberName, JsonObject jsonObject) {
+        return T.valueOf(enumClass, jsonObject.get(memberName).getAsString());
+    }
+
     public static String formatJsonObject(JsonElement jsonElement) {
         StringBuilder stringBuilder = new StringBuilder();
         char[] chars = jsonElement.toString().toCharArray();

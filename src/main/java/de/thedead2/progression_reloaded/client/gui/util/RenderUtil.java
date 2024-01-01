@@ -1,33 +1,32 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
-import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.platform.Lighting;
+import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.ItemRenderer;
-import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.item.ItemStack;
 import org.joml.*;
+import org.lwjgl.opengl.GL11;
 
 import java.awt.*;
 import java.lang.Math;
 import java.text.DecimalFormat;
+import java.util.Arrays;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
 
@@ -278,6 +277,10 @@ public class RenderUtil {
     }
 
 
+    public static Vector3f _getCenter(float xMin, float xMax, float yMin, float yMax, float zPos) {
+        return getCenter(xMin, yMin, zPos, xMax - xMin, yMax - yMin);
+    }
+
     public static Vector3f getCenter(float xPos, float yPos, float zPos, float objectWidth, float objectHeight) {
         float a = objectWidth / 2;
         float b = objectHeight / 2;
@@ -314,6 +317,18 @@ public class RenderUtil {
     public static void renderItem(ItemStack item, float xPos, float yPos, float zPos, float size, Quaternionf rotation) {
         Minecraft minecraft = Minecraft.getInstance();
         ItemRenderer itemRenderer = minecraft.getItemRenderer();
+        PoseStack posestack = RenderSystem.getModelViewStack();
+        posestack.pushPose();
+        posestack.translate(0.0F, 0.0F, 32.0F);
+        RenderSystem.applyModelViewMatrix();
+        itemRenderer.blitOffset = zPos;
+        itemRenderer.renderAndDecorateItem(item, Math.round(xPos), Math.round(yPos));
+        itemRenderer.blitOffset = 0.0F;
+
+        posestack.popPose();
+        RenderSystem.applyModelViewMatrix();
+
+        /*
         BakedModel bakedModel = itemRenderer.getModel(item, null, null, 0);
         minecraft.textureManager.getTexture(InventoryMenu.BLOCK_ATLAS).setFilter(false, false);
         RenderSystem.setShaderTexture(0, InventoryMenu.BLOCK_ATLAS);
@@ -343,7 +358,7 @@ public class RenderUtil {
         }
 
         modelViewStack.popPose();
-        RenderSystem.applyModelViewMatrix();
+        RenderSystem.applyModelViewMatrix();*/
     }
 
 
@@ -362,6 +377,15 @@ public class RenderUtil {
         blit(poseStack, xStart, 0, 0, 0, screenWidth + Math.negateExact(xStart), screenHeight, relativeWidth, screenHeight);
     }
 
+
+    /**
+     * Draws the given texture without transformation using a relative height to the given screenWidth and centering the texture
+     **/
+    public static void blitCenteredWithClipping(PoseStack poseStack, int screenWidth, int screenHeight, float ratio) {
+        var relativeHeight = Math.round(screenWidth / ratio);
+        int yStart = Math.negateExact((screenHeight - relativeHeight) / 2);
+        blit(poseStack, 0, 0, 0, yStart, screenWidth, screenHeight, screenWidth, relativeHeight);
+    }
 
 
 
@@ -462,6 +486,58 @@ public class RenderUtil {
     }
 
 
+    public static void border(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, float lineWidth, float radius, int color) {
+        border(poseStack, xMin, xMax, yMin, yMax, zPos, lineWidth, radius, radius, radius, radius, color);
+    }
+
+
+    public static void border(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, float lineWidth, float radiusTopLeft, float radiusTopRight, float radiusBottomRight, float radiusBottomLeft, int color) {
+        float height = yMax - yMin;
+        float halfHeight = height / 2;
+        float width = xMax - xMin;
+        float halfWidth = width / 2;
+        float diagonalRadius = (float) Math.sqrt((height * height) + (width * width)) / 2f;
+
+        radiusTopLeft = Mth.clamp(radiusTopLeft, 0, diagonalRadius);
+        radiusTopRight = Mth.clamp(radiusTopRight, 0, diagonalRadius);
+        radiusBottomRight = Mth.clamp(radiusBottomRight, 0, diagonalRadius);
+        radiusBottomLeft = Mth.clamp(radiusBottomLeft, 0, diagonalRadius);
+
+
+        //Top left
+        float scale = Mth.clamp(radiusTopLeft / diagonalRadius, 0, 1);
+        float invertedScale = 1 - scale;
+
+        horizontalLine(poseStack, (xMin + halfWidth) - (halfWidth * invertedScale), xMin + halfWidth, yMin, zPos, lineWidth, color);
+        circularLine(poseStack, xMin + halfWidth * scale, yMin + halfHeight * scale, zPos, halfWidth * scale, halfHeight * scale, 0.75f, 0.25f, lineWidth, color);
+        verticalLine(poseStack, xMin, (yMin + halfHeight) - ((halfHeight) * invertedScale), yMin + halfHeight, zPos, lineWidth, color);
+
+
+        //Top right
+        scale = Mth.clamp(radiusTopRight / diagonalRadius, 0, 1);
+        invertedScale = 1 - scale;
+
+        horizontalLine(poseStack, (xMin + halfWidth), (xMin + halfWidth) + (halfWidth * invertedScale), yMin, zPos, lineWidth, color);
+        circularLine(poseStack, xMax - halfWidth * scale, yMin + halfHeight * scale, zPos, (halfWidth) * scale, (halfHeight) * scale, 0f, 0.25f, lineWidth, color);
+        verticalLine(poseStack, xMax, (yMin + halfHeight) - ((halfHeight) * invertedScale), yMin + halfHeight, zPos, lineWidth, color);
+
+        //Bottom right
+        scale = Mth.clamp(radiusBottomRight / diagonalRadius, 0, 1);
+        invertedScale = 1 - scale;
+
+        horizontalLine(poseStack, (xMin + halfWidth), (xMin + halfWidth) + (halfWidth * invertedScale), yMax, zPos, lineWidth, color);
+        circularLine(poseStack, xMax - halfWidth * scale, yMax - halfHeight * scale, zPos, (halfWidth) * scale, (halfHeight) * scale, 0.25f, 0.25f, lineWidth, color);
+        verticalLine(poseStack, xMax, (yMin + halfHeight), (yMin + halfHeight) + (halfHeight * invertedScale), zPos, lineWidth, color);
+
+        //Bottom left
+        scale = Mth.clamp(radiusBottomLeft / diagonalRadius, 0, 1);
+        invertedScale = 1 - scale;
+
+        horizontalLine(poseStack, (xMin + halfWidth) - (halfWidth * invertedScale), xMin + halfWidth, yMax, zPos, lineWidth, color);
+        circularLine(poseStack, xMin + halfWidth * scale, yMax - halfHeight * scale, zPos, (halfWidth) * scale, (halfHeight) * scale, 0.5f, 0.25f, lineWidth, color);
+        verticalLine(poseStack, xMin, (yMin + halfHeight), (yMin + halfHeight) + (halfHeight * invertedScale), zPos, lineWidth, color);
+    }
+
     public static void horizontalLine(PoseStack poseStack, float xMin, float xMax, float yPos, float zPos, float lineWidth, int color) {
         if(xMax < xMin) {
             float i = xMin;
@@ -469,7 +545,7 @@ public class RenderUtil {
             xMax = i;
         }
 
-        fill(poseStack, xMin, xMax + lineWidth / 2, yPos, yPos + lineWidth / 2, zPos, color);
+        fill(poseStack, xMin, xMax, yPos - lineWidth / 2, yPos + lineWidth / 2, zPos, color);
     }
 
 
@@ -480,16 +556,74 @@ public class RenderUtil {
             yMax = i;
         }
 
-        fill(poseStack, xPos, xPos + lineWidth / 2, yMin + lineWidth / 2, yMax, zPos, color);
+        fill(poseStack, xPos - lineWidth / 2, xPos + lineWidth / 2, yMin, yMax, zPos, color);
+    }
+
+
+    public static void circularLine(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, float lineWidth, int color) {
+        circularLine(poseStack, xPos, yPos, zPos, radius, 0, 1f, lineWidth, color);
+    }
+
+
+    public static void circularLine(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, float startPercent, float percentFilled, float lineWidth, int color) {
+        circularLine(poseStack, xPos, yPos, zPos, radius, radius, startPercent, percentFilled, lineWidth, color);
+    }
+
+
+    public static void circularLine(PoseStack poseStack, float xPos, float yPos, float zPos, float xRadius, float yRadius, float startPercent, float percentFilled, float lineWidth, int color) {
+        lineWidth = Math.max(lineWidth, 0.01f);
+
+        int alpha = (color >> 24 & 255);
+        int red = (color >> 16 & 255);
+        int green = (color >> 8 & 255);
+        int blue = (color & 255);
+
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        RenderSystem.enableBlend();
+        RenderSystem.disableTexture();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        poseStack.pushPose();
+
+        bufferbuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        _fillCircleOutline(poseStack.last().pose(), bufferbuilder, xPos, yPos, zPos, xRadius - lineWidth / 2, yRadius - lineWidth / 2, xRadius + lineWidth / 2, yRadius + lineWidth / 2, Mth.clamp(startPercent, 0f, 1f), Mth.clamp(percentFilled, 0f, 1f), red, green, blue, alpha);
+        BufferUploader.drawWithShader(bufferbuilder.end());
+
+        poseStack.popPose();
+        RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
+    }
+
+
+    private static void _fillCircleOutline(Matrix4f matrix, BufferBuilder bufferBuilder, float xPos, float yPos, float zPos, float innerXRadius, float innerYRadius, float outerXRadius, float outerYRadius, float startPercent, float percentFilled, int red, int green, int blue, int alpha) {
+        _fillCircleOutlineGradient(matrix, bufferBuilder, xPos, yPos, zPos, innerXRadius, innerYRadius, outerXRadius, outerYRadius, startPercent, percentFilled, red, green, blue, alpha, red, green, blue, alpha);
+    }
+
+
+    private static void _fillCircleOutlineGradient(Matrix4f matrix, BufferBuilder bufferBuilder, float xPos, float yPos, float zPos, float innerXRadius, float innerYRadius, float outerXRadius, float outerYRadius, float startPercent, float percentFilled, int redA, int greenA, int blueA, int alphaA, int redB, int greenB, int blueB, int alphaB) {
+        final int vertices = Mth.floor(percentFilled * 100);
+
+        for(int i = vertices; i >= 0; --i) {
+            float f = (float) (((startPercent * 100) + (percentFilled * 100) * (double) i / vertices) * (2 * Math.PI) / 100);
+            float sin = (float) Math.sin(f);
+            float cos = (float) Math.cos(f);
+            float outerXOffset = sin * outerXRadius;
+            float outerYOffset = cos * outerYRadius;
+            float innerXOffset = sin * innerXRadius;
+            float innerYOffset = cos * innerYRadius;
+
+            bufferBuilder.vertex(matrix, xPos + innerXOffset, yPos - innerYOffset, zPos).color(redA, greenA, blueA, alphaA).endVertex();
+            bufferBuilder.vertex(matrix, xPos + outerXOffset, yPos - outerYOffset, zPos).color(redB, greenB, blueB, alphaB).endVertex();
+        }
+    }
+
+
+    public static void circularLine(PoseStack poseStack, float xPos, float yPos, float zPos, float xRadius, float yRadius, float lineWidth, int color) {
+        circularLine(poseStack, xPos, yPos, zPos, xRadius, yRadius, 0, 1f, lineWidth, color);
     }
 
 
     public static void fill(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float z, int color) {
-        innerFill(poseStack.last().pose(), xMin, xMax, yMin, yMax, z, color);
-    }
-
-
-    private static void innerFill(Matrix4f matrix, float xMin, float xMax, float yMin, float yMax, float z, int color) {
         if(xMin < xMax) {
             float i = xMin;
             xMin = xMax;
@@ -502,23 +636,273 @@ public class RenderUtil {
             yMax = j;
         }
 
-        float alpha = (float) (color >> 24 & 255) / 255.0F;
-        float red = (float) (color >> 16 & 255) / 255.0F;
-        float green = (float) (color >> 8 & 255) / 255.0F;
-        float blue = (float) (color & 255) / 255.0F;
+        int alpha = (color >> 24 & 255);
+        int red = (color >> 16 & 255);
+        int green = (color >> 8 & 255);
+        int blue = (color & 255);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
         RenderSystem.enableBlend();
         RenderSystem.disableTexture();
         RenderSystem.defaultBlendFunc();
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-        bufferbuilder.vertex(matrix, xMin, yMax, z).color(red, green, blue, alpha).endVertex();
-        bufferbuilder.vertex(matrix, xMax, yMax, z).color(red, green, blue, alpha).endVertex();
-        bufferbuilder.vertex(matrix, xMax, yMin, z).color(red, green, blue, alpha).endVertex();
-        bufferbuilder.vertex(matrix, xMin, yMin, z).color(red, green, blue, alpha).endVertex();
+        _fillColor(poseStack.last().pose(), bufferbuilder, xMin, xMax, yMin, yMax, z, red, green, blue, alpha);
         BufferUploader.drawWithShader(bufferbuilder.end());
         RenderSystem.enableTexture();
         RenderSystem.disableBlend();
+    }
+
+
+    public static void fillCircle(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, int color) {
+        fillCircle(poseStack, xPos, yPos, zPos, radius, 0, 1f, color);
+    }
+
+
+    public static void fillCircle(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, float startPercent, float percentFilled, int color) {
+        int alpha = (color >> 24 & 255);
+        int red = (color >> 16 & 255);
+        int green = (color >> 8 & 255);
+        int blue = (color & 255);
+        BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
+        RenderSystem.enableBlend();
+        RenderSystem.disableTexture();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        bufferbuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        _fillCircle(poseStack.last().pose(), bufferbuilder, xPos, yPos, zPos, radius, Mth.clamp(startPercent, 0f, 1f), Mth.clamp(percentFilled, 0f, 1f), red, green, blue, alpha);
+        BufferUploader.drawWithShader(bufferbuilder.end());
+        RenderSystem.enableTexture();
+        RenderSystem.disableBlend();
+    }
+
+
+    private static void _fillCircle(Matrix4f matrix, BufferBuilder bufferBuilder, float xPos, float yPos, float zPos, float radius, float startPercent, float percentFilled, int red, int green, int blue, int alpha) {
+        _fillCircleOutlineGradient(matrix, bufferBuilder, xPos, yPos, zPos, 0, 0, radius, radius, startPercent, percentFilled, red, green, blue, alpha, red, green, blue, alpha);
+    }
+
+
+    public static void fillCircle(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, float percentFilled, int color) {
+        fillCircle(poseStack, xPos, yPos, zPos, radius, 0, percentFilled, color);
+    }
+
+
+    public static void enableScissor(float xMin, float xMax, float yMin, float yMax) {
+        Window window = Minecraft.getInstance().getWindow();
+        int windowHeight = window.getHeight();
+        double guiScale = window.getGuiScale();
+        double x = xMin * guiScale;
+        double y = windowHeight - yMin * guiScale;
+        double width = (xMax - xMin) * guiScale;
+        double height = (yMax - yMin) * guiScale;
+        RenderSystem.enableScissor((int) x, (int) y, Math.max(0, (int) width), Math.max(0, (int) height));
+    }
+
+
+    public static void linearGradient(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, float degrees, GradientColor... colors) {
+        poseStack.pushPose();
+        GuiComponent.enableScissor(Math.round(xMin), Math.round(yMin), Math.round(xMax), Math.round(yMax));
+        Arrays.sort(colors);
+        float height = yMax - yMin;
+        float width = xMax - xMin;
+
+        float scale = scaleToFit(width, height, degrees);
+
+        Vector3f center = getCenter(xMin, yMin, zPos, width, height);
+        rotateAround(poseStack, Axis.ZP.rotationDegrees(degrees), center);
+        scaleAround(poseStack, new Vector3f(scale, scale, 1), center);
+
+        RenderSystem.disableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = tesselator.getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+        fillLinearGradient(poseStack.last().pose(), bufferbuilder, xMin, xMin + width, yMin, yMin + height, zPos, height, colors);
+        tesselator.end();
+        RenderSystem.disableBlend();
+        RenderSystem.enableTexture();
+
+        RenderSystem.disableScissor();
+        poseStack.popPose();
+    }
+
+
+    /**
+     * @return a scale factor to scale an object with a given rotation to fit to the bounding box defined by the given width and height, so that there is no empty space within the bounding box
+     */
+    public static float scaleToFit(float width, float height, float degrees) {
+        double radians = Math.toRadians(degrees);
+        double sin = Math.abs(Math.sin(radians));
+        double cos = Math.abs(Math.cos(radians));
+
+        float W = (float) (width * cos + height * sin);
+        float H = (float) (width * sin + height * cos);
+
+        return Math.max(W / width, H / height);
+    }
+
+
+    private static void fillLinearGradient(Matrix4f matrix, BufferBuilder bufferBuilder, float xMin, float xMax, float yMin, float yMax, float zPos, float height, GradientColor... colors) {
+        GradientColor first = colors[0];
+
+        _fillColor(matrix, bufferBuilder, xMin, xMax, yMin, yMin + first.stopPercent() * height, zPos, first.red(), first.green(), first.blue(), first.alpha());
+
+        for(int i = 0; i < colors.length; i++) {
+            GradientColor colorA = colors[i];
+            GradientColor colorB = (i + 1) < colors.length ? colors[i + 1] : null;
+            float aYPos = yMin + colorA.stopPercent() * height;
+            float bYPos = colorB == null ? yMax : yMin + colorB.stopPercent() * height;
+
+            if(colorB != null) {
+                _fillGradient(matrix, bufferBuilder, xMin, xMax, aYPos, bYPos, zPos, colorA.red(), colorA.green(), colorA.blue(), colorA.alpha(), colorB.red(), colorB.green(), colorB.blue(), colorB.alpha());
+            }
+        }
+
+        GradientColor last = colors[colors.length - 1];
+
+        _fillColor(matrix, bufferBuilder, xMin, xMax, yMin + last.stopPercent() * height, yMax, zPos, last.red(), last.green(), last.blue(), last.alpha());
+    }
+
+
+    private static void _fillColor(Matrix4f matrix, BufferBuilder bufferBuilder, float xMin, float xMax, float yMin, float yMax, float zPos, int red, int green, int blue, int alpha) {
+        _fillGradient(matrix, bufferBuilder, xMin, xMax, yMin, yMax, zPos, red, green, blue, alpha, red, green, blue, alpha);
+    }
+
+
+    private static void _fillGradient(Matrix4f matrix, BufferBuilder bufferBuilder, float xMin, float xMax, float yMin, float yMax, float zPos, int redA, int greenA, int blueA, int alphaA, int redB, int greenB, int blueB, int alphaB) {
+        bufferBuilder.vertex(matrix, xMax, yMin, zPos).color(redA, greenA, blueA, alphaA).endVertex();
+        bufferBuilder.vertex(matrix, xMin, yMin, zPos).color(redA, greenA, blueA, alphaA).endVertex();
+        bufferBuilder.vertex(matrix, xMin, yMax, zPos).color(redB, greenB, blueB, alphaB).endVertex();
+        bufferBuilder.vertex(matrix, xMax, yMax, zPos).color(redB, greenB, blueB, alphaB).endVertex();
+    }
+
+
+    public static void radialGradient(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, GradientColor... colors) {
+        poseStack.pushPose();
+        Arrays.sort(colors);
+        GuiComponent.enableScissor(Math.round(xMin), Math.round(yMin), Math.round(xMax), Math.round(yMax));
+
+        float height = yMax - yMin;
+        float width = xMax - xMin;
+        float diagonal = (float) Math.sqrt((height * height) + (width * width));
+
+        Vector3f center = getCenter(xMin, yMin, zPos, width, height);
+
+        RenderSystem.disableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = tesselator.getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        fillRadialGradient(poseStack.last().pose(), bufferbuilder, center.x, center.y, zPos, diagonal / 2, colors);
+        tesselator.end();
+        RenderSystem.disableBlend();
+        RenderSystem.enableTexture();
+        RenderSystem.disableScissor();
+
+        poseStack.popPose();
+    }
+
+
+    private static void fillRadialGradient(Matrix4f matrix, BufferBuilder bufferBuilder, float xPos, float yPos, float zPos, float radius, GradientColor... colors) {
+        GradientColor first = colors[0];
+
+        _fillCircleOutline(matrix, bufferBuilder, xPos, yPos, zPos, 0, 0, radius * first.stopPercent(), radius * first.stopPercent(), 0, 1f, first.red(), first.green(), first.blue(), first.alpha());
+
+        for(int i = 0; i < colors.length; i++) {
+            GradientColor colorA = colors[i];
+            GradientColor colorB = (i + 1) < colors.length ? colors[i + 1] : null;
+
+            float innerRadius = colorA.stopPercent() * radius;
+            float outerRadius = colorB != null ? colorB.stopPercent() * radius : radius;
+
+            if(colorB != null) {
+                _fillCircleOutlineGradient(matrix, bufferBuilder, xPos, yPos, zPos, innerRadius, innerRadius, outerRadius, outerRadius, 0, 1f, colorA.red(), colorA.green(), colorA.blue(), colorA.alpha(), colorB.red(), colorB.green(), colorB.blue(), colorB.alpha());
+            }
+        }
+
+        GradientColor last = colors[colors.length - 1];
+
+        _fillCircleOutline(matrix, bufferBuilder, xPos, yPos, zPos, last.stopPercent() * radius, last.stopPercent() * radius, radius, radius, 0, 1f, last.red(), last.green(), last.blue(), last.alpha());
+    }
+
+
+    public static void radialGradient(PoseStack poseStack, float xPos, float yPos, float zPos, float radius, GradientColor... colors) {
+        poseStack.pushPose();
+        Arrays.sort(colors);
+
+        RenderSystem.disableTexture();
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = tesselator.getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.TRIANGLE_STRIP, DefaultVertexFormat.POSITION_COLOR);
+        fillRadialGradient(poseStack.last().pose(), bufferbuilder, xPos, yPos, zPos, radius, colors);
+        tesselator.end();
+        RenderSystem.disableBlend();
+        RenderSystem.enableTexture();
+
+        poseStack.popPose();
+    }
+
+
+    public static void renderWithMask(PoseStack poseStack, int mouseX, int mouseY, float partialTick, Runnable mask, Runnable render) {
+        GL11.glEnable(GL11.GL_STENCIL_TEST);
+
+        mask.run();
+        GL11.glDisable(GL11.GL_STENCIL_TEST);
+        render.run();
+    }
+
+
+    /**
+     * @return a scale factor to scale an object with a given rotation to fit within the bounding box defined by the given width and height
+     */
+    public static float scaleToFitWithIn(float width, float height, float degrees) {
+        double radians = Math.toRadians(degrees);
+        double sin = Math.abs(Math.sin(radians));
+        double cos = Math.abs(Math.cos(radians));
+
+        float W = (float) (width * cos + height * sin);
+        float H = (float) (width * sin + height * cos);
+
+        return Math.min(width / W, height / H);
+    }
+
+
+    /**
+     * @return a scale factor to scale an object with a given rotation to fit within the bounding box defined by the given width and height
+     */
+    public static float scaleToFitWithIn(float width, float height, double radians) {
+        double sin = Math.abs(Math.sin(radians));
+        double cos = Math.abs(Math.cos(radians));
+
+        float W = (float) (width * cos + height * sin);
+        float H = (float) (width * sin + height * cos);
+
+        return Math.min(width / W, height / H);
+    }
+
+
+    /**
+     * @return a scale factor to scale an object with a given rotation to fit to the bounding box defined by the given width and height, so that there is no empty space within the bounding box
+     */
+    public static float scaleToFit(float width, float height, double radians) {
+        double sin = Math.abs(Math.sin(radians));
+        double cos = Math.abs(Math.cos(radians));
+
+        float W = (float) (width * cos + height * sin);
+        float H = (float) (width * sin + height * cos);
+
+        return Math.max(W / width, H / height);
+    }
+
+
+    public static boolean isWithin(float pX, float pY, float xPos, float yPos, float width, float height) {
+        return pX >= xPos && pX <= xPos + width && pY >= yPos && pY <= yPos + height;
     }
 
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {

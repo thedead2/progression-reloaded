@@ -7,17 +7,26 @@ import de.thedead2.progression_reloaded.client.gui.util.Area;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.util.Mth;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 
+//TODO: Add listener methods for potential header (mouseClicked, etc.)
 public abstract class ScrollableScreenComponent extends ScreenComponent {
 
+    protected final Area contentArea;
+
+    @Nullable
+    private ScreenComponent header;
     protected final ScrollBar xScrollBar, yScrollBar;
 
     private ScrollDirection scrollDirection;
 
+    private boolean showOverflow;
+
 
     protected ScrollableScreenComponent(Area area, ScrollDirection scrollDirection, ScrollBar.Visibility visibility) {
         super(area);
+        this.contentArea = area.copy();
         this.scrollDirection = scrollDirection;
         this.xScrollBar = new HorizontalScrollBar((scrollDirection == ScrollDirection.BOTH || scrollDirection == ScrollDirection.HORIZONTAL) ? visibility : ScrollBar.Visibility.NEVER, 2, this.scrollRate());
         this.yScrollBar = new VerticalScrollBar((scrollDirection == ScrollDirection.BOTH || scrollDirection == ScrollDirection.VERTICAL) ? visibility : ScrollBar.Visibility.NEVER, 2, this.scrollRate());
@@ -58,6 +67,22 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
     }
 
 
+    public void setHeader(@Nullable ScreenComponent header) {
+        this.header = header;
+        if(this.header != null) {
+            this.header.getArea().setPosition(this.area.getX(), this.area.getY(), this.area.getZ());
+            if(this.header instanceof ScrollableScreenComponent scrollableScreenComponent) {
+                scrollableScreenComponent.contentArea.setPosition(this.area.getX(), this.area.getY(), this.area.getZ());
+            }
+            this.contentArea.setHeight(this.area.getHeight() - header.getHeight());
+            this.contentArea.setY(this.area.getY() + header.getHeight());
+        }
+        else {
+            this.contentArea.set(this.area);
+        }
+    }
+
+
     public void setScrollAmount(ScrollDirection target, float amount) {
         switch(target) {
             case VERTICAL -> this.yScrollBar.setScrollAmount(amount);
@@ -73,11 +98,15 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         super.render(poseStack, mouseX, mouseY, partialTick);
-        if(!ModRenderer.isGuiDebug()) {
-            this.hideOverflow();
+        if(this.header != null) {
+            this.header.render(poseStack, mouseX, mouseY, partialTick);
+        }
+        if(!ModRenderer.isGuiDebug() && !this.showOverflow) {
+            enableScissor(Math.round(this.contentArea.getInnerX() - 1), Math.round(this.contentArea.getInnerY()), Math.round(this.contentArea.getInnerXMax() + 1), Math.round(this.contentArea.getInnerYMax() + 1));
         }
 
         poseStack.pushPose();
+        this.checkScrollAmounts();
         switch(this.scrollDirection) {
             case VERTICAL -> poseStack.translate(0, -this.yScrollBar.getScrollAmount(), 0);
             case HORIZONTAL -> poseStack.translate(-this.xScrollBar.getScrollAmount(), 0, 0);
@@ -86,53 +115,61 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
         this.renderContents(poseStack, mouseX, mouseY, partialTick);
         poseStack.popPose();
 
-        if(!ModRenderer.isGuiDebug()) {
-            this.showOverflow();
+        if(!ModRenderer.isGuiDebug() && !this.showOverflow) {
+            disableScissor();
         }
+
         this.renderDecorations(poseStack, mouseX, mouseY, partialTick);
         this.xScrollBar.render(poseStack, mouseX, mouseY, partialTick);
         this.yScrollBar.render(poseStack, mouseX, mouseY, partialTick);
     }
 
 
-    public void hideOverflow() {
-        enableScissor(Math.round(this.area.getInnerX() - 1), Math.round(this.area.getInnerY() - 1), Math.round(this.area.getInnerXMax() + 1), Math.round(this.area.getInnerYMax() + 1));
+    private void checkScrollAmounts() {
+        double yScrollAmount = this.yScrollBar.getScrollAmount();
+        if(this.contentHeight() < yScrollAmount) {
+            this.yScrollBar.setScrollAmount(yScrollAmount - this.contentHeight());
+        }
     }
 
 
     protected abstract void renderContents(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick);
 
 
-    public void showOverflow() {
-        disableScissor();
+    protected float contentHeight() {
+        return this.contentArea.getInnerHeight();
+    }
+
+
+    public void showOverflow(boolean bool) {
+        this.showOverflow = bool;
     }
 
 
     protected void renderDecorations(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {}
 
 
+    public boolean shouldShowOverflow() {
+        return showOverflow;
+    }
+
+
     protected boolean withinContentArea(double pX, double pY) {
-        return this.area.innerContains((float) pX, (float) pY);
+        return this.contentArea.innerContains((float) pX, (float) pY);
     }
 
 
     protected boolean withinContentAreaTopBottom(float top, float bottom) {
-        if(ModRenderer.isGuiDebug()) {
-            return true;
-        }
-        else {
-            return switch(this.scrollDirection) {
-                case VERTICAL, BOTH -> bottom - this.yScrollBar.getScrollAmount() >= this.area.getInnerY() && top - this.yScrollBar.getScrollAmount() <= this.area.getInnerYMax();
-                case HORIZONTAL -> bottom >= this.area.getInnerY() && top <= this.area.getInnerYMax();
-            };
-        }
+        return switch(this.scrollDirection) {
+            case VERTICAL, BOTH -> bottom - this.yScrollBar.getScrollAmount() >= this.contentArea.getInnerY() && top - this.yScrollBar.getScrollAmount() <= this.contentArea.getInnerYMax();
+            case HORIZONTAL -> bottom >= this.contentArea.getInnerY() && top <= this.contentArea.getInnerYMax();
+        };
     }
 
 
-    protected abstract float contentHeight();
-
-
-    protected abstract float contentWidth();
+    protected float contentWidth() {
+        return this.contentArea.getInnerWidth();
+    }
 
 
     public void setScrollDirection(ScrollDirection scrollDirection) {
@@ -183,15 +220,15 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
             if(!this.mouseClicked) {
                 return false;
             }
-            if(mouseX < (double) ScrollableScreenComponent.this.area.getX()) {
+            if(mouseX < (double) ScrollableScreenComponent.this.contentArea.getX()) {
                 this.setScrollAmount(0.0D);
             }
-            else if(mouseX > (double) ScrollableScreenComponent.this.area.getXMax()) {
+            else if(mouseX > (double) ScrollableScreenComponent.this.contentArea.getXMax()) {
                 this.setScrollAmount(this.getMaxScrollAmount());
             }
             else {
                 float i = this.getWidth();
-                double d0 = Math.max(1, this.getMaxScrollAmount() / (ScrollableScreenComponent.this.area.getInnerWidth() - i));
+                double d0 = Math.max(1, this.getMaxScrollAmount() / (ScrollableScreenComponent.this.contentArea.getInnerWidth() - i));
                 this.setScrollAmount(this.scrollAmount + dragX * d0);
             }
             return true;
@@ -200,7 +237,7 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
 
         @Override
         public float getMaxScrollAmount() {
-            return Math.max(0, ScrollableScreenComponent.this.contentWidth() - ScrollableScreenComponent.this.area.getInnerWidth());
+            return Math.max(0, ScrollableScreenComponent.this.contentWidth() - ScrollableScreenComponent.this.contentArea.getInnerWidth());
         }
 
 
@@ -210,9 +247,9 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
                 return false;
             }
             float scrollBarWidth = this.getWidth();
-            float xMin = Math.max(ScrollableScreenComponent.this.area.getX(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.area.getWidth() - scrollBarWidth) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.area.getX());
+            float xMin = Math.max(ScrollableScreenComponent.this.contentArea.getX(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.contentArea.getWidth() - scrollBarWidth) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.contentArea.getX());
             float xMax = xMin + scrollBarWidth;
-            float yMin = ScrollableScreenComponent.this.area.getYMax() - this.height;
+            float yMin = ScrollableScreenComponent.this.contentArea.getYMax() - this.height;
             float yMax = yMin + this.height + 2;
 
             return mouseX >= (double) xMin && mouseX <= (double) xMax && mouseY >= yMin && mouseY < (double) yMax;
@@ -221,24 +258,24 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
 
         @Override
         protected boolean calcVisibility() {
-            return ScrollableScreenComponent.this.contentWidth() > ScrollableScreenComponent.this.area.getInnerWidth();
+            return ScrollableScreenComponent.this.contentWidth() > ScrollableScreenComponent.this.contentArea.getInnerWidth();
         }
 
 
         private float getWidth() {
-            return Mth.clamp(((ScrollableScreenComponent.this.area.getWidth() * ScrollableScreenComponent.this.area.getWidth()) / ScrollableScreenComponent.this.contentWidth()), 15, ScrollableScreenComponent.this.area.getWidth());
+            return Mth.clamp(((ScrollableScreenComponent.this.contentArea.getWidth() * ScrollableScreenComponent.this.contentArea.getWidth()) / ScrollableScreenComponent.this.contentWidth()), 15, ScrollableScreenComponent.this.contentArea.getWidth());
         }
 
 
         @Override
         public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
             float scrollBarWidth = this.getWidth();
-            float xMin = Math.max(ScrollableScreenComponent.this.area.getX(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.area.getWidth() - scrollBarWidth) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.area.getX());
+            float xMin = Math.max(ScrollableScreenComponent.this.contentArea.getX(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.contentArea.getWidth() - scrollBarWidth) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.contentArea.getX());
             float xMax = xMin + scrollBarWidth;
-            float yMin = ScrollableScreenComponent.this.area.getYMax() - this.height;
+            float yMin = ScrollableScreenComponent.this.contentArea.getYMax() - this.height;
             float yMax = yMin + this.height;
 
-            this.render(xMin, xMax, yMin, yMax, ScrollableScreenComponent.this.area.getZ() + 2, mouseX, mouseY);
+            this.render(xMin, xMax, yMin, yMax, ScrollableScreenComponent.this.contentArea.getZ() + 2, mouseX, mouseY);
         }
 
     }
@@ -260,15 +297,15 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
             if(!this.mouseClicked) {
                 return false;
             }
-            if(mouseY < (double) ScrollableScreenComponent.this.area.getY()) {
+            if(mouseY < (double) ScrollableScreenComponent.this.contentArea.getY()) {
                 this.setScrollAmount(0.0D);
             }
-            else if(mouseY > (double) ScrollableScreenComponent.this.area.getYMax()) {
+            else if(mouseY > (double) ScrollableScreenComponent.this.contentArea.getYMax()) {
                 this.setScrollAmount(this.getMaxScrollAmount());
             }
             else {
                 float i = this.getHeight();
-                double d0 = Math.max(1, this.getMaxScrollAmount() / (ScrollableScreenComponent.this.area.getInnerHeight() - i));
+                double d0 = Math.max(1, this.getMaxScrollAmount() / (ScrollableScreenComponent.this.contentArea.getInnerHeight() - i));
                 this.setScrollAmount(this.scrollAmount + dragY * d0);
             }
             return true;
@@ -277,7 +314,7 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
 
         @Override
         public float getMaxScrollAmount() {
-            return Math.max(0, ScrollableScreenComponent.this.contentHeight() - (ScrollableScreenComponent.this.area.getInnerHeight()));
+            return Math.max(0, ScrollableScreenComponent.this.contentHeight() - (ScrollableScreenComponent.this.contentArea.getInnerHeight()));
         }
 
 
@@ -287,9 +324,9 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
                 return false;
             }
             float scrollBarHeight = this.getHeight();
-            float xMin = ScrollableScreenComponent.this.area.getXMax() - this.width;
+            float xMin = ScrollableScreenComponent.this.contentArea.getXMax() - this.width;
             float xMax = xMin + this.width + 2;
-            float yMin = Math.max(ScrollableScreenComponent.this.area.getY(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.area.getHeight() - scrollBarHeight) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.area.getY());
+            float yMin = Math.max(ScrollableScreenComponent.this.contentArea.getY(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.contentArea.getHeight() - scrollBarHeight) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.contentArea.getY());
             float yMax = yMin + scrollBarHeight;
 
             return mouseX >= (double) xMin && mouseX <= (double) xMax && mouseY >= yMin && mouseY < (double) yMax;
@@ -298,24 +335,24 @@ public abstract class ScrollableScreenComponent extends ScreenComponent {
 
         @Override
         protected boolean calcVisibility() {
-            return ScrollableScreenComponent.this.contentHeight() > ScrollableScreenComponent.this.area.getInnerHeight();
+            return ScrollableScreenComponent.this.contentHeight() > ScrollableScreenComponent.this.contentArea.getInnerHeight();
         }
 
 
         private float getHeight() {
-            return Mth.clamp(((ScrollableScreenComponent.this.area.getHeight() * ScrollableScreenComponent.this.area.getHeight()) / ScrollableScreenComponent.this.contentHeight()), 15, ScrollableScreenComponent.this.area.getHeight());
+            return Mth.clamp(((ScrollableScreenComponent.this.contentArea.getHeight() * ScrollableScreenComponent.this.contentArea.getHeight()) / ScrollableScreenComponent.this.contentHeight()), 15, ScrollableScreenComponent.this.contentArea.getHeight());
         }
 
 
         @Override
         public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
             float scrollBarHeight = this.getHeight();
-            float xMin = ScrollableScreenComponent.this.area.getXMax() - this.width;
+            float xMin = ScrollableScreenComponent.this.contentArea.getXMax() - this.width;
             float xMax = xMin + this.width;
-            float yMin = Math.max(ScrollableScreenComponent.this.area.getY(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.area.getHeight() - scrollBarHeight) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.area.getY());
+            float yMin = Math.max(ScrollableScreenComponent.this.contentArea.getY(), (int) this.getScrollAmount() * (ScrollableScreenComponent.this.contentArea.getHeight() - scrollBarHeight) / Math.max(this.getMaxScrollAmount(), 1) + ScrollableScreenComponent.this.contentArea.getY());
             float yMax = yMin + scrollBarHeight;
 
-            this.render(xMin, xMax, yMin, yMax, ScrollableScreenComponent.this.area.getZ() + 2, mouseX, mouseY);
+            this.render(xMin, xMax, yMin, yMax, ScrollableScreenComponent.this.contentArea.getZ() + 2, mouseX, mouseY);
         }
     }
 }

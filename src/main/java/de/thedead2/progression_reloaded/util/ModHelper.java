@@ -86,16 +86,7 @@ public abstract class ModHelper {
     }
 
 
-    public static void reloadAll(MinecraftServer server) {
-        Timer timer = new Timer();
-        LOGGER.info("Reloading...");
 
-        init();
-        reloadGameData(server);
-
-        LOGGER.info("Reload completed in {} ms!", timer.getTime());
-        timer.stop();
-    }
 
 
     public static void init() {

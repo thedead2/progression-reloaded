@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.textures;
 
+import de.thedead2.progression_reloaded.client.gui.util.ObjectFit;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
@@ -47,6 +49,6 @@ public class IconInfos {
 
 
     private static TextureInfo createIconInfo(String name) {
-        return new TextureInfo(new ResourceLocation(MOD_ID, "textures/gui/icons/" + name), 50, 50, true);
+        return new TextureInfo(new ResourceLocation(MOD_ID, "textures/gui/icons/" + name), Component.empty(), 50, 50, ObjectFit.CONTAIN);
     }
 }

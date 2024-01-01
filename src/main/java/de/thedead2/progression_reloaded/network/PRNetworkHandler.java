@@ -28,9 +28,9 @@ import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
 
 
-public abstract class ModNetworkHandler {
+public abstract class PRNetworkHandler {
 
-    private static final Marker marker = new MarkerManager.Log4jMarker("NetworkHandler");
+    private static final Marker MARKER = new MarkerManager.Log4jMarker("NetworkHandler");
 
     private static final String PROTOCOL_VERSION = "1";
 
@@ -45,20 +45,24 @@ public abstract class ModNetworkHandler {
 
 
     public static void registerPackets() {
-        LOGGER.debug(marker, "Registering network packets...");
+        LOGGER.debug(MARKER, "Registering network packets...");
 
-        registerPacket(ClientDisplayProgressToast.class);
         registerPacket(ClientOpenProgressionBookPacket.class);
-        registerPacket(ClientSyncPlayerDataPacket.class);
+        registerPacket(ClientOnProgressChangedPacket.class);
         registerPacket(ClientSyncRestrictionsPacket.class);
+        registerPacket(ClientSyncPlayerDataPacket.class);
         registerPacket(ClientUsedExtraLifePacket.class);
         registerPacket(UpdateRenderersPacket.class);
+        //registerPacket(ClientWelcomePacket.class);
 
-        LOGGER.debug(marker, "Network registration complete.");
+        LOGGER.debug(MARKER, "Network registration complete.");
+    }
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet) {
+        registerPacket(packet, false);
     }
 
 
-    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet) {
+    private static <T extends ModNetworkPacket> void registerPacket(Class<T> packet, boolean needsResponse) {
         try {
             boolean loginPacket = false;
             packet.getConstructor(FriendlyByteBuf.class);
@@ -70,26 +74,24 @@ public abstract class ModNetworkHandler {
             }
             NetworkDirection direction = getDirection(packet, loginPacket);
 
+            SimpleChannel.MessageBuilder<T> messageBuilder = INSTANCE.messageBuilder(packet, nextMessageId(), direction)
+                                                                     .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
+                                                                     .encoder(ModNetworkPacket::toBytes)
+                                                                     .consumerMainThread(PRNetworkHandler::handlePacket);
+
             if(loginPacket) {
-                INSTANCE.messageBuilder(packet, nextMessageId(), direction)
-                        .markAsLoginPacket()
-                        .loginIndex(t -> ((ModLoginNetworkPacket) t).getAsInt(), (t, integer) -> ((ModLoginNetworkPacket) t).setLoginIndex(integer))
-                        .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
-                        .encoder(ModNetworkPacket::toBytes)
-                        .consumerMainThread(ModNetworkHandler::handlePacket)
-                        .add();
-            }
-            else {
-                INSTANCE.messageBuilder(packet, nextMessageId(), direction)
-                        .decoder(buf -> ModNetworkPacket.fromBytes(buf, packet))
-                        .encoder(ModNetworkPacket::toBytes)
-                        .consumerMainThread(ModNetworkHandler::handlePacket)
-                        .add();
+                messageBuilder.markAsLoginPacket()
+                              .loginIndex(t -> ((ModLoginNetworkPacket) t).getAsInt(), (t, integer) -> ((ModLoginNetworkPacket) t).setLoginIndex(integer));
             }
 
+            if(!needsResponse) {
+                messageBuilder.noResponse();
+            }
+
+            messageBuilder.add();
         }
         catch(Throwable e) {
-            CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), "ModNetworkHandler", e, Level.ERROR);
+            CrashHandler.getInstance().handleException("Failed to register ModNetworkPacket: " + packet.getName(), MARKER, e, Level.ERROR);
         }
     }
 
@@ -138,14 +140,14 @@ public abstract class ModNetworkHandler {
                 return packet.onClient(ctx);
             });
             DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> {
-                LOGGER.debug(marker, "Received packet {} from player {}, attempting to handle it...", packet.getClass().getName(), ctx.get().getSender().getUUID());
+                LOGGER.debug(MARKER, "Received packet {} from player {}, attempting to handle it...", packet.getClass().getName(), ctx.get().getSender().getUUID());
                 return packet.onServer(ctx);
             });
             ctx.get().setPacketHandled(true);
-            LOGGER.debug(marker, "Handled packet {} successfully...", packet.getClass().getName());
+            LOGGER.debug(MARKER, "Handled packet {} successfully...", packet.getClass().getName());
         }
         catch(Throwable throwable) {
-            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), marker, throwable, Level.FATAL);
+            CrashHandler.getInstance().handleException("Failed to handle network packet -> " + packet.getClass().getName(), MARKER, throwable, Level.FATAL);
             ctx.get().setPacketHandled(false);
         }
     }
@@ -159,7 +161,7 @@ public abstract class ModNetworkHandler {
     @SuppressWarnings("ConstantValue")
     public static <MSG extends ModNetworkPacket> void sendToPlayer(@NotNull MSG msg, @NotNull ServerPlayer player) {
         if(player.connection == null) {
-            LOGGER.error(marker, "Can't send packet {} to player {} as the connection is null!", msg.getClass().getName(), player.getName().getString());
+            LOGGER.error(MARKER, "Can't send packet {} to player {} as the connection is null!", msg.getClass().getName(), player.getName().getString());
             return;
         }
         INSTANCE.send(PacketDistributor.PLAYER.with(() -> player), msg);

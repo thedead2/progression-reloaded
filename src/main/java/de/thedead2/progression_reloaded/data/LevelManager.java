@@ -6,19 +6,17 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.events.PREventFactory;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
-import de.thedead2.progression_reloaded.network.packets.ClientDisplayProgressToast;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
+import de.thedead2.progression_reloaded.network.packets.ClientOnProgressChangedPacket;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.GameType;
-import net.minecraftforge.event.entity.player.PlayerEvent;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.logging.log4j.Marker;
@@ -113,32 +111,6 @@ public class LevelManager {
         }
     }
 
-
-    public static void onGameModeChange(final PlayerEvent.PlayerChangeGameModeEvent event) {
-        if(!ConfigManager.CHANGE_LEVEL_ON_CREATIVE.get()) {
-            return;
-        }
-        GameType newGameMode = event.getNewGameMode();
-        GameType currentGameMode = event.getCurrentGameMode();
-        if(isGameModeCreativeOrSpectator(newGameMode) && isGameModeNotCreativeAndSpectator(currentGameMode)) {
-            LevelManager.getInstance().onCreativeChange(event.getEntity());
-        }
-        else if(isGameModeNotCreativeAndSpectator(newGameMode) && isGameModeCreativeOrSpectator(currentGameMode)) {
-            LevelManager.getInstance().onSurvivalChange(event.getEntity());
-        }
-    }
-
-
-    private static boolean isGameModeCreativeOrSpectator(GameType gameMode) {
-        return gameMode == GameType.CREATIVE || gameMode == GameType.SPECTATOR;
-    }
-
-
-    private static boolean isGameModeNotCreativeAndSpectator(GameType gameMode) {
-        return gameMode != GameType.CREATIVE && gameMode != GameType.SPECTATOR;
-    }
-
-
     public void reset() {
         instance = null;
     }
@@ -178,7 +150,7 @@ public class LevelManager {
                 level.rewardPlayer(player);
                 progress.setRewarded(true);
                 ProgressionLevel nextLevel = this.getNextLevel(level);
-                ModNetworkHandler.sendToPlayer(new ClientDisplayProgressToast(level.getDisplay(), Component.literal("Level complete!")), player.getServerPlayer());
+                PRNetworkHandler.sendToPlayer(new ClientOnProgressChangedPacket(level.getDisplay(), ClientOnProgressChangedPacket.Type.LEVEL_COMPLETE), player.getServerPlayer());
                 LOGGER.debug(MARKER, "Player {} completed level {}", player.getName(), level.getId());
                 this.updateLevel(player, nextLevel);
             }
@@ -195,7 +167,7 @@ public class LevelManager {
 
 
     private void syncWithClient(PlayerData player) {
-        ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
+        PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
     }
     // Bsp. 25 level
     // current level 24
@@ -269,7 +241,7 @@ public class LevelManager {
     }
 
 
-    private void onSurvivalChange(Player player) {
+    public void onSurvivalChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
         playerData.getLevelData().restoreCachedLevel();
 
@@ -277,7 +249,7 @@ public class LevelManager {
     }
 
 
-    private void onCreativeChange(Player player) {
+    public void onCreativeChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
         playerData.getLevelData().updateAndCacheLevel(CREATIVE);
 

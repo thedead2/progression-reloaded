@@ -10,7 +10,7 @@ import net.minecraftforge.client.settings.KeyConflictContext;
 import org.lwjgl.glfw.GLFW;
 
 
-public class ModKeyMappings {
+public class PRKeyMappings {
 
     private static final String CATEGORY_QUESTING = TranslationKeyProvider.translationKeyFor(TranslationKeyType.KEY, "categories", "questing");
 

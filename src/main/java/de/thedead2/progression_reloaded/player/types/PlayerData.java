@@ -2,7 +2,7 @@ package de.thedead2.progression_reloaded.player.types;
 
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
-import de.thedead2.progression_reloaded.network.ModNetworkHandler;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientSyncPlayerDataPacket;
 import de.thedead2.progression_reloaded.player.data.PlayerLevels;
 import de.thedead2.progression_reloaded.player.data.PlayerQuests;
@@ -181,7 +181,7 @@ public class PlayerData {
     public void setTeam(PlayerTeam playerTeam) {
         this.team = playerTeam;
         if(this.player instanceof ServerPlayer serverPlayer) {
-            ModNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(this), serverPlayer);
+            PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(this), serverPlayer);
         }
     }
 

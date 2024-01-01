@@ -12,19 +12,18 @@ import org.jetbrains.annotations.NotNull;
 
 public abstract class NotificationToast extends ScreenComponent {
 
-    protected final Component title;
-
+    protected final Component message;
     protected final Alignment toastAlignment;
 
     protected final IAnimation animation;
 
 
-    protected NotificationToast(Area area, Component title, Alignment toastAlignment, IAnimation animation) {
+    protected NotificationToast(Area area, Component message, Alignment toastAlignment, IAnimation animation) {
         super(area);
-        this.title = title;
+        this.message = message;
         this.toastAlignment = toastAlignment;
         this.animation = animation;
-        this.setFocused(true);
+        this.changeFocus(true);
     }
 
 
@@ -35,7 +34,7 @@ public abstract class NotificationToast extends ScreenComponent {
 
     @Override
     public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
-        narrationElementOutput.add(NarratedElementType.TITLE, this.title);
+        narrationElementOutput.add(NarratedElementType.TITLE, this.message);
     }
 
 

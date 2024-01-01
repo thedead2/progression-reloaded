@@ -13,33 +13,9 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 
 
-public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
-
-    private final ResourceLocation id;
-
-    private final Component title;
-
-    private final Component description;
-
-    private final ItemStack icon;
-
-    private final boolean mainQuest;
-
-    @Nullable
-    private final ResourceLocation parentQuest;
-
-
-    public QuestDisplayInfo(ResourceLocation id, Component title, Component description, ItemStack icon, boolean mainQuest, @Nullable ResourceLocation parentQuest) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.icon = icon;
-        this.mainQuest = mainQuest;
-        this.parentQuest = parentQuest;
-    }
+public record QuestDisplayInfo(ResourceLocation id, Component title, Component description, ItemStack icon, boolean mainQuest, @Nullable ResourceLocation parentQuest) implements IDisplayInfo<ProgressionQuest> {
 
 
     public static QuestDisplayInfo fromJson(JsonElement jsonElement) {
@@ -95,59 +71,6 @@ public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
 
 
     @Override
-    public ItemStack getIcon() {
-        return icon;
-    }
-
-
-    @Override
-    public Component getTitle() {return title;}
-
-
-    @Override
-    public Component getDescription() {
-        return description;
-    }
-
-
-    @Override
-    public ResourceLocation getId() {return id;}
-
-
-    public boolean mainQuest() {
-        return mainQuest;
-    }
-
-
-    @Nullable
-    public ResourceLocation parentQuest() {return parentQuest;}
-
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, title, description, icon, mainQuest, parentQuest);
-    }
-
-
-    @Override
-    public boolean equals(Object obj) {
-        if(obj == this) {
-            return true;
-        }
-        if(obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        var that = (QuestDisplayInfo) obj;
-        return Objects.equals(this.id, that.id) &&
-                Objects.equals(this.title, that.title) &&
-                Objects.equals(this.description, that.description) &&
-                Objects.equals(this.icon, that.icon) &&
-                this.mainQuest == that.mainQuest &&
-                Objects.equals(this.parentQuest, that.parentQuest);
-    }
-
-
-    @Override
     public String toString() {
         return "QuestDisplayInfo[" +
                 "id=" + id + ", " +
@@ -158,6 +81,18 @@ public final class QuestDisplayInfo implements IDisplayInfo<ProgressionQuest> {
                 "parentQuest=" + parentQuest + ']';
     }
 
+
+    public Builder deconstruct() {
+        Builder builder = Builder.builder();
+        builder.id = this.id;
+        builder.title = this.title;
+        builder.description = this.description;
+        builder.icon = this.icon;
+        builder.isMainQuest = this.mainQuest;
+        builder.parentQuest = this.parentQuest;
+
+        return builder;
+    }
 
     public static class Builder {
 
