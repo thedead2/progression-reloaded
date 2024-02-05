@@ -36,7 +36,7 @@ public abstract class Restriction<T> {
             Method fromNet = restrictionClass.getDeclaredMethod("fromNetwork", FriendlyByteBuf.class, ResourceLocation.class);
             return (Restriction<R>) fromNet.invoke(null, buf, levelId);
         }
-        catch(ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        catch(NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
             CrashHandler.getInstance().handleException("Failed to deserialize Restriction from network", e, Level.ERROR);
             throw new RuntimeException(e);
         }

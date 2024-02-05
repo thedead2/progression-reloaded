@@ -35,6 +35,7 @@ public class QuestOverlay extends ProgressOverlay<ProgressionQuest> {
 
     @Override
     public void updateProgress(IProgressInfo<ProgressionQuest> progressInfo) {
+        this.displayInfo = progressInfo.getProgressable().getDisplay();
         FormattedString title = new FormattedString(this.displayInfo.title(), this.font.getName(), FontFormatting.defaultFormatting().setLineHeight(4).setTextAlignment(Alignment.CENTERED).setBgColor(Color.BLACK.getRGB()).setBgAlpha(0.25f).setColor(153, 102, 51, 255), false);
         List<FormattedString> list = ((QuestProgress) progressInfo).getCurrentDescriptions()
                                                        .stream()

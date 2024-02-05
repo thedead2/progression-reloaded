@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.events;
 
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraftforge.eventbus.api.Cancelable;
 import net.minecraftforge.eventbus.api.Event;
@@ -49,7 +49,7 @@ public abstract class UpdateStatusEvent extends Event {
     @Cancelable
     public static class TriggerEvent extends Event {
 
-        private final SimpleTrigger<?> trigger;
+        private final SimpleCriterionTrigger<?> trigger;
 
         private final PlayerData player;
 
@@ -60,7 +60,7 @@ public abstract class UpdateStatusEvent extends Event {
         private final boolean triggerTestResult;
 
 
-        public <T> TriggerEvent(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data, boolean triggerTestResult) {
+        public <T> TriggerEvent(SimpleCriterionTrigger<T> trigger, PlayerData player, T toTest, Object[] data, boolean triggerTestResult) {
             this.trigger = trigger;
             this.player = player;
             this.toTest = toTest;
@@ -69,7 +69,7 @@ public abstract class UpdateStatusEvent extends Event {
         }
 
 
-        public SimpleTrigger<?> getTrigger() {
+        public SimpleCriterionTrigger<?> getTrigger() {
             return trigger;
         }
 

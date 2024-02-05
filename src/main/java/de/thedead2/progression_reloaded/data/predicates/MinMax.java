@@ -4,27 +4,27 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.StringReader;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import de.thedead2.progression_reloaded.api.INbtSerializable;
+import de.thedead2.progression_reloaded.api.IStatusChecker;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
+import de.thedead2.progression_reloaded.client.gui.animation.LoopTypes;
+import de.thedead2.progression_reloaded.util.TickTimer;
+import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.GsonHelper;
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.function.BiFunction;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 
 public abstract class MinMax<T extends Number> {
-
-    public static final SimpleCommandExceptionType ERROR_EMPTY = new SimpleCommandExceptionType(Component.translatable(
-            "argument.range.empty"));
-
-    public static final SimpleCommandExceptionType ERROR_SWAPPED = new SimpleCommandExceptionType(Component.translatable(
-            "argument.range.swapped"));
 
     @Nullable
     protected final T min;
@@ -51,16 +51,16 @@ public abstract class MinMax<T extends Number> {
     protected abstract T squareOpt(@Nullable T value);
 
 
-    protected static <T extends Number, R extends MinMax<T>> R fromJson(@Nullable JsonElement jsonElement, R defaultValue, BiFunction<JsonElement, String, T> valueFactory, MinMaxFactory<T, R> minMaxFactory) {
+    protected static <T extends Number, R extends MinMax<T>> R fromJson(@Nullable JsonElement jsonElement, R defaultValue, Function<JsonElement, T> valueConverter, MinMaxFactory<T, R> minMaxFactory) {
         if(jsonElement != null && !jsonElement.isJsonNull()) {
             if(GsonHelper.isNumberValue(jsonElement)) {
-                T value = valueFactory.apply(jsonElement, "value");
+                T value = valueConverter.apply(jsonElement);
                 return minMaxFactory.create(value, value);
             }
             else {
-                JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonElement, "value");
-                T min = SerializationHelper.getNullable(jsonobject, "min", jsonElement1 -> valueFactory.apply(jsonElement1, "min"));
-                T max = SerializationHelper.getNullable(jsonobject, "max", jsonElement1 -> valueFactory.apply(jsonElement1, "max"));
+                JsonObject jsonobject = jsonElement.getAsJsonObject();
+                T min = SerializationHelper.getNullable(jsonobject, "min", valueConverter);
+                T max = SerializationHelper.getNullable(jsonobject, "max", valueConverter);
                 return minMaxFactory.create(min, max);
             }
         }
@@ -70,86 +70,52 @@ public abstract class MinMax<T extends Number> {
     }
 
 
-    protected static <T extends Number, R extends MinMax<T>> R fromReader(StringReader pReader, MinMax.BoundsFromReaderFactory<T, R> pBoundedFactory, Function<String, T> pValueFactory, Supplier<DynamicCommandExceptionType> pCommandExceptionSupplier, Function<T, T> pFormatter) throws CommandSyntaxException {
-        if(!pReader.canRead()) {
-            throw ERROR_EMPTY.createWithContext(pReader);
+    public Component getDefaultDescription() {
+        if(this.isAny()) {
+            return Component.empty();
         }
-        else {
-            int i = pReader.getCursor();
 
-            try {
-                T t = optionallyFormat(readNumber(pReader, pValueFactory, pCommandExceptionSupplier), pFormatter);
-                T t1;
-                if(pReader.canRead(2) && pReader.peek() == '.' && pReader.peek(1) == '.') {
-                    pReader.skip();
-                    pReader.skip();
-                    t1 = optionallyFormat(readNumber(pReader, pValueFactory, pCommandExceptionSupplier), pFormatter);
-                    if(t == null && t1 == null) {
-                        throw ERROR_EMPTY.createWithContext(pReader);
-                    }
-                }
-                else {
-                    t1 = t;
-                }
-
-                if(t == null && t1 == null) {
-                    throw ERROR_EMPTY.createWithContext(pReader);
-                }
-                else {
-                    return pBoundedFactory.create(pReader, t, t1);
-                }
+        if(this.min != null) {
+            if(this.max == null) {
+                return Component.literal("at least").append(this.min.toString());
             }
-            catch(CommandSyntaxException commandsyntaxexception) {
-                pReader.setCursor(i);
-                throw new CommandSyntaxException(commandsyntaxexception.getType(), commandsyntaxexception.getRawMessage(), commandsyntaxexception.getInput(), i);
-            }
-        }
-    }
-
-
-    @Nullable
-    private static <T> T optionallyFormat(@Nullable T pValue, Function<T, T> pFormatter) {
-        return pValue == null ? null : pFormatter.apply(pValue);
-    }
-
-
-    @Nullable
-    private static <T extends Number> T readNumber(StringReader pReader, Function<String, T> pStringToValueFunction, Supplier<DynamicCommandExceptionType> pCommandExceptionSupplier) throws CommandSyntaxException {
-        int i = pReader.getCursor();
-
-        while(pReader.canRead() && isAllowedInputChat(pReader)) {
-            pReader.skip();
-        }
-
-        String s = pReader.getString().substring(i, pReader.getCursor());
-        if(s.isEmpty()) {
-            return null;
-        }
-        else {
-            try {
-                return pStringToValueFunction.apply(s);
-            }
-            catch(NumberFormatException numberformatexception) {
-                throw pCommandExceptionSupplier.get().createWithContext(pReader, s);
-            }
-        }
-    }
-
-
-    private static boolean isAllowedInputChat(StringReader pReader) {
-        char c0 = pReader.peek();
-        if((c0 < '0' || c0 > '9') && c0 != '-') {
-            if(c0 != '.') {
-                return false;
+            else if(this.min.equals(this.max)) {
+                return Component.literal(this.min.toString());
             }
             else {
-                return !pReader.canRead(2) || pReader.peek(1) != '.';
+                return Component.literal("between").append(this.min.toString()).append("and").append(this.max.toString());
             }
         }
         else {
-            return true;
+            return Component.literal("at most").append(this.max.toString());
         }
     }
+
+
+    @Nonnull
+    Component getShortDescription() {
+        if(this.isAny()) {
+            return Component.empty();
+        }
+
+        if(this.min != null) {
+            if(this.max == null) {
+                return Component.literal(">").append(this.min.toString());
+            }
+            else if(this.min.equals(this.max)) {
+                return Component.literal("/").append(this.min.toString());
+            }
+            else {
+                return Component.literal(">").append(this.min.toString()).append("<").append(this.max.toString());
+            }
+        }
+        else {
+            return Component.literal("<").append(this.max.toString());
+        }
+    }
+
+
+    public abstract boolean matches(T t);
 
 
     @Nullable
@@ -176,7 +142,12 @@ public abstract class MinMax<T extends Number> {
     }
 
 
-    public JsonElement serializeToJson() {
+    public Tag toNBT() {
+        return SerializationHelper.convertToNBT(this.toJson());
+    }
+
+
+    public JsonElement toJson() {
         if(this.isAny()) {
             return JsonNull.INSTANCE;
         }
@@ -193,21 +164,17 @@ public abstract class MinMax<T extends Number> {
     }
 
 
+    public abstract void toNetwork(FriendlyByteBuf buf);
+
+
     public boolean isAny() {
         return this.min == null && this.max == null;
     }
-
 
     @FunctionalInterface
     protected interface MinMaxFactory<T extends Number, R extends MinMax<T>> {
 
         R create(@Nullable T min, @Nullable T max);
-    }
-
-    @FunctionalInterface
-    protected interface BoundsFromReaderFactory<T extends Number, R extends MinMax<T>> {
-
-        R create(StringReader pReader, @Nullable T pMin, @Nullable T pMax) throws CommandSyntaxException;
     }
 
     public static class Doubles extends MinMax<Double> {
@@ -235,8 +202,21 @@ public abstract class MinMax<T extends Number> {
         }
 
 
+        public static MinMax.Doubles fromNBT(Tag tag) {
+            return fromJson(SerializationHelper.convertToJson(tag));
+        }
+
+
         public static MinMax.Doubles fromJson(@Nullable JsonElement jsonElement) {
-            return fromJson(jsonElement, ANY, GsonHelper::convertToDouble, MinMax.Doubles::new);
+            return fromJson(jsonElement, ANY, JsonElement::getAsDouble, MinMax.Doubles::new);
+        }
+
+
+        public static MinMax.Doubles fromNetwork(FriendlyByteBuf buf) {
+            Double min = buf.readNullable(FriendlyByteBuf::readDouble);
+            Double max = buf.readNullable(FriendlyByteBuf::readDouble);
+
+            return new Doubles(min, max);
         }
 
 
@@ -251,33 +231,20 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public static MinMax.Doubles fromReader(StringReader pReader) throws CommandSyntaxException {
-            return fromReader(pReader, (p_154807_) -> p_154807_);
-        }
-
-
-        public static MinMax.Doubles fromReader(StringReader pReader, Function<Double, Double> pFormatter) throws CommandSyntaxException {
-            return fromReader(pReader, MinMax.Doubles::create, Double::parseDouble, CommandSyntaxException.BUILT_IN_EXCEPTIONS::readerInvalidDouble, pFormatter);
-        }
-
-
-        private static MinMax.Doubles create(StringReader p_154796_, @Nullable Double p_154797_, @Nullable Double p_154798_) throws CommandSyntaxException {
-            if(p_154797_ != null && p_154798_ != null && p_154797_ > p_154798_) {
-                throw ERROR_SWAPPED.createWithContext(p_154796_);
-            }
-            else {
-                return new MinMax.Doubles(p_154797_, p_154798_);
-            }
-        }
-
-
-        public boolean matches(double value) {
+        public boolean matches(Double value) {
             if(this.min != null && this.min > value) {
                 return false;
             }
             else {
                 return this.max == null || !(this.max < value);
             }
+        }
+
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf) {
+            buf.writeNullable(this.min, FriendlyByteBuf::writeDouble);
+            buf.writeNullable(this.max, FriendlyByteBuf::writeDouble);
         }
 
 
@@ -294,7 +261,6 @@ public abstract class MinMax<T extends Number> {
     public static class Ints extends MinMax<Integer> {
 
         public static final MinMax.Ints ANY = new MinMax.Ints((Integer) null, (Integer) null);
-
 
         public static MinMax.Ints exactly(int pValue) {
             return new MinMax.Ints(pValue, pValue);
@@ -316,8 +282,21 @@ public abstract class MinMax<T extends Number> {
         }
 
 
+        public static MinMax.Ints fromNBT(Tag tag) {
+            return fromJson(SerializationHelper.convertToJson(tag));
+        }
+
+
         public static MinMax.Ints fromJson(@Nullable JsonElement jsonElement) {
-            return fromJson(jsonElement, ANY, GsonHelper::convertToInt, MinMax.Ints::new);
+            return fromJson(jsonElement, ANY, JsonElement::getAsInt, MinMax.Ints::new);
+        }
+
+
+        public static MinMax.Ints fromNetwork(FriendlyByteBuf buf) {
+            Integer min = buf.readNullable(FriendlyByteBuf::readInt);
+            Integer max = buf.readNullable(FriendlyByteBuf::readInt);
+
+            return new MinMax.Ints(min, max);
         }
 
 
@@ -332,33 +311,20 @@ public abstract class MinMax<T extends Number> {
         }
 
 
-        public static MinMax.Ints fromReader(StringReader pReader) throws CommandSyntaxException {
-            return fromReader(pReader, (integer) -> integer);
-        }
-
-
-        public static MinMax.Ints fromReader(StringReader pReader, Function<Integer, Integer> pValueFunction) throws CommandSyntaxException {
-            return fromReader(pReader, MinMax.Ints::create, Integer::parseInt, CommandSyntaxException.BUILT_IN_EXCEPTIONS::readerInvalidInt, pValueFunction);
-        }
-
-
-        private static MinMax.Ints create(StringReader p_55378_, @Nullable Integer p_55379_, @Nullable Integer p_55380_) throws CommandSyntaxException {
-            if(p_55379_ != null && p_55380_ != null && p_55379_ > p_55380_) {
-                throw ERROR_SWAPPED.createWithContext(p_55378_);
-            }
-            else {
-                return new MinMax.Ints(p_55379_, p_55380_);
-            }
-        }
-
-
-        public boolean matches(int value) {
+        public boolean matches(Integer value) {
             if(this.min != null && this.min > value) {
                 return false;
             }
             else {
                 return this.max == null || this.max >= value;
             }
+        }
+
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf) {
+            buf.writeNullable(this.min, FriendlyByteBuf::writeInt);
+            buf.writeNullable(this.max, FriendlyByteBuf::writeInt);
         }
 
 
@@ -369,6 +335,214 @@ public abstract class MinMax<T extends Number> {
             else {
                 return this.maxSq == null || this.maxSq >= value;
             }
+        }
+    }
+
+    public static class Counter implements INbtSerializable, INetworkSerializable, IStatusChecker {
+
+        private final MinMax.Ints minMax;
+
+        private final AtomicInteger current;
+
+
+        public Counter(MinMax.Ints minMax) {
+            this(minMax, new AtomicInteger(0));
+        }
+
+
+        private Counter(MinMax.Ints minMax, AtomicInteger current) {
+            this.minMax = minMax;
+            this.current = current;
+        }
+
+
+        public static Counter fromNBT(CompoundTag tag) {
+            MinMax.Ints minMax = MinMax.Ints.fromNBT(tag.get("minMax"));
+            int current = tag.getInt("current");
+
+            return new Counter(minMax, new AtomicInteger(current));
+        }
+
+
+        public static Counter fromNetwork(FriendlyByteBuf buf) {
+            MinMax.Ints minMax = MinMax.Ints.fromNetwork(buf);
+            int current = buf.readInt();
+
+            return new Counter(minMax, new AtomicInteger(current));
+        }
+
+
+        @Override
+        public void reset() {
+            this.current.set(0);
+        }
+
+
+        @Override
+        public boolean updateAndCheck() {
+            if(this.minMax.isAny()) {
+                return true;
+            }
+            else {
+                return this.minMax.matches(this.current.getAndIncrement());
+            }
+        }
+
+
+        @Override
+        public boolean check() {
+            return this.minMax.isAny() || this.minMax.matches(this.current.get());
+        }
+
+
+        @Override
+        public Component getStatus() {
+            if(this.minMax.isAny()) {
+                return Component.empty();
+            }
+            else {
+                return Component.literal(" " + this.current.get()).append(this.minMax.getShortDescription());
+            }
+        }
+
+
+        @Override
+        public Tag toNBT() {
+            CompoundTag tag = new CompoundTag();
+
+            tag.put("minMax", this.minMax.toNBT());
+            tag.putInt("current", this.current.get());
+
+            return tag;
+        }
+
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf) {
+            this.minMax.toNetwork(buf);
+            buf.writeInt(this.current.get());
+        }
+    }
+
+
+    public static class Timer implements INbtSerializable, INetworkSerializable, IStatusChecker {
+
+        private final MinMax.Doubles minMax;
+
+        private final TickTimer timer;
+
+
+        public Timer(MinMax.Doubles minMax) {
+            this.minMax = minMax;
+
+            float duration;
+
+            if(this.minMax.isAny()) {
+                duration = 1;
+            }
+            else if(this.minMax.max != null) {
+                duration = this.minMax.max.floatValue();
+            }
+            else {
+                duration = this.minMax.min.floatValue() + 1f;
+            }
+
+            this.timer = new TickTimer(0, duration, false, true, LoopTypes.NO_LOOP);
+        }
+
+
+        private Timer(MinMax.Doubles minMax, TickTimer timer) {
+            this.minMax = minMax;
+            this.timer = timer;
+        }
+
+
+        public static Timer fromNetwork(FriendlyByteBuf buf) {
+            MinMax.Doubles minMax = MinMax.Doubles.fromNetwork(buf);
+            TickTimer timer = TickTimer.fromNetwork(buf);
+
+            return new Timer(minMax, timer);
+        }
+
+
+        public static Timer fromNBT(CompoundTag tag) {
+            MinMax.Doubles minMax = MinMax.Doubles.fromNBT(tag.get("minMax"));
+            TickTimer timer = TickTimer.fromNBT(tag.getCompound("timer"));
+
+            return new Timer(minMax, timer);
+        }
+
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf) {
+            this.minMax.toNetwork(buf);
+            this.timer.toNetwork(buf);
+        }
+
+
+        @Override
+        public Tag toNBT() {
+            CompoundTag tag = new CompoundTag();
+
+            tag.put("minMax", this.minMax.toNBT());
+            tag.put("timer", this.timer.toNBT());
+
+            return tag;
+        }
+
+
+        @Override
+        public void reset() {
+            this.timer.stop();
+            this.timer.reset();
+        }
+
+
+        @Override
+        public boolean updateAndCheck() {
+            if(this.minMax.isAny()) {
+                return true;
+            }
+            else {
+                this.startIfNeeded();
+                this.timer.updateTime();
+                return !this.timer.isFinished();
+            }
+        }
+
+
+        @Override
+        public boolean check() {
+            return this.minMax.isAny() || !this.timer.isFinished();
+        }
+
+
+        @Override
+        public Component getStatus() {
+            if(this.minMax.isAny()) {
+                return Component.empty();
+            }
+            else {
+                this.startIfNeeded();
+                this.timer.updateTime();
+                String timeLeft = DurationFormatUtils.formatDurationHMS(MathHelper.ticksToMillis(this.timer.getTimeLeft()));
+                return Component.literal(timeLeft);
+            }
+        }
+
+
+        public boolean startIfNeeded() {
+            if(!this.minMax.isAny()) {
+                this.timer.startIfNeeded();
+                return true;
+            }
+
+            return false;
+        }
+
+
+        public void stopIfNeeded() {
+            this.timer.pause(true);
         }
     }
 }

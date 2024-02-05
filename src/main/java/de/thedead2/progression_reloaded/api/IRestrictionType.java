@@ -1,5 +1,6 @@
 package de.thedead2.progression_reloaded.api;
 
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 import de.thedead2.progression_reloaded.data.RestrictionManager;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -11,7 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.util.stream.Stream;
 
 
-public interface IRestrictionType<T> {
+public interface IRestrictionType<T> extends INetworkSerializable {
 
     static <T> Pair<ResourceLocation, Stream<TagKey<T>>> getFromRegistry(IForgeRegistry<T> registry, T object) {
         ResourceLocation id = registry.getKey(object);
@@ -35,6 +36,7 @@ public interface IRestrictionType<T> {
 
     Pair<ResourceLocation, Stream<TagKey<T>>> get(T object);
 
+    @Override
     default void toNetwork(FriendlyByteBuf buf) {
         buf.writeResourceLocation(RestrictionManager.RESTRICTION_TYPES.inverse().get(this));
     }

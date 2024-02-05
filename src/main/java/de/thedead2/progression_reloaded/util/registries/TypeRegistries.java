@@ -1,8 +1,7 @@
 package de.thedead2.progression_reloaded.util.registries;
 
-import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.util.ReflectionHelper;
 import net.minecraft.resources.ResourceLocation;
 
@@ -10,13 +9,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-public abstract class TypeRegistries {
+public class TypeRegistries {
 
-    public static final Map<ResourceLocation, Class<SimpleTrigger<?>>> PROGRESSION_TRIGGER = new HashMap<>();
+    public static final Map<ResourceLocation, Class<SimpleCriterionTrigger<?>>> PROGRESSION_TRIGGER = new HashMap<>();
 
     public static final Map<ResourceLocation, Class<IReward>> PROGRESSION_REWARDS = new HashMap<>();
-
-    public static final Map<ResourceLocation, Class<ITriggerPredicate<?>>> PROGRESSION_PREDICATES = new HashMap<>();
 
 
     @SuppressWarnings("unchecked")

@@ -7,7 +7,9 @@ import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.QuestManager;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.tasks.QuestTasks;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -38,6 +40,15 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
     }
 
 
+    public static ProgressionQuest fromNetwork(FriendlyByteBuf buf) {
+        QuestDisplayInfo displayInfo = QuestDisplayInfo.fromNetwork(buf);
+        QuestTasks tasks = QuestTasks.fromNetwork(buf);
+
+        return new ProgressionQuest(displayInfo, tasks);
+    }
+
+
+    @Override
     public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("display", this.displayInfo.toJson());
@@ -46,6 +57,12 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
         return jsonObject;
     }
 
+
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        this.displayInfo.toNetwork(buf);
+        this.tasks.toNetwork(buf);
+    }
 
     public boolean isMainQuest() {
         return this.displayInfo.mainQuest();
@@ -138,12 +155,12 @@ public class ProgressionQuest implements IProgressable<ProgressionQuest> {
 
 
     public boolean isDone(PlayerData player) {
-        return player.getQuestData().getOrStartProgress(this).isDone();
+        return player.getPlayerQuests().getOrStartProgress(this).isDone();
     }
 
 
     public boolean isActive(PlayerData player) {
-        return player.getQuestData().getStartedOrActiveQuests().contains(this);
+        return player.getPlayerQuests().getStartedOrActiveQuests().contains(this);
     }
 
 }

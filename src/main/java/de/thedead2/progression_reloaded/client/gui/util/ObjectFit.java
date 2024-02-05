@@ -5,6 +5,9 @@ import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
 
 //TODO: Check if u and v are not 0, if other textures get drawn --> maybe fixable with also fixing texture repetition
 public enum ObjectFit {
+    /**
+     * The object is resized to fill the given dimension. If necessary, the object will be stretched or squished to fit
+     */
     FILL {
         @Override
         public float getUMin(TextureInfo textureInfo, Area area) {
@@ -29,6 +32,9 @@ public enum ObjectFit {
             return (textureInfo.getV() + area.getInnerHeight()) / area.getInnerHeight();
         }
     },
+    /**
+     * The object keeps its aspect ratio, but is resized to fit within the given dimension
+     */
     CONTAIN {
         @Override
         public float getUMin(TextureInfo textureInfo, Area area) {
@@ -85,6 +91,9 @@ public enum ObjectFit {
             }
         }
     },
+    /**
+     * The object keeps its aspect ratio and fills the given dimension. The object will be clipped to fit
+     */
     COVER {
         @Override
         public float getUMin(TextureInfo textureInfo, Area area) {
@@ -141,6 +150,9 @@ public enum ObjectFit {
             }
         }
     },
+    /**
+     *  The object is not resized and keeps its original width and height
+     * */
     NONE {
         @Override
         public float getUMin(TextureInfo textureInfo, Area area) {
@@ -169,6 +181,9 @@ public enum ObjectFit {
             return (textureInfo.getV() + (area.getInnerHeight() - vStart)) / textureInfo.getTextureHeight();
         }
     },
+    /**
+     * The object is scaled down to the smallest version of {@link #NONE} or {@link #CONTAIN}
+     * */
     SCALE_DOWN {
         @Override
         public float getUMin(TextureInfo textureInfo, Area area) {

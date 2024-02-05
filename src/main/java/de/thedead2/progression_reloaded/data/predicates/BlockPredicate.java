@@ -3,10 +3,12 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -19,8 +21,7 @@ public class BlockPredicate implements ITriggerPredicate<BlockState> {
 
     public static final ResourceLocation ID = ITriggerPredicate.createId("block");
 
-    @SuppressWarnings("unchecked")
-    public static final BlockPredicate ANY = new BlockPredicate(null, null, (StatePropertiesPredicate<BlockState>) StatePropertiesPredicate.ANY, NbtPredicate.ANY);
+    public static final BlockPredicate ANY = new BlockPredicate(null, null, NbtPredicate.ANY);
 
     @Nullable
     private final TagKey<Block> tag;
@@ -28,34 +29,27 @@ public class BlockPredicate implements ITriggerPredicate<BlockState> {
     @Nullable
     private final Block block;
 
-    private final StatePropertiesPredicate<BlockState> properties;
-
     private final NbtPredicate nbt;
 
 
-    public BlockPredicate(@Nullable TagKey<Block> tag, @Nullable Block block, StatePropertiesPredicate<BlockState> properties, NbtPredicate nbt) {
+    public BlockPredicate(@Nullable TagKey<Block> tag, @Nullable Block block, NbtPredicate nbt) {
         this.tag = tag;
         this.block = block;
-        this.properties = properties;
         this.nbt = nbt;
     }
 
 
     public static BlockPredicate fromJson(JsonElement jsonElement) {
         if(jsonElement != null && !jsonElement.isJsonNull()) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonElement, "block");
-            NbtPredicate nbtpredicate = NbtPredicate.fromJson(jsonobject.get("nbt"));
-            Block block1 = ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(GsonHelper.getAsString(jsonobject, "block", null)));
+            JsonObject jsonobject = jsonElement.getAsJsonObject();
+            Block block = SerializationHelper.getNullable(jsonobject, "block", jsonElement1 -> ForgeRegistries.BLOCKS.getValue(ResourceLocation.tryParse(jsonElement1.getAsString())));
+            TagKey<Block> tag = SerializationHelper.getNullable(jsonobject, "tag", jsonElement1 -> {
+                ResourceLocation resourcelocation1 = new ResourceLocation(jsonElement1.getAsString());
+                return TagKey.create(Registries.BLOCK, resourcelocation1);
+            });
+            NbtPredicate nbtPredicate = NbtPredicate.fromJson(jsonobject.get("nbt"));
 
-            TagKey<Block> tagkey = null;
-            if(jsonobject.has("tag")) {
-                ResourceLocation resourcelocation1 = new ResourceLocation(GsonHelper.getAsString(jsonobject, "tag"));
-                tagkey = TagKey.create(Registries.BLOCK, resourcelocation1);
-            }
-
-            StatePropertiesPredicate<BlockState> statepropertiespredicate = StatePropertiesPredicate.fromJson(jsonobject.get("state"));
-
-            return new BlockPredicate(tagkey, block1, statepropertiespredicate, nbtpredicate);
+            return new BlockPredicate(tag, block, nbtPredicate);
         }
         else {
             return ANY;
@@ -63,18 +57,9 @@ public class BlockPredicate implements ITriggerPredicate<BlockState> {
     }
 
 
-    public static BlockPredicate from(BlockState blockState, Object... addArgs) {
-        if(blockState == null) {
-            return ANY;
-        }
-        TagKey<Block> blockTagKey = blockState.getTags().findFirst().orElse(null);
-        Block block1 = blockState.getBlock();
-        StatePropertiesPredicate<BlockState> properties = StatePropertiesPredicate.from(blockState);
-        NbtPredicate nbt = addArgs[0] != null ? NbtPredicate.from(((BlockEntity) addArgs[0]).saveWithFullMetadata()) : NbtPredicate.ANY;
-
-        return new BlockPredicate(blockTagKey, block1, properties, nbt);
+    public static BlockPredicate from(Block block) {
+        return new BlockPredicate(null, block, NbtPredicate.ANY);
     }
-
 
     @Override
     public boolean matches(BlockState blockState, Object... addArgs) {
@@ -86,9 +71,6 @@ public class BlockPredicate implements ITriggerPredicate<BlockState> {
                 return false;
             }
             else if(this.block != null && !this.block.equals(blockState.getBlock())) {
-                return false;
-            }
-            else if(!this.properties.matches(blockState)) {
                 return false;
             }
             else {
@@ -110,17 +92,28 @@ public class BlockPredicate implements ITriggerPredicate<BlockState> {
         }
         else {
             JsonObject jsonobject = new JsonObject();
-            if(this.block != null) {
-                jsonobject.addProperty("block", ForgeRegistries.BLOCKS.getKey(block).toString());
-            }
 
-            if(this.tag != null) {
-                jsonobject.addProperty("tag", this.tag.location().toString());
-            }
+            SerializationHelper.addNullable(this.block, jsonobject, "block", block1 -> new JsonPrimitive(ForgeRegistries.BLOCKS.getKey(block1).toString()));
+            SerializationHelper.addNullable(this.tag, jsonobject, "tag", tag -> new JsonPrimitive(tag.location().toString()));
 
             jsonobject.add("nbt", this.nbt.toJson());
-            jsonobject.add("state", this.properties.toJson());
             return jsonobject;
+        }
+    }
+
+
+    @Override
+    public Component getDefaultDescription() {
+        if(this == ANY) {
+            return Component.literal(" blocks");
+        }
+        else {
+            if(this.tag != null) {
+                return Component.literal(" " + this.tag.location().getPath());
+            }
+            else {
+                return Component.literal(" ").append(this.block.getName());
+            }
         }
     }
 

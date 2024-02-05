@@ -47,6 +47,8 @@ public class IconInfos {
 
     public static final TextureInfo DRAG = createIconInfo("drag.png");
 
+    public static final TextureInfo CROSSED_SWORDS = createIconInfo("crossed_swords.png");
+
 
     private static TextureInfo createIconInfo(String name) {
         return new TextureInfo(new ResourceLocation(MOD_ID, "textures/gui/icons/" + name), Component.empty(), 50, 50, ObjectFit.CONTAIN);

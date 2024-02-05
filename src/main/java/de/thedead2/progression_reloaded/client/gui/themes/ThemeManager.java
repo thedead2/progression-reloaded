@@ -8,6 +8,7 @@ import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ModHelper;
+import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -21,8 +22,8 @@ import java.util.function.Supplier;
 public class ThemeManager {
 
     private final Supplier<ProgressionLayout> activeLayout = () -> ProgressionLayout.Builder.builder()
-                                                                                            .withToast(200, 100, 0, 150, 50, Padding.NONE)
-                                                                                            .withLevelProgressOL(0, 0, 0, 100, 13, new Padding(5))
+                                                                                            .withToast(() -> RenderUtil.getScreenCenter().x - (MathHelper.percentOf(25, RenderUtil.getScreenWidth()) / 2), () -> MathHelper.percentOf(10, RenderUtil.getScreenHeight()), () -> 0, () -> MathHelper.percentOf(25, RenderUtil.getScreenWidth()), () -> MathHelper.percentOf(10, RenderUtil.getScreenHeight()), Padding.NONE)
+                                                                                            .withLevelProgressOL(() -> 0, () -> 0, () -> 0, () -> MathHelper.percentOf(10, RenderUtil.getScreenWidth()), () -> MathHelper.percentOf(3, RenderUtil.getScreenHeight()), new Padding(5))
                                                                                             .withQuestProgressOL(() -> RenderUtil.getScreenWidth() - 50, () -> 50, () -> 0, () -> 50, () -> 150, new Padding(5))
                                                                                             .build();
 

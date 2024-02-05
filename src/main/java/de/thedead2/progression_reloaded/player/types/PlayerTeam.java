@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import de.thedead2.progression_reloaded.api.INbtSerializable;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 import de.thedead2.progression_reloaded.data.display.TeamDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.player.PlayerDataManager;
@@ -21,7 +23,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 
-public class PlayerTeam {
+public class PlayerTeam implements INbtSerializable, INetworkSerializable {
 
     private final String teamName;
 
@@ -59,7 +61,7 @@ public class PlayerTeam {
         String name = tag.getString("name");
         String id = tag.getString("id");
         Set<KnownPlayer> members = CollectionHelper.loadFromNBT(Sets::newHashSetWithExpectedSize, tag.getList("members", 0), tag1 -> KnownPlayer.fromCompoundTag((CompoundTag) tag1));
-        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = CollectionHelper.loadFromNBT(tag.getCompound("pendingQuestSyncs"), KnownPlayer::fromString, tag1 -> PlayerQuests.loadFromNBT((CompoundTag) tag1));
+        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = CollectionHelper.loadFromNBT(tag.getCompound("pendingQuestSyncs"), KnownPlayer::fromString, tag1 -> PlayerQuests.fromNBT((CompoundTag) tag1));
 
         return new PlayerTeam(name, new ResourceLocation(id), members, pendingQuestSyncs, ProgressionLevel.fromKey(new ResourceLocation(level)));
     }
@@ -95,7 +97,7 @@ public class PlayerTeam {
         String teamName = buf.readUtf();
         ResourceLocation id = buf.readResourceLocation();
         Set<KnownPlayer> members = buf.readCollection(Sets::newHashSetWithExpectedSize, KnownPlayer::fromNetwork);
-        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = buf.readMap(Maps::newHashMapWithExpectedSize, KnownPlayer::fromNetwork, PlayerQuests::loadFromNetwork);
+        Map<KnownPlayer, PlayerQuests> pendingQuestSyncs = buf.readMap(Maps::newHashMapWithExpectedSize, KnownPlayer::fromNetwork, PlayerQuests::fromNetwork);
         ProgressionLevel level = ModRegistries.LEVELS.get().getValue(buf.readResourceLocation());
 
         return new PlayerTeam(teamName, id, members, pendingQuestSyncs, level);
@@ -132,15 +134,16 @@ public class PlayerTeam {
     }
 
 
-    public CompoundTag toCompoundTag() {
+    @Override
+    public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
         if(this.progressionLevel != null) {
             tag.putString("level", this.progressionLevel.getId().toString());
         }
         tag.putString("name", this.teamName);
         tag.putString("id", this.id.toString());
-        tag.put("members", CollectionHelper.saveToNBT(this.knownMembers, KnownPlayer::toCompoundTag));
-        tag.put("pendingQuestSyncs", CollectionHelper.saveToNBT(this.pendingQuestSyncs, KnownPlayer::toString, PlayerQuests::saveToNBT));
+        tag.put("members", CollectionHelper.saveToNBT(this.knownMembers, KnownPlayer::toNBT));
+        tag.put("pendingQuestSyncs", CollectionHelper.saveToNBT(this.pendingQuestSyncs, KnownPlayer::toString, PlayerQuests::toNBT));
 
         return tag;
     }
@@ -217,11 +220,12 @@ public class PlayerTeam {
     }
 
 
+    @Override
     public void toNetwork(FriendlyByteBuf buf) {
         buf.writeUtf(this.teamName);
         buf.writeResourceLocation(this.id);
         buf.writeCollection(this.knownMembers, (buf1, player) -> player.toNetwork(buf1));
-        buf.writeMap(this.pendingQuestSyncs, (friendlyByteBuf, player) -> player.toNetwork(friendlyByteBuf), (friendlyByteBuf, playerQuests) -> playerQuests.saveToNetwork(friendlyByteBuf));
+        buf.writeMap(this.pendingQuestSyncs, (friendlyByteBuf, player) -> player.toNetwork(friendlyByteBuf), (friendlyByteBuf, playerQuests) -> playerQuests.toNetwork(friendlyByteBuf));
         buf.writeResourceLocation(this.progressionLevel.getId());
     }
 

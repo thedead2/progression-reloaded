@@ -2,10 +2,12 @@ package de.thedead2.progression_reloaded.data.display;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -45,11 +47,7 @@ public final class LevelDisplayInfo implements IDisplayInfo<ProgressionLevel> {
         Component title = Component.Serializer.fromJson(jsonObject.get("title"));
         Component description = Component.Serializer.fromJson(jsonObject.get("description"));
         ItemStack icon = JsonHelper.itemFromJson(jsonObject.get("icon").getAsJsonObject());
-
-        ResourceLocation previous = null;
-        if(jsonObject.has("previous")) {
-            previous = new ResourceLocation(jsonObject.get("previous").getAsString());
-        }
+        ResourceLocation previous = SerializationHelper.getNullable(jsonObject, "previous", jsonElement1 -> new ResourceLocation(jsonElement1.getAsString()));
 
         return new LevelDisplayInfo(id, title, description, icon, previous);
     }
@@ -83,10 +81,8 @@ public final class LevelDisplayInfo implements IDisplayInfo<ProgressionLevel> {
         jsonObject.add("title", Component.Serializer.toJsonTree(this.title));
         jsonObject.add("description", Component.Serializer.toJsonTree(this.description));
         jsonObject.add("icon", JsonHelper.itemToJson(this.icon));
+        SerializationHelper.addNullable(this.previousLevel, jsonObject, "previous", id -> new JsonPrimitive(id.toString()));
 
-        if(this.previousLevel != null) {
-            jsonObject.addProperty("previous", this.previousLevel.toString());
-        }
 
         return jsonObject;
     }

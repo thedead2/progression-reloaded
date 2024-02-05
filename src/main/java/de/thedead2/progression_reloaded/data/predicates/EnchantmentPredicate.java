@@ -3,8 +3,11 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -24,35 +27,27 @@ public class EnchantmentPredicate implements ITriggerPredicate<Map<Enchantment, 
     private final MinMax.Ints level;
 
 
-    public EnchantmentPredicate(@Nullable Enchantment pEnchantment, MinMax.Ints pLevel) {
-        this.enchantment = pEnchantment;
-        this.level = pLevel;
+    public EnchantmentPredicate(@Nullable Enchantment enchantment, MinMax.Ints level) {
+        this.enchantment = enchantment;
+        this.level = level;
     }
 
 
     public static EnchantmentPredicate fromJson(JsonElement jsonElement) {
         if(jsonElement != null && !jsonElement.isJsonNull()) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonElement, "enchantment");
-            Enchantment enchantment = null;
-            if(jsonobject.has("enchantment")) {
-                ResourceLocation resourcelocation = new ResourceLocation(GsonHelper.getAsString(jsonobject, "enchantment"));
-                enchantment = ForgeRegistries.ENCHANTMENTS.getValue(resourcelocation);
-            }
+            JsonObject jsonobject = jsonElement.getAsJsonObject();
+            Enchantment enchantment = SerializationHelper.getNullable(jsonobject, "enchantment", jsonElement1 -> {
+                ResourceLocation resourcelocation = new ResourceLocation(jsonElement1.getAsString());
+                return ForgeRegistries.ENCHANTMENTS.getValue(resourcelocation);
+            });
 
-            MinMax.Ints levels = MinMax.Ints.fromJson(jsonobject.get("levels"));
-            return new EnchantmentPredicate(enchantment, levels);
+            MinMax.Ints level = MinMax.Ints.fromJson(jsonobject.get("level"));
+
+            return new EnchantmentPredicate(enchantment, level);
         }
         else {
             return ANY;
         }
-    }
-
-
-    public static EnchantmentPredicate from(Enchantment enchantment) {
-        if(enchantment == null) {
-            return ANY;
-        }
-        return new EnchantmentPredicate(enchantment, MinMax.Ints.between(enchantment.getMinLevel(), enchantment.getMaxLevel()));
     }
 
 
@@ -87,12 +82,25 @@ public class EnchantmentPredicate implements ITriggerPredicate<Map<Enchantment, 
         }
         else {
             JsonObject jsonobject = new JsonObject();
-            if(this.enchantment != null) {
-                jsonobject.addProperty("enchantment", ForgeRegistries.ENCHANTMENTS.getKey(this.enchantment).toString());
+            SerializationHelper.addNullable(this.enchantment, jsonobject, "enchantment", enchantment1 -> new JsonPrimitive(ForgeRegistries.ENCHANTMENTS.getKey(enchantment1).toString()));
+            jsonobject.add("level", this.level.toJson());
+            return jsonobject;
+        }
+    }
+
+
+    @Override
+    public Component getDefaultDescription() {
+        if(this == ANY) {
+            return Component.literal(" anything");
+        }
+        else {
+            MutableComponent component = Component.literal(" ").append(Component.translatable(this.enchantment.getDescriptionId()));
+            if(!this.level.isAny()) {
+                component.append(" with level ").append(this.level.getDefaultDescription());
             }
 
-            jsonobject.add("levels", this.level.serializeToJson());
-            return jsonobject;
+            return component;
         }
     }
 }

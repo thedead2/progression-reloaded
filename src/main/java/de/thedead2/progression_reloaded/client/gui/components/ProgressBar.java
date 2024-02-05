@@ -103,6 +103,6 @@ public class ProgressBar<T extends IProgressable<T>> extends ScreenComponent {
 
     @Override
     public void updateNarration(@NotNull NarrationElementOutput narrationElementOutput) {
-        narrationElementOutput.add(NarratedElementType.TITLE, this.progressable.getTitle());
+        narrationElementOutput.add(NarratedElementType.TITLE, this.progressable.getId().toString());
     }
 }

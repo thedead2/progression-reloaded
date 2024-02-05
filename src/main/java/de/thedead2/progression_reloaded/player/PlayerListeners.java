@@ -69,12 +69,12 @@ public class PlayerListeners {
 
     @SubscribeEvent
     public static void onPlayerFileSave(final PlayerEvent.SaveToFile event) {
-        PlayerDataManager.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
-        PlayerData data = PlayerDataManager.getPlayerData(event.getEntity());
+        PlayerData data = PlayerDataManager.savePlayerData(event.getEntity(), event.getPlayerFile(MOD_ID));
         PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(data), data.getServerPlayer());
 
         if(GAME_STATE == GameState.PLAYER_LOGGED_OUT) {
             Player player = event.getEntity();
+            data.getPlayerQuests().stopTimeKeeping();
             PlayerDataManager.clearPlayerData(player);
         }
     }

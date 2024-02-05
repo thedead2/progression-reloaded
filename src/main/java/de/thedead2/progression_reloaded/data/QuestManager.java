@@ -118,14 +118,14 @@ public class QuestManager {
     public void updateStatus(PlayerData player) {
         LOGGER.debug(MARKER, "Updating quests for player: {}", player.getName());
 
-        this.getAllQuestsForLevel(player.getCurrentLevel()).forEach(quest -> player.getQuestData().updateQuestStatus(quest));
+        this.getAllQuestsForLevel(player.getCurrentLevel()).forEach(quest -> player.getPlayerQuests().updateQuestStatus(quest));
 
         PlayerDataManager.ensureQuestsSynced(player);
     }
 
 
     public void stopListening(PlayerData player) {
-        player.getQuestData().stopListening();
+        player.getPlayerQuests().stopListening();
     }
 
 
@@ -133,7 +133,7 @@ public class QuestManager {
         Collection<QuestProgress> questProgresses = new HashSet<>();
         this.getMainQuestsForLevel(level).forEach(quest -> {
             if(quest.isMainQuest()) {
-                questProgresses.add(player.getQuestData().getOrStartProgress(quest));
+                questProgresses.add(player.getPlayerQuests().getOrStartProgress(quest));
             }
         });
         return questProgresses;
@@ -148,7 +148,7 @@ public class QuestManager {
                                                         .collect(Collectors.toSet());
         levelQuests.forEach(quest -> {
             if(!quest.isMainQuest()) {
-                questProgresses.add(player.getQuestData().getOrStartProgress(quest));
+                questProgresses.add(player.getPlayerQuests().getOrStartProgress(quest));
             }
         });
         return questProgresses;
@@ -190,7 +190,7 @@ public class QuestManager {
      **/
     public boolean award(ProgressionQuest quest, boolean successful, PlayerData player) {
         boolean flag = false;
-        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
+        QuestProgress questProgress = player.getPlayerQuests().getOrStartProgress(quest);
         if(!PREventFactory.onQuestAward(quest, questProgress, player)) {
             if(successful) {
                 questProgress.complete();
@@ -209,7 +209,7 @@ public class QuestManager {
     public boolean isParentDone(ProgressionQuest quest, PlayerData player) {
         ProgressionQuest parentQuest = questChildren.inverse().get(quest);
         if(parentQuest != null) {
-            return player.getQuestData().getOrStartProgress(parentQuest).isDone();
+            return player.getPlayerQuests().getOrStartProgress(parentQuest).isDone();
         }
         return true;
     }
@@ -225,11 +225,11 @@ public class QuestManager {
      **/
     public boolean revoke(ProgressionQuest quest, PlayerData player) {
         boolean flag = false;
-        QuestProgress questProgress = player.getQuestData().getOrStartProgress(quest);
+        QuestProgress questProgress = player.getPlayerQuests().getOrStartProgress(quest);
         QuestStatus oldStatus = questProgress.getCurrentQuestStatus();
         if(!PREventFactory.onQuestRevoke(quest, questProgress, player)) {
             questProgress.reset();
-            player.getQuestData().onQuestStatusChanged(quest, oldStatus, questProgress.getCurrentQuestStatus());
+            player.getPlayerQuests().onQuestStatusChanged(quest, oldStatus, questProgress.getCurrentQuestStatus());
             this.levelManager.updateStatus();
             flag = true;
         }

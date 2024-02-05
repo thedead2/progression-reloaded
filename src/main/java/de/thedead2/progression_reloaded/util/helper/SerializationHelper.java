@@ -2,9 +2,16 @@ package de.thedead2.progression_reloaded.util.helper;
 
 import com.google.gson.*;
 import net.minecraft.nbt.*;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 /**
@@ -12,6 +19,7 @@ import java.util.function.Function;
  **/
 public class SerializationHelper {
 
+    @NotNull
     public static Tag convertToNBT(JsonElement jsonElement) {
         if(jsonElement.isJsonPrimitive()) {
             JsonPrimitive primitive = jsonElement.getAsJsonPrimitive();
@@ -58,16 +66,20 @@ public class SerializationHelper {
             return tag;
         }
         else {
-            return EndTag.INSTANCE;
+            return StringTag.valueOf("null");
         }
     }
 
 
+    @NotNull
     public static JsonElement convertToJson(Tag tag) {
         if(tag instanceof StringTag stringTag) {
             String s = stringTag.getAsString();
             if(s.equalsIgnoreCase("true") || s.equalsIgnoreCase("false")) {
                 return new JsonPrimitive(Boolean.parseBoolean(s));
+            }
+            else if(s.equalsIgnoreCase("null")) {
+                return JsonNull.INSTANCE;
             }
             else {
                 return new JsonPrimitive(s);
@@ -94,14 +106,14 @@ public class SerializationHelper {
     }
 
 
-    public static <T> void addNullable(@Nullable T object, CompoundTag tag, String name, Function<T, Tag> valueConverter) {
+    public static <T> void addNullable(@Nullable T object, CompoundTag tag, String name, Function<@NotNull T, @NotNull Tag> valueConverter) {
         if(object != null) {
             tag.put(name, valueConverter.apply(object));
         }
     }
 
 
-    public static <T> void addNullable(@Nullable T object, JsonObject jsonObject, String name, Function<T, JsonElement> valueConverter) {
+    public static <T> void addNullable(@Nullable T object, JsonObject jsonObject, String name, Function<@NotNull T, @NotNull JsonElement> valueConverter) {
         if(object != null) {
             jsonObject.add(name, valueConverter.apply(object));
         }
@@ -109,7 +121,7 @@ public class SerializationHelper {
 
 
     @Nullable
-    public static <T> T getNullable(CompoundTag tag, String member, Function<Tag, T> valueConverter) {
+    public static <T> T getNullable(CompoundTag tag, String member, Function<Tag, @Nullable T> valueConverter) {
         T t = null;
         if(tag.contains(member)) {
             t = valueConverter.apply(tag.get(member));
@@ -120,7 +132,7 @@ public class SerializationHelper {
 
 
     @Nullable
-    public static <T> T getNullable(JsonObject jsonObject, String member, Function<JsonElement, T> valueConverter) {
+    public static <T> T getNullable(JsonObject jsonObject, String member, Function<JsonElement, @Nullable T> valueConverter) {
         T t = null;
         if(jsonObject.has(member)) {
             t = valueConverter.apply(jsonObject.get(member));
@@ -129,4 +141,31 @@ public class SerializationHelper {
         return t;
     }
 
+
+    @SuppressWarnings("unchecked")
+    public static <T> T createGeneric(Class<? extends T> aClass, CompoundTag tag) {
+        try {
+            Method fromNBT = aClass.getDeclaredMethod("fromNBT", CompoundTag.class);
+            return (T) fromNBT.invoke(null, tag);
+        }
+        catch(NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    public static <T> T createGeneric(Class<? extends T> aClass, JsonElement jsonElement, Object... addArgs) {
+        try {
+            List<Class<?>> params = Arrays.stream(addArgs).map(Object::getClass).collect(Collectors.toList());
+            params.add(0, JsonElement.class);
+            Method fromJson = aClass.getDeclaredMethod("fromJson", params.toArray(Class[]::new));
+            List<Object> args = new ArrayList<>(List.of(addArgs));
+            args.add(0, jsonElement);
+            return (T) fromJson.invoke(null, args.toArray());
+        }
+        catch(NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

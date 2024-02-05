@@ -111,7 +111,7 @@ public class AdminCommands {
                               ResourceLocation quest_id = ResourceLocationArgument.getId(context, "quest");
                               PlayerData playerData = PlayerDataManager.getPlayerData(context.getSource().getPlayerOrException());
 
-                              if(playerData.getQuestData().getOrStartProgress(quest_id).unlock()) {
+                              if(playerData.getPlayerQuests().getOrStartProgress(quest_id).unlock()) {
                                   context.getSource().sendSuccess(Component.literal("Unlocked quest " + quest_id), false);
                                   return ModCommands.COMMAND_SUCCESS;
                               }

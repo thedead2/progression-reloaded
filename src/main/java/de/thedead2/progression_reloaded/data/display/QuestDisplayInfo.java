@@ -2,10 +2,12 @@ package de.thedead2.progression_reloaded.data.display;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.api.gui.IDisplayInfo;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -25,7 +27,7 @@ public record QuestDisplayInfo(ResourceLocation id, Component title, Component d
         Component description = Component.Serializer.fromJson(jsonObject.get("description"));
         ItemStack icon = JsonHelper.itemFromJson(jsonObject.get("icon").getAsJsonObject());
         boolean mainQuest = jsonObject.get("isMainQuest").getAsBoolean();
-        ResourceLocation parent = jsonObject.has("parent") ? new ResourceLocation(jsonObject.get("parent").getAsString()) : null;
+        ResourceLocation parent = SerializationHelper.getNullable(jsonObject, "parent", jsonElement1 -> new ResourceLocation(jsonElement1.getAsString()));
 
         return new QuestDisplayInfo(id, title, description, icon, mainQuest, parent);
     }
@@ -62,9 +64,7 @@ public record QuestDisplayInfo(ResourceLocation id, Component title, Component d
         jsonObject.add("description", Component.Serializer.toJsonTree(this.description));
         jsonObject.add("icon", JsonHelper.itemToJson(this.icon));
         jsonObject.addProperty("isMainQuest", this.mainQuest);
-        if(this.parentQuest != null) {
-            jsonObject.addProperty("parent", this.parentQuest.toString());
-        }
+        SerializationHelper.addNullable(this.parentQuest, jsonObject, "parent", id -> new JsonPrimitive(id.toString()));
 
         return jsonObject;
     }

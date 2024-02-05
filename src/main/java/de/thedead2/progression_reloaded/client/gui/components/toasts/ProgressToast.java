@@ -17,7 +17,9 @@ import de.thedead2.progression_reloaded.client.gui.textures.DrawableTexture;
 import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
 import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientOnProgressChangedPacket;
+import de.thedead2.progression_reloaded.network.packets.ServerFollowQuestPacket;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
@@ -72,7 +74,7 @@ public class ProgressToast extends NotificationToast {
 
         if((this.type == ClientOnProgressChangedPacket.Type.NEW_QUEST || this.type == ClientOnProgressChangedPacket.Type.QUEST_UPDATED) && !renderer.isQuestFollowed(this.displayInfo.id())) {
             if(PRKeyMappings.FOLLOW_QUEST_KEY.isDown()) {
-                renderer.updateQuestProgressOverlay(ModClientInstance.getInstance().getClientData().getQuestData().getOrStartProgress(this.displayInfo.id()));
+                PRNetworkHandler.sendToServer(new ServerFollowQuestPacket(this.displayInfo.id()));
             }
             else {
                 string = new FormattedString("[" + PRKeyMappings.toString(PRKeyMappings.FOLLOW_QUEST_KEY).toUpperCase() + "] Follow Quest", this.font, FontFormatting.defaultFormatting().setLineHeight(3).setTextAlignment(Alignment.LEFT_CENTERED).setAlpha(this.alpha), true);

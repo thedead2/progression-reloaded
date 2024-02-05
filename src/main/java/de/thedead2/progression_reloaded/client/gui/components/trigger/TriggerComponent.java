@@ -2,10 +2,10 @@ package de.thedead2.progression_reloaded.client.gui.components.trigger;
 
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 
 
-public abstract class TriggerComponent<T extends SimpleTrigger<?>> extends ScreenComponent {
+public abstract class TriggerComponent<T extends SimpleCriterionTrigger<?>> extends ScreenComponent {
 
     protected final T trigger;
 

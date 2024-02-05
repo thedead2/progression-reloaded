@@ -42,6 +42,6 @@ public class ClientSyncPlayerDataPacket implements ModNetworkPacket {
 
     @Override
     public void toBytes(FriendlyByteBuf buf) {
-        buf.writeNullable(this.playerData, (buf1, playerData1) -> playerData1.serializeToNetwork(buf1));
+        buf.writeNullable(this.playerData, (buf1, playerData1) -> playerData1.toNetwork(buf1));
     }
 }

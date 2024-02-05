@@ -5,6 +5,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestStatus;
+import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +40,11 @@ public class QuestPredicate implements ITriggerPredicate<ProgressionQuest> {
     }
 
 
+    public static QuestPredicate from(ResourceLocation questId) {
+        return new QuestPredicate(questId, null);
+    }
+
+
     @Override
     public boolean matches(ProgressionQuest quest, Object... addArgs) {
         if(this.questId.equals(quest.getId())) {
@@ -63,5 +71,11 @@ public class QuestPredicate implements ITriggerPredicate<ProgressionQuest> {
 
             return jsonObject;
         }
+    }
+
+
+    @Override
+    public Component getDefaultDescription() {
+        return ((MutableComponent) ModRegistries.QUESTS.get().getValue(this.questId).getTitle()).append(this.completionStatus == QuestStatus.COMPLETE ? " successfully" : " unsuccessfully");
     }
 }

@@ -14,9 +14,11 @@ import net.minecraft.resources.ResourceLocation;
 public abstract class ProgressOverlay<T extends IProgressable<T>> implements IProgressOverlay<T> {
 
     protected final Area area;
+
     protected final DrawableTexture backgroundFrame;
 
     protected final ProgressionFont font;
+
     protected IDisplayInfo<T> displayInfo;
 
 
@@ -27,9 +29,4 @@ public abstract class ProgressOverlay<T extends IProgressable<T>> implements IPr
         this.font = FontManager.getInstance().getFont(font);
     }
 
-
-    @Override
-    public void updateDisplayInfo(IDisplayInfo<T> displayInfo) {
-        this.displayInfo = displayInfo;
-    }
 }

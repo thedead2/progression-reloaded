@@ -1,73 +1,88 @@
 package de.thedead2.progression_reloaded.client.gui.components;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-import de.thedead2.progression_reloaded.api.gui.animation.IAnimation;
-import de.thedead2.progression_reloaded.client.gui.animation.AnimationTypes;
-import de.thedead2.progression_reloaded.client.gui.animation.InterpolationTypes;
-import de.thedead2.progression_reloaded.client.gui.animation.LoopTypes;
-import de.thedead2.progression_reloaded.client.gui.animation.SimpleAnimation;
-import de.thedead2.progression_reloaded.client.gui.textures.DrawableItemTexture;
-import de.thedead2.progression_reloaded.client.gui.textures.DrawableTexture;
-import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
+import de.thedead2.progression_reloaded.client.gui.fonts.FontManager;
+import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FontFormatting;
+import de.thedead2.progression_reloaded.client.gui.fonts.formatting.FormattedString;
+import de.thedead2.progression_reloaded.client.gui.fonts.types.ProgressionFont;
+import de.thedead2.progression_reloaded.client.gui.textures.IconInfos;
+import de.thedead2.progression_reloaded.client.gui.util.Alignment;
 import de.thedead2.progression_reloaded.client.gui.util.Area;
 import de.thedead2.progression_reloaded.client.gui.util.RenderUtil;
-import de.thedead2.progression_reloaded.client.gui.util.TooltipInfo;
+import de.thedead2.progression_reloaded.client.gui.util.Size;
 import de.thedead2.progression_reloaded.data.display.QuestDisplayInfo;
+import de.thedead2.progression_reloaded.data.quest.QuestProgress;
+import de.thedead2.progression_reloaded.data.tasks.types.QuestTask;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import org.jetbrains.annotations.NotNull;
-import org.joml.Vector3f;
+
+import java.awt.*;
 
 
 public class QuestWidget extends ScreenComponent {
 
-    private final IAnimation rotation = new SimpleAnimation(0, MathHelper.secondsToTicks(20), LoopTypes.LOOP, AnimationTypes.EASE_IN, InterpolationTypes.LINEAR);
+    private final ProgressionFont font;
 
-    private final IAnimation scaling = new SimpleAnimation(0, MathHelper.secondsToTicks(1f), LoopTypes.LOOP_INVERSE_WHILE(animationTimer -> this.isMouseOver()), AnimationTypes.EASE_IN_OUT, InterpolationTypes.SINUS, false);
+    private final TextBox title;
 
-    private final DrawableTexture frame;
+    private final TextBox description;
 
-    private final DrawableItemTexture item;
+    private final SelectionList<QuestTask> goals;
 
-    private final Tooltip tooltip;
+    private QuestProgress quest;
 
 
-    public QuestWidget(Area area, TextureInfo frame, QuestDisplayInfo quest, TooltipInfo tooltipInfo) {
+    public QuestWidget(Area area, QuestProgress quest) {
         super(area);
-        this.frame = new DrawableTexture(frame, this.area);
-        this.item = new DrawableItemTexture(this.area, quest.icon());
-        this.tooltip = new Tooltip(tooltipInfo, quest.description(), 100, 300);
+        this.font = FontManager.getInstance().getFont(ModClientInstance.getInstance().getModRenderer().getThemeManager().getActiveTheme().get().font());
+        this.title = new TextBox(area.copy().setHeight(MathHelper.percentOf(5, area.getInnerHeight())));
+        this.description = new TextBox(area.copy().growX(-(area.getWidth() / 2)).growY(-MathHelper.percentOf(5, area.getInnerHeight())).moveX(area.getWidth() / 2).moveY(-MathHelper.percentOf(5, area.getInnerHeight())));
+        this.goals = new SelectionList<>(area.copy()
+                                             .growX(-(area.getWidth() / 2))
+                                             .growY(-MathHelper.percentOf(5, area.getInnerHeight()))
+                                             .moveY(-MathHelper.percentOf(5, area.getInnerHeight())), new Size(area.getWidth() / 2, MathHelper.percentOf(5, area.getInnerHeight())),
+                                         (content, poseStack, entryArea, mouseX, mouseY, partialTick) -> {
+                                             RenderUtil.renderIcon(poseStack, IconInfos.CROSSED_SWORDS, entryArea.getInnerX(), Alignment.LEFT_CENTERED.getYPos(entryArea, 16, 0), entryArea.getZ(), 16, Color.WHITE.getRGB());
+                                             float descriptionStart = entryArea.getInnerX() + 16 + 5;
+                                             this.font.drawWithLineWrap(poseStack, content.getDescription(), descriptionStart, Alignment.LEFT_CENTERED.getYPos(entryArea, this.font.height(content.getDescription(), entryArea.getInnerXMax() - descriptionStart), 0), entryArea.getZ(), entryArea.getInnerXMax() - descriptionStart);
+                                         }
+        );
+
+        this.setQuest(quest);
+    }
+
+
+    public void setQuest(QuestProgress quest) {
+        this.quest = quest;
+
+        if(quest != null) {
+            QuestDisplayInfo questInfo = quest.getProgressable().getDisplay();
+
+            this.title.setValue(new FormattedString(questInfo.title(), FontFormatting.defaultFormatting().setFont(this.font.getName()).setBold(true).setLetterSpacing(2).setLineHeight(20)));
+            this.description.setValue(new FormattedString(questInfo.description(), FontFormatting.defaultFormatting().setFont(this.font.getName()).setLineHeight(12)));
+            this.goals.clear();
+            this.goals.addAll(quest.getProgressable().getTasks().getTasks().values());
+        }
+        else {
+            this.title.setValue(FormattedString.EMPTY);
+            this.description.setValue(FormattedString.EMPTY);
+            this.goals.clear();
+        }
     }
 
 
     @Override
     public void render(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
         super.render(poseStack, mouseX, mouseY, partialTick);
-        poseStack.pushPose();
-        this.item.render(poseStack, mouseX, mouseY, partialTick);
-        this.animateHoverEffect(poseStack, mouseX, mouseY);
-        this.frame.render(poseStack, mouseX, mouseY, partialTick);
-        poseStack.popPose();
-        if(this.isMouseOver(mouseX, mouseY)) {
-            this.tooltip.render(poseStack, mouseX, mouseY, partialTick);
-        }
+
+        this.title.render(poseStack, mouseX, mouseY, partialTick);
+        this.description.render(poseStack, mouseX, mouseY, partialTick);
+        this.goals.render(poseStack, mouseX, mouseY, partialTick);
     }
 
 
-    private void animateHoverEffect(PoseStack poseStack, double mouseX, double mouseY) {
-        Vector3f anchor = new Vector3f(this.frame.getArea().getCenterX(), this.frame.getArea().getCenterY(), this.frame.getArea().getZ());
-        this.rotation.animateIf(iAnimation -> this.frame.isMouseOver(mouseX, mouseY), 0, 359.99999999999f, t -> RenderUtil.rotateAround(poseStack, Axis.ZP.rotationDegrees(t), anchor));
-
-        if(this.frame.isMouseOver(mouseX, mouseY)) {
-            this.scaling.startIfNeeded();
-        }
-        else {
-            this.scaling.invert(this.scaling.isStarted());
-        }
-
-        this.scaling.animate(1, 1.25f, t -> RenderUtil.scaleAround(poseStack, t, t, 1, anchor.x(), anchor.y(), anchor.z()));
-    }
 
 
     @Override

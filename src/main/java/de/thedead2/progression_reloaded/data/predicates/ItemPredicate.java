@@ -1,12 +1,11 @@
 package de.thedead2.progression_reloaded.data.predicates;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.helper.JsonHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.item.EnchantedBookItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -27,9 +26,7 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
 
     public static final ResourceLocation ID = ITriggerPredicate.createId("item");
 
-    public static final ItemPredicate ANY = new ItemPredicate(null, MinMax.Ints.ANY, MinMax.Ints.ANY, Collections.emptySet(), Collections.emptySet(), NbtPredicate.ANY, null);
-
-    private final MinMax.Ints itemCount;
+    public static final ItemPredicate ANY = new ItemPredicate(null, MinMax.Ints.ANY, Collections.emptySet(), Collections.emptySet(), NbtPredicate.ANY, null);
 
     private final MinMax.Ints itemDurability;
 
@@ -48,9 +45,8 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
     private final Potion potion;
 
 
-    public ItemPredicate(Item itemType, MinMax.Ints itemCount, MinMax.Ints itemDurability, Set<EnchantmentPredicate> enchantments, Set<EnchantmentPredicate> storedEnchantments, NbtPredicate nbt, @Nullable Potion potion) {
+    public ItemPredicate(Item itemType, MinMax.Ints itemDurability, Set<EnchantmentPredicate> enchantments, Set<EnchantmentPredicate> storedEnchantments, NbtPredicate nbt, @Nullable Potion potion) {
         this.itemType = itemType;
-        this.itemCount = itemCount;
         this.itemDurability = itemDurability;
         this.enchantments = enchantments;
         this.storedEnchantments = storedEnchantments;
@@ -61,25 +57,22 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
 
     public static ItemPredicate fromJson(JsonElement jsonElement) {
         if(jsonElement != null && !jsonElement.isJsonNull()) {
-            JsonObject jsonObject = GsonHelper.convertToJsonObject(jsonElement, "item");
-            Item itemType = jsonObject.has("item") ? JsonHelper.itemFromJson(jsonObject.get("item").getAsJsonObject()).getItem() : null;
-            MinMax.Ints count = MinMax.Ints.fromJson(jsonObject.get("count"));
+            JsonObject jsonObject = jsonElement.getAsJsonObject();
+            Item itemType = SerializationHelper.getNullable(jsonObject, "item", jsonElement1 -> JsonHelper.itemFromJson(jsonElement1).getItem());
             MinMax.Ints durability = MinMax.Ints.fromJson(jsonObject.get("durability"));
-
-            NbtPredicate nbt = NbtPredicate.fromJson(jsonObject.get("nbt"));
-
-            Potion potion = null;
-            if(jsonObject.has("potion")) {
-                potion = ForgeRegistries.POTIONS.getValue(new ResourceLocation(GsonHelper.getAsString(jsonObject, "potion")));
-            }
 
             Set<EnchantmentPredicate> enchantments = new HashSet<>(), storedEnchantments = new HashSet<>();
 
             JsonArray jsonArray = jsonObject.get("enchantments").getAsJsonArray();
             jsonArray.forEach(jsonElement1 -> enchantments.add(EnchantmentPredicate.fromJson(jsonElement1)));
-            JsonArray jsonArray1 = jsonObject.get("stored_enchantments").getAsJsonArray();
+            JsonArray jsonArray1 = jsonObject.get("storedEnchantments").getAsJsonArray();
             jsonArray1.forEach(jsonElement1 -> storedEnchantments.add(EnchantmentPredicate.fromJson(jsonElement1)));
-            return new ItemPredicate(itemType, count, durability, enchantments, storedEnchantments, nbt, potion);
+
+            NbtPredicate nbt = NbtPredicate.fromJson(jsonObject.get("nbt"));
+
+            Potion potion = SerializationHelper.getNullable(jsonObject, "potion", jsonElement1 -> ForgeRegistries.POTIONS.getValue(new ResourceLocation(jsonElement1.getAsString())));
+
+            return new ItemPredicate(itemType, durability, enchantments, storedEnchantments, nbt, potion);
         }
         else {
             return ANY;
@@ -87,29 +80,9 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
     }
 
 
-    public static ItemPredicate from(ItemStack itemStack) {
-        int count = itemStack.getCount();
-        int damage = itemStack.getMaxDamage() - itemStack.getDamageValue();
-        Map<Enchantment, Integer> map = itemStack.getAllEnchantments();
-        Set<EnchantmentPredicate> enchantments = new HashSet<>();
-        map.keySet().forEach(enchantment -> enchantments.add(EnchantmentPredicate.from(enchantment)));
-        Map<Enchantment, Integer> map1 = EnchantmentHelper.deserializeEnchantments(EnchantedBookItem.getEnchantments(itemStack));
-        Set<EnchantmentPredicate> storedEnchantments = new HashSet<>();
-        map1.keySet().forEach(enchantment -> storedEnchantments.add(EnchantmentPredicate.from(enchantment)));
-        NbtPredicate nbt = NbtPredicate.from(itemStack.getTag());
-        Potion potion = PotionUtils.getPotion(itemStack);
-
-        return new ItemPredicate(
-                itemStack.getItem(),
-                MinMax.Ints.exactly(count),
-                itemStack.isDamageableItem() ? MinMax.Ints.exactly(damage) : MinMax.Ints.ANY,
-                enchantments,
-                storedEnchantments,
-                nbt,
-                potion
-        );
+    public static ItemPredicate from(Item item) {
+        return new ItemPredicate(item, MinMax.Ints.ANY, Collections.emptySet(), Collections.emptySet(), NbtPredicate.ANY, null);
     }
-
 
     @Override
     public boolean matches(ItemStack itemStack, Object... addArgs) {
@@ -117,9 +90,6 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
             return true;
         }
         else if(this.itemType != null && !this.itemType.equals(itemStack.getItem())) {
-            return false;
-        }
-        else if(!this.itemCount.matches(itemStack.getCount())) {
             return false;
         }
         else if(!this.itemDurability.isAny() && !itemStack.isDamageableItem()) {
@@ -165,37 +135,39 @@ public class ItemPredicate implements ITriggerPredicate<ItemStack> {
         }
         else {
             JsonObject jsonObject = new JsonObject();
-            if(this.itemType != null) {
-                jsonObject.add("item", JsonHelper.itemToJson(this.itemType.getDefaultInstance()));
-            }
-            jsonObject.add("count", this.itemCount.serializeToJson());
-            jsonObject.add("durability", this.itemCount.serializeToJson());
-            jsonObject.add("nbt", this.nbt.toJson());
+            SerializationHelper.addNullable(this.itemType, jsonObject, "item", item -> JsonHelper.itemToJson(item.getDefaultInstance()));
+
+            jsonObject.add("durability", this.itemDurability.toJson());
+
             if(!this.enchantments.isEmpty()) {
-                JsonArray jsonArray = new JsonArray();
-
-                for(EnchantmentPredicate enchantmentPredicate : this.enchantments) {
-                    jsonArray.add(enchantmentPredicate.toJson());
-                }
-
-                jsonObject.add("enchantments", jsonArray);
+                jsonObject.add("enchantments", CollectionHelper.saveToJson(this.enchantments, EnchantmentPredicate::toJson));
             }
 
             if(!this.storedEnchantments.isEmpty()) {
-                JsonArray jsonArray = new JsonArray();
-
-                for(EnchantmentPredicate enchantmentPredicate : this.storedEnchantments) {
-                    jsonArray.add(enchantmentPredicate.toJson());
-                }
-
-                jsonObject.add("stored_enchantments", jsonArray);
+                jsonObject.add("stored_enchantments", CollectionHelper.saveToJson(this.storedEnchantments, EnchantmentPredicate::toJson));
             }
 
-            if(this.potion != null) {
-                jsonObject.addProperty("potion", ForgeRegistries.POTIONS.getKey(this.potion).toString());
-            }
+            jsonObject.add("nbt", this.nbt.toJson());
+
+            SerializationHelper.addNullable(this.potion, jsonObject, "potion", potion1 -> new JsonPrimitive(ForgeRegistries.POTIONS.getKey(potion1).toString()));
 
             return jsonObject;
+        }
+    }
+
+
+    @Override
+    public Component getDefaultDescription() {
+        if(this == ANY) {
+            return Component.literal(" anything");
+        }
+        else {
+            if(this.itemType != null) {
+                return this.itemType.getDescription();
+            }
+            else {
+                return Component.literal(this.potion.getName(""));
+            }
         }
     }
 }

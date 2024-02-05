@@ -111,22 +111,22 @@ public class ScreenEventsListener {
                         rightSide.add("Extra Lives: " + (ExtraLifeItem.isUnlimited() ? "Unlimited" : clientData.getExtraLives()) + " [max. " + ConfigManager.MAX_EXTRA_LIVES.get() + "]");
                     }
 
-                    List<ProgressionQuest> activeQuests = CollectionHelper.convertCollection(clientData.getQuestData().getStartedOrActiveQuests(), progressionQuest -> progressionQuest);
+                    List<ProgressionQuest> activeQuests = CollectionHelper.convertCollection(clientData.getPlayerQuests().getStartedOrActiveQuests(), progressionQuest -> progressionQuest);
                     rightSide.add("Active Quests:" + (activeQuests.isEmpty() ? " None" : ""));
                     activeQuests.forEach(quest -> {
                         if(activeQuests.indexOf(quest) < maxQuests) {
-                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getQuestData().getOrStartProgress(quest).getPercent() * 100) + " %]");
+                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getPlayerQuests().getOrStartProgress(quest).getPercent() * 100) + " %]");
                         }
                     });
                     if(activeQuests.size() > maxQuests) {
                         rightSide.add("...");
                     }
 
-                    List<ProgressionQuest> completedQuests = CollectionHelper.convertCollection(clientData.getQuestData().getFinishedQuests(), progressionQuest -> progressionQuest);
+                    List<ProgressionQuest> completedQuests = CollectionHelper.convertCollection(clientData.getPlayerQuests().getFinishedQuests(), progressionQuest -> progressionQuest);
                     rightSide.add("Finished Quests:" + (completedQuests.isEmpty() ? " None" : ""));
                     completedQuests.forEach(quest -> {
                         if(completedQuests.indexOf(quest) < maxQuests) {
-                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getQuestData().getOrStartProgress(quest).getPercent() * 100) + " %]");
+                            rightSide.add(quest.getTitle().getString() + " [" + ModHelper.DECIMAL_FORMAT.format(clientData.getPlayerQuests().getOrStartProgress(quest).getPercent() * 100) + " %]");
                         }
                     });
                     if(completedQuests.size() > maxQuests) {

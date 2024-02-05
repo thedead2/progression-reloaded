@@ -2,6 +2,7 @@ package de.thedead2.progression_reloaded.client;
 
 import de.thedead2.progression_reloaded.data.RestrictionManager;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
+import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.client.Minecraft;
@@ -76,10 +77,16 @@ public class ModClientInstance {
 
     public void setClientData(PlayerData clientData) {
         ProgressionLevel previousLevel = this.clientData != null ? this.clientData.getCurrentLevel() : null;
+        ProgressionQuest previousFollowedQuest = this.clientData != null ? this.clientData.getPlayerQuests().getFollowedQuest() : null;
         this.clientData = clientData;
 
         if(!this.clientData.getCurrentLevel().equals(previousLevel)) {
             PREventFactory.onLevelChanged(this.clientData.getCurrentLevel(), this.clientData, previousLevel);
+        }
+
+        if(this.clientData.getPlayerQuests().getFollowedQuest() != null && !this.clientData.getPlayerQuests().getFollowedQuest().equals(previousFollowedQuest)) {
+            this.modRenderer.updateQuestProgressOverlay(this.clientData.getPlayerQuests().getFollowedQuestProgress());
+            PREventFactory.onQuestFocusChanged(this.clientData.getPlayerQuests().getFollowedQuest(), this.clientData, previousFollowedQuest);
         }
 
         PREventFactory.onPlayerSynced(this.clientData);

@@ -8,6 +8,4 @@ import net.minecraft.client.gui.components.Renderable;
 public interface IProgressOverlay<T extends IProgressable<T>> extends Renderable {
 
     void updateProgress(IProgressInfo<T> progressInfo);
-
-    void updateDisplayInfo(IDisplayInfo<T> displayInfo);
 }

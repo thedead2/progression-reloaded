@@ -1,6 +1,6 @@
 package de.thedead2.progression_reloaded.mixin;
 
-import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedTrigger;
+import de.thedead2.progression_reloaded.data.trigger.PlayerInventoryChangedCriterionTrigger;
 import net.minecraft.advancements.critereon.InventoryChangeTrigger;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -16,6 +16,6 @@ public class MixinInventoryChangeTrigger {
 
     @Inject(at = @At("HEAD"), method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/item/ItemStack;)V")
     public void onInventoryChanged(ServerPlayer pPlayer, Inventory pInventory, ItemStack pStack, CallbackInfo ci) {
-        PlayerInventoryChangedTrigger.onInventoryChanged(pPlayer, pStack);
+        PlayerInventoryChangedCriterionTrigger.onInventoryChanged(pPlayer, pStack);
     }
 }

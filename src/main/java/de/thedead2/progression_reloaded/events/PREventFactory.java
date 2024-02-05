@@ -7,7 +7,7 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.data.quest.QuestStatus;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.common.MinecraftForge;
@@ -51,7 +51,7 @@ public abstract class PREventFactory {
     }
 
 
-    public static <T> boolean onTriggerFiring(SimpleTrigger<T> trigger, PlayerData player, T toTest, Object[] data, boolean triggerTestResult) {
+    public static <T> boolean onTriggerFiring(SimpleCriterionTrigger<T> trigger, PlayerData player, T toTest, Object[] data, boolean triggerTestResult) {
         return EVENT_BUS.post(new UpdateStatusEvent.TriggerEvent(trigger, player, toTest, data, triggerTestResult));
     }
 
@@ -99,5 +99,10 @@ public abstract class PREventFactory {
 
     public static void onStatusUpdatePost(PlayerData player) {
         EVENT_BUS.post(new UpdateStatusEvent.Post(player));
+    }
+
+
+    public static void onQuestFocusChanged(ProgressionQuest newFollowedQuest, PlayerData clientData, ProgressionQuest oldFollowedQuest) {
+
     }
 }

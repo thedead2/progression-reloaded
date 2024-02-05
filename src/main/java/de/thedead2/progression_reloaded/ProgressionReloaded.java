@@ -5,10 +5,9 @@ import de.thedead2.progression_reloaded.commands.ModCommands;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.RestrictionManager;
 import de.thedead2.progression_reloaded.data.level.TestLevels;
-import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.TestQuests;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.loot.ModLootModifiers;
 import de.thedead2.progression_reloaded.network.PRNetworkHandler;
@@ -69,7 +68,6 @@ public class ProgressionReloaded {
 
         this.registerTrigger(forgeEventBus);
         this.registerRewards();
-        this.registerPredicates();
 
         ModItems.register(modEventBus);
 
@@ -97,18 +95,13 @@ public class ProgressionReloaded {
 
 
     private void registerTrigger(IEventBus forgeEventBus) {
-        ReflectionHelper.registerClassesToEventBus(SimpleTrigger.class, forgeEventBus);
-        TypeRegistries.registerClasses(SimpleTrigger.class, TypeRegistries.PROGRESSION_TRIGGER);
+        ReflectionHelper.registerClassesToEventBus(SimpleCriterionTrigger.class, forgeEventBus);
+        TypeRegistries.registerClasses(SimpleCriterionTrigger.class, TypeRegistries.PROGRESSION_TRIGGER);
     }
 
 
     private void registerRewards() {
         TypeRegistries.registerClasses(IReward.class, TypeRegistries.PROGRESSION_REWARDS);
-    }
-
-
-    private void registerPredicates() {
-        TypeRegistries.registerClasses(ITriggerPredicate.class, TypeRegistries.PROGRESSION_PREDICATES);
     }
 
 

@@ -3,8 +3,11 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -21,7 +24,7 @@ public class EntityFlagsPredicate implements ITriggerPredicate<Entity> {
     private final Boolean isOnFire;
 
     @Nullable
-    private final Boolean isCrouching;
+    private final Boolean isSneaking;
 
     @Nullable
     private final Boolean isSprinting;
@@ -33,56 +36,36 @@ public class EntityFlagsPredicate implements ITriggerPredicate<Entity> {
     private final Boolean isBaby;
 
 
-    public EntityFlagsPredicate(@Nullable Boolean pIsOnFire, @Nullable Boolean pIsCouching, @Nullable Boolean pIsSprinting, @Nullable Boolean pIsSwimming, @Nullable Boolean pIsBaby) {
-        this.isOnFire = pIsOnFire;
-        this.isCrouching = pIsCouching;
-        this.isSprinting = pIsSprinting;
-        this.isSwimming = pIsSwimming;
-        this.isBaby = pIsBaby;
+    public EntityFlagsPredicate(@Nullable Boolean isOnFire, @Nullable Boolean isSneaking, @Nullable Boolean isSprinting, @Nullable Boolean isSwimming, @Nullable Boolean isBaby) {
+        this.isOnFire = isOnFire;
+        this.isSneaking = isSneaking;
+        this.isSprinting = isSprinting;
+        this.isSwimming = isSwimming;
+        this.isBaby = isBaby;
     }
 
 
-    public static EntityFlagsPredicate from(Entity entity) {
-        if(entity == null) {
-            return ANY;
-        }
-        return new EntityFlagsPredicate(
-                entity.isOnFire(),
-                entity.isCrouching(),
-                entity.isSprinting(),
-                entity.isSwimming(),
-                entity instanceof LivingEntity livingEntity ? livingEntity.isBaby() : null
-        );
-    }
+    public static EntityFlagsPredicate fromJson(@Nullable JsonElement jsonElement) {
+        if(jsonElement != null && !jsonElement.isJsonNull()) {
+            JsonObject jsonobject = jsonElement.getAsJsonObject();
+            Boolean isOnFire = SerializationHelper.getNullable(jsonobject, "isOnFire", JsonElement::getAsBoolean);
+            Boolean isSneaking = SerializationHelper.getNullable(jsonobject, "isSneaking", JsonElement::getAsBoolean);
+            Boolean isSprinting = SerializationHelper.getNullable(jsonobject, "isSprinting", JsonElement::getAsBoolean);
+            Boolean isSwimming = SerializationHelper.getNullable(jsonobject, "isSwimming", JsonElement::getAsBoolean);
+            Boolean isBaby = SerializationHelper.getNullable(jsonobject, "isBaby", JsonElement::getAsBoolean);
 
-
-    public static EntityFlagsPredicate fromJson(@Nullable JsonElement pJson) {
-        if(pJson != null && !pJson.isJsonNull()) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(pJson, "entity flags");
-            Boolean isOnFire1 = getOptionalBoolean(jsonobject, "is_on_fire");
-            Boolean isSneaking = getOptionalBoolean(jsonobject, "is_sneaking");
-            Boolean isSprinting1 = getOptionalBoolean(jsonobject, "is_sprinting");
-            Boolean isSwimming1 = getOptionalBoolean(jsonobject, "is_swimming");
-            Boolean isBaby1 = getOptionalBoolean(jsonobject, "is_baby");
-            return new EntityFlagsPredicate(isOnFire1, isSneaking, isSprinting1, isSwimming1, isBaby1);
+            return new EntityFlagsPredicate(isOnFire, isSneaking, isSprinting, isSwimming, isBaby);
         }
         else {
             return ANY;
         }
     }
 
-
-    @Nullable
-    private static Boolean getOptionalBoolean(JsonObject pJson, String pName) {
-        return pJson.has(pName) ? GsonHelper.getAsBoolean(pJson, pName) : null;
-    }
-
-
     public boolean matches(Entity entity, Object... addArgs) {
         if(this.isOnFire != null && entity.isOnFire() != this.isOnFire) {
             return false;
         }
-        else if(this.isCrouching != null && entity.isCrouching() != this.isCrouching) {
+        else if(this.isSneaking != null && entity.isCrouching() != this.isSneaking) {
             return false;
         }
         else if(this.isSprinting != null && entity.isSprinting() != this.isSprinting) {
@@ -103,20 +86,46 @@ public class EntityFlagsPredicate implements ITriggerPredicate<Entity> {
         }
         else {
             JsonObject jsonobject = new JsonObject();
-            this.addOptionalBoolean(jsonobject, "is_on_fire", this.isOnFire);
-            this.addOptionalBoolean(jsonobject, "is_sneaking", this.isCrouching);
-            this.addOptionalBoolean(jsonobject, "is_sprinting", this.isSprinting);
-            this.addOptionalBoolean(jsonobject, "is_swimming", this.isSwimming);
-            this.addOptionalBoolean(jsonobject, "is_baby", this.isBaby);
+            SerializationHelper.addNullable(this.isOnFire, jsonobject, "isOnFire", JsonPrimitive::new);
+            SerializationHelper.addNullable(this.isSneaking, jsonobject, "isSneaking", JsonPrimitive::new);
+            SerializationHelper.addNullable(this.isSprinting, jsonobject, "isSprinting", JsonPrimitive::new);
+            SerializationHelper.addNullable(this.isSwimming, jsonobject, "isSwimming", JsonPrimitive::new);
+            SerializationHelper.addNullable(this.isBaby, jsonobject, "isBaby", JsonPrimitive::new);
+
             return jsonobject;
         }
     }
 
 
-    private void addOptionalBoolean(JsonObject pJson, String pName, @Nullable Boolean pValue) {
-        if(pValue != null) {
-            pJson.addProperty(pName, pValue);
+    @Override
+    public Component getDefaultDescription() {
+        if(this == ANY) {
+            return Component.empty();
         }
+        else {
+            MutableComponent component = Component.empty();
 
+            if(this.isOnFire != null && this.isOnFire) {
+                component.append(" burning");
+            }
+
+            if(this.isSneaking != null && this.isSneaking) {
+                component.append(" sneaking");
+            }
+            else if(this.isSprinting != null && this.isSprinting) {
+                component.append(" sprinting");
+            }
+            else if(this.isSwimming != null && this.isSwimming) {
+                component.append(" swimming");
+            }
+
+            if(this.isBaby != null && this.isBaby) {
+                component.append(" baby");
+            }
+
+            component.append(" ");
+
+            return component;
+        }
     }
 }

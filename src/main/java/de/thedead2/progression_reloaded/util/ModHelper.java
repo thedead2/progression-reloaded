@@ -56,6 +56,8 @@ public abstract class ModHelper {
 
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
 
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss", Locale.ROOT);
+
     public static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##");
 
     public static GameState GAME_STATE = GameState.INACTIVE;

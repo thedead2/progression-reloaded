@@ -1,23 +1,24 @@
 package de.thedead2.progression_reloaded.data.level;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonArray;
+import com.google.common.collect.Sets;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import de.thedead2.progression_reloaded.api.IProgressable;
 import de.thedead2.progression_reloaded.data.LevelManager;
 import de.thedead2.progression_reloaded.data.display.LevelDisplayInfo;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.Rewards;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
+import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 
@@ -27,10 +28,10 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
 
     private final Rewards rewards;
 
-    private final Collection<ResourceLocation> quests;
+    private final Set<ResourceLocation> quests;
 
 
-    public ProgressionLevel(LevelDisplayInfo displayInfo, Rewards rewards, Collection<ResourceLocation> quests) {
+    public ProgressionLevel(LevelDisplayInfo displayInfo, Rewards rewards, Set<ResourceLocation> quests) {
         this.displayInfo = displayInfo;
         this.rewards = rewards;
         this.quests = quests;
@@ -45,28 +46,36 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
     public static ProgressionLevel fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         LevelDisplayInfo displayInfo = LevelDisplayInfo.fromJson(jsonObject.get("display"));
-
-        JsonArray quests = jsonObject.get("quests").getAsJsonArray();
-        Set<ResourceLocation> levelQuests = new HashSet<>();
-        quests.forEach(jsonElement1 -> levelQuests.add(new ResourceLocation(jsonElement1.getAsString())));
-
         Rewards rewards = Rewards.fromJson(jsonObject.get("rewards"));
+        Set<ResourceLocation> levelQuests = CollectionHelper.loadFromJson(Sets::newHashSetWithExpectedSize, jsonObject.getAsJsonArray("quests"), jsonElement1 -> new ResourceLocation(jsonElement1.getAsString()));
 
         return new ProgressionLevel(displayInfo, rewards, levelQuests);
     }
 
 
-    public JsonObject toJson() {
+    public static ProgressionLevel fromNetwork(FriendlyByteBuf buf) {
+        LevelDisplayInfo displayInfo = LevelDisplayInfo.fromNetwork(buf);
+        Rewards rewards = Rewards.fromNetwork(buf);
+        Set<ResourceLocation> quests = buf.readCollection(Sets::newHashSetWithExpectedSize, FriendlyByteBuf::readResourceLocation);
+
+        return new ProgressionLevel(displayInfo, rewards, quests);
+    }
+
+
+    @Override
+    public JsonElement toJson() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.add("display", this.displayInfo.toJson());
-
-        JsonArray quests = new JsonArray();
-        this.quests.forEach(resourceLocation -> quests.add(resourceLocation.toString()));
-        jsonObject.add("quests", quests);
-
         jsonObject.add("rewards", this.rewards.toJson());
+        jsonObject.add("quests", CollectionHelper.saveToJson(this.quests, id -> new JsonPrimitive(id.toString())));
 
         return jsonObject;
+    }
+
+
+    @Override
+    public ResourceLocation getId() {
+        return this.displayInfo.id();
     }
 
 
@@ -89,17 +98,26 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
 
 
     @Override
-    public int compareTo(@NotNull ProgressionLevel other) {
-        //Cases:
-        // 1.) other parent of this --> done
-        // 2.) this parent of other --> done
-        // 3.) this equals other --> done
-        // 4.) neither of the above --> we can't compare them!
+    public void toNetwork(FriendlyByteBuf buf) {
+        this.displayInfo.toNetwork(buf);
+        this.rewards.toNetwork(buf);
+        buf.writeCollection(this.quests, FriendlyByteBuf::writeResourceLocation);
+    }
+
+
+    @Nullable
+    public ResourceLocation getParent() {
+        return this.displayInfo.previousLevel();
+    }
+
+
+    @Override
+    public int compareTo(@NotNull ProgressionLevel o) {
         ResourceLocation thisId = this.getId();
-        ResourceLocation otherId = other.getId();
+        ResourceLocation otherId = o.getId();
 
         ResourceLocation thisPrevious = this.getParent();
-        ResourceLocation otherPrevious = other.getParent();
+        ResourceLocation otherPrevious = o.getParent();
 
         if(thisId.equals(otherId)) { // same levels
             return 0;
@@ -116,14 +134,8 @@ public class ProgressionLevel implements IProgressable<ProgressionLevel> {
     }
 
 
-    @Nullable
-    public ResourceLocation getParent() {
-        return this.displayInfo.previousLevel();
-    }
-
-
-    public ResourceLocation getId() {
-        return this.displayInfo.id();
+    public boolean hasParent() {
+        return this.displayInfo.previousLevel() != null;
     }
 
 

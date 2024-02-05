@@ -1,13 +1,11 @@
 package de.thedead2.progression_reloaded.data.rewards;
 
 import com.google.common.collect.Sets;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.data.display.RewardsDisplayInfo;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import de.thedead2.progression_reloaded.util.helper.CollectionHelper;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import org.jetbrains.annotations.NotNull;
 
@@ -31,9 +29,7 @@ public class Rewards {
     public static Rewards fromJson(JsonElement jsonElement) {
         JsonObject jsonObject = jsonElement.getAsJsonObject();
         RewardStrategy strategy = RewardStrategy.valueOf(jsonObject.get("strategy").getAsString());
-        JsonArray array = jsonObject.get("rewards").getAsJsonArray();
-        Set<IReward> rewards = new HashSet<>();
-        array.forEach(jsonElement1 -> rewards.add(IReward.createFromJson(jsonElement1.getAsJsonObject())));
+        Set<IReward> rewards = CollectionHelper.loadFromJson(Sets::newHashSetWithExpectedSize, jsonObject.getAsJsonArray("rewards"), IReward::createFromJson);
 
         return new Rewards(rewards, strategy);
     }
@@ -47,14 +43,6 @@ public class Rewards {
     public static Rewards fromNetwork(FriendlyByteBuf buf) {
         RewardStrategy strategy = buf.readEnum(RewardStrategy.class);
         Set<IReward> rewards = buf.readCollection(Sets::newHashSetWithExpectedSize, IReward::fromNetwork);
-        return new Rewards(rewards, strategy);
-    }
-
-
-    public static Rewards loadFromNBT(CompoundTag tag) {
-        RewardStrategy strategy = RewardStrategy.valueOf(tag.getString("strategy"));
-        Set<IReward> rewards = CollectionHelper.loadFromNBT(Sets::newHashSetWithExpectedSize, tag.getList("rewards", 0), tag1 -> IReward.fromNBT((CompoundTag) tag1));
-
         return new Rewards(rewards, strategy);
     }
 
@@ -76,15 +64,6 @@ public class Rewards {
 
     public RewardsDisplayInfo getDisplay() {
         return null;
-    }
-
-
-    public CompoundTag saveToNBT() {
-        CompoundTag tag = new CompoundTag();
-        tag.putString("strategy", this.rewardStrategy.name());
-        tag.put("rewards", CollectionHelper.saveToNBT(this.rewards, IReward::saveToNBT));
-
-        return tag;
     }
 
 

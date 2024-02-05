@@ -1,23 +1,9 @@
 package de.thedead2.progression_reloaded.api;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-
-import java.lang.reflect.InvocationTargetException;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 
 
-public interface IProgressInfo<T extends IProgressable<T>> {
-
-    static IProgressInfo<?> deserializeFromNetwork(FriendlyByteBuf buf) {
-        String className = buf.readUtf();
-        try {
-            Class<?> clazz = Class.forName(className);
-            return (IProgressInfo<?>) clazz.getDeclaredMethod("fromNetwork", FriendlyByteBuf.class).invoke(null, buf);
-        }
-        catch(ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-    }
+public interface IProgressInfo<T extends IProgressable<T>> extends INetworkSerializable, INbtSerializable {
 
     /**
      * @return the progress of this {@link IProgressInfo} in stopPercent
@@ -30,13 +16,6 @@ public interface IProgressInfo<T extends IProgressable<T>> {
     boolean isDone();
 
     /**
-     * Saves this {@link IProgressInfo} to a {@link CompoundTag}
-     *
-     * @return the {@link CompoundTag} containing the data of this {@link IProgressInfo}
-     **/
-    CompoundTag saveToCompoundTag();
-
-    /**
      * Resets the progress of this {@link IProgressInfo}
      **/
     void reset();
@@ -45,18 +24,6 @@ public interface IProgressInfo<T extends IProgressable<T>> {
      * Causes the progress of this {@link IProgressInfo} to be completed
      **/
     void complete();
-
-    default void serializeToNetwork(FriendlyByteBuf buf) {
-        buf.writeUtf(this.getClass().getName());
-        this.toNetwork(buf);
-    }
-
-    /**
-     * Serializes this {@link IProgressInfo} to the network buffer
-     *
-     * @param buf the {@link FriendlyByteBuf} to write data to
-     **/
-    void toNetwork(FriendlyByteBuf buf);
 
     T getProgressable();
 }

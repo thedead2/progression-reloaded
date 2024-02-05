@@ -6,10 +6,10 @@ import net.minecraft.network.chat.Component;
 
 public class ProgressionBookGUIEditor extends Screen {
 
-    private final ProgressionBookGUI gui;
+    private final QuestLogScreen gui;
 
 
-    public ProgressionBookGUIEditor(ProgressionBookGUI gui) {
+    public ProgressionBookGUIEditor(QuestLogScreen gui) {
         super(Component.literal("ProgressionBookGUI"));
         this.gui = gui;
     }

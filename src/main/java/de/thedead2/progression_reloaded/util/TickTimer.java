@@ -3,8 +3,12 @@ package de.thedead2.progression_reloaded.util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import de.thedead2.progression_reloaded.api.gui.animation.ILoopType;
+import de.thedead2.progression_reloaded.client.gui.animation.LoopTypes;
 import net.minecraft.Util;
 import net.minecraft.client.Timer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.FriendlyByteBuf;
 
 
 public class TickTimer {
@@ -43,7 +47,7 @@ public class TickTimer {
     }
 
 
-    public TickTimer(float startTime, float duration, float timeLeft, float startCounter, float sleepTime, boolean inverted, boolean paused, ILoopType loop) {
+    private TickTimer(float startTime, float duration, float timeLeft, float startCounter, float sleepTime, boolean inverted, boolean paused, ILoopType loop) {
         this.startTime = startTime;
         this.duration = duration;
         this.timeLeft = timeLeft;
@@ -214,8 +218,86 @@ public class TickTimer {
         jsonObject.addProperty("sleepTime", this.sleepTime);
         jsonObject.addProperty("inverted", this.inverted);
         jsonObject.addProperty("paused", this.paused);
-        jsonObject.addProperty("loop", this.loop.loop(this, false));
 
         return null;
+    }
+
+
+    public static TickTimer fromJson(JsonElement jsonElement) {
+        float startTime, duration, timeLeft, startCounter, sleepTime;
+        boolean inverted, paused;
+
+        JsonObject jsonObject = jsonElement.getAsJsonObject();
+
+        startTime = jsonObject.get("startTime").getAsFloat();
+        duration = jsonObject.get("duration").getAsFloat();
+        timeLeft = jsonObject.get("timeLeft").getAsFloat();
+        startCounter = jsonObject.get("startCounter").getAsFloat();
+        sleepTime = jsonObject.get("sleepTime").getAsFloat();
+
+        inverted = jsonObject.get("inverted").getAsBoolean();
+        paused = jsonObject.get("paused").getAsBoolean();
+
+        return new TickTimer(startTime, duration, timeLeft, startCounter, sleepTime, inverted, paused, LoopTypes.NO_LOOP);
+    }
+
+
+    public static TickTimer fromNBT(CompoundTag tag) {
+        float startTime, duration, timeLeft, startCounter, sleepTime;
+        boolean inverted, paused;
+
+        startTime = tag.getFloat("startTime");
+        duration = tag.getFloat("duration");
+        timeLeft = tag.getFloat("timeLeft");
+        startCounter = tag.getFloat("startCounter");
+        sleepTime = tag.getFloat("sleepTime");
+
+        inverted = tag.getBoolean("inverted");
+        paused = tag.getBoolean("paused");
+
+        return new TickTimer(startTime, duration, timeLeft, startCounter, sleepTime, inverted, paused, LoopTypes.NO_LOOP);
+    }
+
+
+    public static TickTimer fromNetwork(FriendlyByteBuf buf) {
+        float startTime, duration, timeLeft, startCounter, sleepTime;
+        boolean inverted, paused;
+
+        startTime = buf.readFloat();
+        duration = buf.readFloat();
+        timeLeft = buf.readFloat();
+        startCounter = buf.readFloat();
+        sleepTime = buf.readFloat();
+
+        inverted = buf.readBoolean();
+        paused = buf.readBoolean();
+
+        return new TickTimer(startTime, duration, timeLeft, startCounter, sleepTime, inverted, paused, LoopTypes.NO_LOOP);
+    }
+
+
+    public Tag toNBT() {
+        CompoundTag tag = new CompoundTag();
+
+        tag.putFloat("startTime", this.startTime);
+        tag.putFloat("duration", this.duration);
+        tag.putFloat("timeLeft", this.timeLeft);
+        tag.putFloat("startCounter", this.startCounter);
+        tag.putFloat("sleepTime", this.sleepTime);
+        tag.putBoolean("inverted", this.inverted);
+        tag.putBoolean("paused", this.paused);
+
+        return tag;
+    }
+
+
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeFloat(this.startTime);
+        buf.writeFloat(this.duration);
+        buf.writeFloat(this.timeLeft);
+        buf.writeFloat(this.startCounter);
+        buf.writeFloat(this.sleepTime);
+        buf.writeBoolean(this.inverted);
+        buf.writeBoolean(this.paused);
     }
 }

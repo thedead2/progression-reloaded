@@ -3,10 +3,9 @@ package de.thedead2.progression_reloaded.data.quest;
 import com.google.common.collect.Maps;
 import de.thedead2.progression_reloaded.api.IProgressInfo;
 import de.thedead2.progression_reloaded.data.LevelManager;
-import de.thedead2.progression_reloaded.data.criteria.CriterionProgress;
-import de.thedead2.progression_reloaded.data.quest.tasks.QuestTask;
-import de.thedead2.progression_reloaded.data.quest.tasks.TaskProgress;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.tasks.*;
+import de.thedead2.progression_reloaded.data.tasks.types.QuestTask;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.events.PREventFactory;
 import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.network.packets.ClientOnProgressChangedPacket;
@@ -20,6 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 
@@ -35,6 +36,8 @@ import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
 /**
  * Progress of a quest is dependent on the player or the team. Different players or teams can have different progress of a quest.
  **/
+
+//TODO: Split into QuestProgress and QuestProgressListener
 public class QuestProgress implements IProgressInfo<ProgressionQuest> {
 
     private static final Marker MARKER = new MarkerManager.Log4jMarker("QuestProgressListener");
@@ -45,22 +48,23 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
 
     private final Map<QuestTask, TaskProgress> taskProgress;
 
-    private QuestStatus previousQuestStatus;
-
     @Nullable
     private QuestTask currentTask;
 
+    private final TaskPath taskPath;
+
 
     public QuestProgress(ProgressionQuest quest, Supplier<PlayerData> player) {
-        this(player, null, quest, Maps.newHashMap());
+        this(player, null, new TaskPath(), quest, Maps.newHashMap());
     }
 
 
-    private QuestProgress(Supplier<PlayerData> player, @Nullable QuestTask currentTask, ProgressionQuest quest, Map<QuestTask, TaskProgress> taskProgress) {
+    private QuestProgress(Supplier<PlayerData> player, @Nullable QuestTask currentTask, TaskPath taskPath, ProgressionQuest quest, Map<QuestTask, TaskProgress> taskProgress) {
         this.player = player;
         this.currentTask = currentTask;
         this.quest = quest;
         this.taskProgress = taskProgress;
+        this.taskPath = taskPath;
     }
 
 
@@ -68,9 +72,10 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         UUID uuid = tag.getUUID("player");
         ProgressionQuest quest = ModRegistries.QUESTS.get().getValue(new ResourceLocation(tag.getString("quest")));
         QuestTask currentTask = SerializationHelper.getNullable(tag, "currentTask", tag1 -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(tag1.getAsString())));
-        Map<QuestTask, TaskProgress> nodeProgress = CollectionHelper.loadFromNBT(tag.getCompound("nodeProgress"), s -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(s)), tag1 -> TaskProgress.loadFromNBT((CompoundTag) tag1));
+        TaskPath taskPath = new TaskPath(tag.getString("path"));
+        Map<QuestTask, TaskProgress> progress = CollectionHelper.loadFromNBT(tag.getCompound("progress"), s -> quest.getTasks().getTaskForId(ResourceLocation.tryParse(s)), tag1 -> TaskProgress.fromNBT((CompoundTag) tag1));
 
-        return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, quest, nodeProgress);
+        return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, taskPath, quest, progress);
     }
 
 
@@ -78,30 +83,67 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
         UUID uuid = buf.readUUID();
         ProgressionQuest quest = ModRegistries.QUESTS.get().getValue(buf.readResourceLocation());
         QuestTask currentTask = buf.readNullable(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()));
+        TaskPath taskPath = new TaskPath(buf.readUtf());
         Map<QuestTask, TaskProgress> nodeProgress = buf.readMap(buf1 -> quest.getTasks().getTaskForId(buf1.readResourceLocation()), TaskProgress::fromNetwork);
 
-        return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, quest, nodeProgress);
+        return new QuestProgress(() -> PlayerDataManager.getPlayerData(uuid), currentTask, taskPath, quest, nodeProgress);
+    }
+
+
+    @Override
+    public CompoundTag toNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("player", this.player.get().getUUID());
+        tag.putString("quest", this.quest.getId().toString());
+        SerializationHelper.addNullable(this.currentTask, tag, "currentTask", task -> StringTag.valueOf(task.getId().toString()));
+        tag.putString("path", this.taskPath.toString());
+        tag.put("progress", CollectionHelper.saveToNBT(this.taskProgress, task -> task.getId().toString(), TaskProgress::toNBT));
+
+        return tag;
+    }
+
+
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeUUID(this.player.get().getUUID());
+        buf.writeResourceLocation(this.quest.getId());
+        buf.writeNullable(this.currentTask, (buf1, task) -> buf1.writeResourceLocation(task.getId()));
+        buf.writeUtf(this.taskPath.toString());
+        buf.writeMap(this.taskProgress, (buf1, task) -> buf1.writeResourceLocation(task.getId()), (buf1, taskProgress) -> taskProgress.toNetwork(buf1));
     }
 
 
     public void startListening() {
         LOGGER.debug(MARKER, "Started listening for tasks of quest {} for player {}", this.quest.getId(), this.player.get().getName());
-        if(this.currentTask != null) {
-            this.currentTask.getChildren().forEach(id -> this.registerListeners(this.getTaskForId(id), this.player.get()));
+        this.registerListeners(this.getCurrentlyListenedTasks(), this.player.get());
+    }
+
+
+    public Set<QuestTask> getCurrentlyListenedTasks() {
+        if(this.getCurrentQuestStatus() == QuestStatus.NOT_STARTED || this.currentTask == null) {
+            return this.getPotentialStartingTasks();
         }
         else {
-            this.registerListeners(this.getPotentialStartingTasks(), this.player.get());
+            return this.currentTask.getChildren()
+                                   .stream()
+                                   .map(this::getTaskForId)
+                                   .filter(task -> !this.getOrStartProgress(task).isDone())
+                                   .collect(Collectors.toSet());
         }
     }
 
 
-    public Set<QuestTask> getChildrenForCurrentTask() {
-        Set<QuestTask> children = new HashSet<>();
-        if(this.currentTask != null && this.currentTask.hasChildren()) {
-            this.currentTask.getChildren().forEach(value -> children.add(this.getTaskForId(value)));
+    @NotNull
+    public QuestStatus getCurrentQuestStatus() {
+        QuestStatus status;
+        if(this.currentTask != null) {
+            status = this.getOrStartProgress(this.currentTask).getQuestStatus();
+        }
+        else {
+            status = QuestStatus.NOT_STARTED;
         }
 
-        return children;
+        return status;
     }
 
 
@@ -116,20 +158,13 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public void registerListeners(QuestTask task, PlayerData player) {
-        LOGGER.debug(MARKER, "Registering listeners for task {} for player {}", task.getId(), player.getName());
-        TaskProgress taskProgress = this.getOrStartProgress(task);
-        if(!taskProgress.isDone()) {
-            for(Map.Entry<String, SimpleTrigger<?>> entry : task.getCriteria().entrySet()) {
-                CriterionProgress criterionprogress = taskProgress.getCriterion(entry.getKey());
-                if(criterionprogress != null && !criterionprogress.isDone()) {
-                    SimpleTrigger<?> trigger = entry.getValue();
-                    if(trigger != null) {
-                        trigger.addListener(player, new SimpleTrigger.Listener(quest, task, entry.getKey()));
-                    }
-                }
-            }
-        }
+    public Set<QuestTask> getPotentialStartingTasks() {
+        Set<QuestTask> tasks = new HashSet<>();
+        QuestTasks questTasks = this.quest.getTasks();
+        tasks.addAll(questTasks.getTasksByType(QuestTask.Function.START_TASK));
+        tasks.addAll(questTasks.getTasksByType(QuestTask.Function.POSSIBLE_START_TASK));
+
+        return tasks;
     }
 
 
@@ -143,173 +178,79 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    private void startProgress(QuestTask task, TaskProgress taskProgress) {
-        taskProgress.updateProgress(task);
-        this.taskProgress.putIfAbsent(task, taskProgress);
+    public Set<QuestTask> getChildrenForCurrentTask() {
+        return this.getChildrenForTask(this.currentTask);
     }
 
 
-    public boolean award(QuestTask task, String criterionName, PlayerData player) {
-        LOGGER.debug(MARKER, "Awarding criterion {} of task {}  for player {}", criterionName, task.getId(), player.getName());
-        boolean flag = false;
-        boolean questFinished = false;
-        ClientOnProgressChangedPacket.Type toastType = null;
-        TaskProgress taskProgress = this.getOrStartProgress(task);
-        this.previousQuestStatus = this.getCurrentQuestStatus();
-        if(criterionName == null || taskProgress.grantProgress(criterionName)) {
-            if(criterionName == null) {
-                taskProgress.complete();
-            }
-            if(taskProgress.isDone()) {
-                switch(task.getQuestStatus()) {
-                    case STARTED: {
-                        this.unregisterListeners(this.getPotentialStartingTasks(), player);
-                        this.registerChildrenListeners(task, player);
-
-                        toastType = ClientOnProgressChangedPacket.Type.NEW_QUEST;
-                        break;
-                    }
-                    case ACTIVE: {
-                        this.unregisterListeners(task, player);
-                        if(!task.isOptional() && this.currentTask != null) {
-                            this.currentTask.getChildren().forEach(id -> this.unregisterListeners(this.getTaskForId(id), player));
-                        }
-                        this.registerChildrenListeners(task, player);
-
-                        if(this.previousQuestStatus != QuestStatus.NOT_STARTED) {
-                            toastType = ClientOnProgressChangedPacket.Type.QUEST_UPDATED;
-                        }
-                        else {
-                            toastType = ClientOnProgressChangedPacket.Type.NEW_QUEST;
-                        }
-                        break;
-                    }
-                    case COMPLETE:
-                    case FAILED: {
-                        this.stopListening();
-
-                        questFinished = true;
-                        toastType = task.getQuestStatus() == QuestStatus.COMPLETE ? ClientOnProgressChangedPacket.Type.QUEST_COMPLETE : ClientOnProgressChangedPacket.Type.QUEST_FAILED;
-                        break;
-                    }
-                }
-
-                this.setCurrentTask(task);
-                this.currentTask.rewardPlayer(player);
-
-                flag = true;
-            }
+    public Set<QuestTask> getChildrenForTask(QuestTask task) {
+        Set<QuestTask> children = new HashSet<>();
+        if(task != null && task.hasChildren()) {
+            task.getChildren().forEach(value -> children.add(this.getTaskForId(value)));
         }
 
-        PREventFactory.onQuestProgressChanged(this.quest, this, player);
-        PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
-        PlayerDataManager.ensureQuestsSynced(player);
-
-        if(this.previousQuestStatus != this.getCurrentQuestStatus()) {
-            player.getQuestData().onQuestStatusChanged(this.quest, this.previousQuestStatus, this.getCurrentQuestStatus());
-        }
-
-        if(flag) {
-            PRNetworkHandler.sendToPlayer(new ClientOnProgressChangedPacket(this.quest.getDisplay(), toastType), player.getServerPlayer());
-        }
-
-        if(questFinished) {
-            PREventFactory.onQuestFinished(this.quest, task.getQuestStatus(), player);
-            LevelManager.getInstance().updateStatus();
-        }
-
-        return flag;
+        return children;
     }
-
 
     private void registerChildrenListeners(QuestTask task, PlayerData player) {
         task.getChildren().forEach(id -> this.registerListeners(this.getTaskForId(id), player));
     }
 
 
+    //TODO: Maybe needs revision
+    public void registerListeners(QuestTask task, PlayerData player) {
+        LOGGER.debug(MARKER, "Registering listeners for task {} for player {}", task.getId(), player.getName());
+        TaskProgress taskProgress = this.getOrStartProgress(task);
+        if(!taskProgress.isDone()) {
+            SimpleCriterionTrigger<?> trigger = task.getCriterion();
+            if(trigger != null) {
+                if(taskProgress.startTimerIfNeeded()) {
+                    player.getPlayerQuests().getTimeKeeper().startListening(new TaskKey(this.quest.getId(), task.getId()), taskProgress.getTimer());
+                }
+
+                trigger.addListener(player, new SimpleCriterionTrigger.Listener(quest, task));
+            }
+        }
+    }
+
+
+    //TODO: Maybe needs revision
+    private void startProgress(QuestTask task, TaskProgress taskProgress) {
+        this.taskProgress.putIfAbsent(task, taskProgress);
+    }
+
+
+    private TaskStrategy getStrategy() {
+        return this.currentTask != null ? this.currentTask.getTaskStrategy() : TaskStrategy.OR;
+    }
+
+    /*public boolean revoke(QuestTask task, PlayerData player) {
+        LOGGER.debug(MARKER, "Revoking task {} for player {}", task.getId(), player.getName());
+
+        TaskProgress taskProgress = this.getOrStartProgress(task);
+        this.previousQuestStatus = this.getCurrentQuestStatus();
+        taskProgress.revoke();
+        this.registerListeners(task, player);
+        LevelManager.getInstance().updateStatus();
+
+        return true;
+    }*/
+
+
+    //TODO: Maybe needs revision
     public void unregisterListeners(QuestTask task, PlayerData player) {
         LOGGER.debug(MARKER, "Unregistering listeners for task {} for player {}", task.getId(), player.getName());
         TaskProgress taskProgress = this.getOrStartProgress(task);
 
-        for(Map.Entry<String, SimpleTrigger<?>> entry : task.getCriteria().entrySet()) {
-            CriterionProgress criterionprogress = taskProgress.getCriterion(entry.getKey());
-            if(criterionprogress != null && (criterionprogress.isDone() || taskProgress.isDone())) {
-                SimpleTrigger<?> trigger = entry.getValue();
-                if(trigger != null) {
-                    trigger.removeListener(player, new SimpleTrigger.Listener(quest, task, entry.getKey()));
-                }
+        if(taskProgress.isDone()) {
+            SimpleCriterionTrigger<?> criterion = task.getCriterion();
+            if(criterion != null) {
+                taskProgress.stopTimerIfNeeded();
+                player.getPlayerQuests().getTimeKeeper().stopListening(new TaskKey(this.quest.getId(), task.getId()));
+                criterion.removeListener(player, new SimpleCriterionTrigger.Listener(quest, task));
             }
         }
     }
-
-
-    @NotNull
-    public QuestStatus getCurrentQuestStatus() {
-        QuestStatus status;
-        if(this.currentTask != null) {
-            status = this.currentTask.getQuestStatus();
-        }
-        else {
-            status = QuestStatus.NOT_STARTED;
-        }
-
-        return status;
-    }
-
-
-    public boolean revoke(QuestTask task, String criterionName, PlayerData player) {
-        LOGGER.debug(MARKER, "Revoking task {} criterion {} for player {}", task.getId(), criterionName, player.getName());
-        boolean flag = false;
-        TaskProgress taskProgress = this.getOrStartProgress(task);
-        this.previousQuestStatus = this.getCurrentQuestStatus();
-        if(criterionName == null || taskProgress.revokeProgress(criterionName)) {
-            if(criterionName == null) {
-                taskProgress.reset();
-            }
-            this.registerListeners(task, player);
-            flag = true;
-            LevelManager.getInstance().updateStatus();
-        }
-
-        return flag;
-    }
-
-
-    @Override //FIXME: incorrect!
-    public float getPercent() {
-        if(this.getCurrentQuestStatus() == QuestStatus.NOT_STARTED) {
-            return 0f;
-        }
-        else if(this.isDone()) {
-            return 1f;
-        }
-        else {
-            float percent = 0f;
-
-            int counter = 0;
-            for(QuestTask task : Set.copyOf(this.taskProgress.keySet())) {
-                if(task.getType() != QuestTask.Function.START_TASK) {
-                    percent += this.getOrStartProgress(task).getPercent();
-                    counter++;
-                }
-            }
-
-            return percent / counter;
-        }
-    }
-
-
-    @Override
-    public CompoundTag saveToCompoundTag() {
-        CompoundTag tag = new CompoundTag();
-        tag.putUUID("player", this.player.get().getUUID());
-        tag.putString("quest", this.quest.getId().toString());
-        SerializationHelper.addNullable(this.currentTask, tag, "currentTask", task -> StringTag.valueOf(task.getId().toString()));
-        tag.put("progress", CollectionHelper.saveToNBT(this.taskProgress, task -> task.getId().toString(), TaskProgress::saveToNBT));
-
-        return tag;
-    }
-
 
     @Override
     public boolean isDone() {
@@ -328,8 +269,9 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    private void setCurrentTask(@Nullable QuestTask task) {
-        this.currentTask = task;
+    public void award(QuestTask task, PlayerData player) {
+        LOGGER.debug(MARKER, "Awarding task {} for player {}", task.getId(), player.getName());
+        this.updateProgress(task, TaskProgress.UpdateMode.COMPLETE);
     }
 
 
@@ -339,33 +281,23 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    @Override
-    public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeUUID(this.player.get().getUUID());
-        buf.writeResourceLocation(this.quest.getId());
-        buf.writeNullable(this.currentTask, (buf1, task) -> buf1.writeResourceLocation(task.getId()));
-        buf.writeMap(this.taskProgress, (buf1, task) -> buf1.writeResourceLocation(task.getId()), (buf1, taskProgress) -> taskProgress.toNetwork(buf1));
-    }
-
-
     public void fail() {
         this.awardAllTasks(false);
     }
 
 
-    private void awardAllTasks(boolean successful) {
-        LOGGER.debug(MARKER, "Force completing quest {} for player {}", this.quest.getId(), this.player.get().getName());
-        QuestTasks tasks = this.quest.getTasks();
-        QuestStatus status = !successful ? QuestStatus.COMPLETE : QuestStatus.FAILED;
-
-        tasks.forEach((id, task) -> {
-            if(task.getQuestStatus() != status) {
-                this.award(task, null, this.player.get());
-            }
-        });
-
-        this.stopListening();
-        this.setCurrentTask(this.getEndTask(successful));
+    //TODO: Needs revision
+    @Override //FIXME: incorrect!
+    public float getPercent() {
+        if(this.getCurrentQuestStatus() == QuestStatus.NOT_STARTED) {
+            return 0f;
+        }
+        else if(this.isDone()) {
+            return 1f;
+        }
+        else {
+            return 0f;
+        }
     }
 
 
@@ -374,9 +306,15 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
-    public void stopListening() {
-        LOGGER.debug(MARKER, "Stopped listening for tasks of quest {} for player {}", this.quest.getId(), this.player.get().getName());
-        this.unregisterListeners(this.taskProgress.keySet(), this.player.get());
+    private void setCurrentTask(@Nullable QuestTask task) {
+        this.currentTask = task;
+
+        if(task != null) {
+            this.taskPath.append(task.getId());
+        }
+        else {
+            this.taskPath.clear();
+        }
     }
 
 
@@ -391,49 +329,146 @@ public class QuestProgress implements IProgressInfo<ProgressionQuest> {
     }
 
 
+    //TODO: Needs revision
+    private void awardAllTasks(boolean successful) {
+        LOGGER.debug(MARKER, "Force completing quest {} for player {}", this.quest.getId(), this.player.get().getName());
+        QuestTasks tasks = this.quest.getTasks();
+        QuestStatus status = !successful ? QuestStatus.COMPLETE : QuestStatus.FAILED;
+
+        tasks.forEach((id, task) -> {
+            if(task.getQuestStatus() != status) {
+                this.award(task, this.player.get());
+            }
+        });
+
+        this.stopListening();
+        this.setCurrentTask(this.getEndTask(successful));
+    }
+
+
+    public void stopListening() {
+        LOGGER.debug(MARKER, "Stopped listening for tasks of quest {} for player {}", this.quest.getId(), this.player.get().getName());
+        this.unregisterListeners(this.getCurrentlyListenedTasks(), this.player.get());
+    }
+
+
     public Set<Component> getCurrentDescriptions() {
         Set<Component> set = new HashSet<>();
 
-        if(this.getCurrentQuestStatus() == QuestStatus.NOT_STARTED) {
-            this.getPotentialStartingTasks()
-                .stream()
-                .map(QuestTask::getDescription)
-                .forEach(set::add);
-        }
-        else {
-            if(!this.currentTask.hasChildren()) {
-                throw new IllegalStateException("The status of quest " + this.quest.getId() + " is active and can not be completed as there are no more actions for completion!");
-            }
+        this.getCurrentlyListenedTasks().forEach(task -> {
+            MutableComponent component = (MutableComponent) task.getDescription();
+            TaskProgress taskProgress = this.getOrStartProgress(task);
+            component.append(taskProgress.getStatus());
 
-            this.currentTask
-                    .getChildren()
-                    .stream()
-                    .map(this::getTaskForId)
-                    .map(QuestTask::getDescription)
-                    .forEach(set::add);
-        }
+            set.add(component);
+        });
 
         return set;
     }
 
 
-    public Set<QuestTask> getPotentialStartingTasks() {
-        Set<QuestTask> nodes = new HashSet<>();
-        QuestTasks tasks = this.quest.getTasks();
-        nodes.addAll(tasks.getTasksByType(QuestTask.Function.START_TASK));
-        nodes.addAll(tasks.getTasksByType(QuestTask.Function.POSSIBLE_START_TASK));
-
-        return nodes;
-    }
-
-
+    //TODO: Needs revision
     public boolean unlock() {
         if(this.getCurrentQuestStatus() != QuestStatus.NOT_STARTED) {
             return false;
         }
         else {
             QuestTask task = this.getPotentialStartingTasks().stream().findFirst().orElseThrow();
-            return this.award(task, null, this.player.get());
+            this.award(task, this.player.get());
+
+            return true;
+        }
+    }
+
+
+    public void failTask(ResourceLocation taskId) {
+        LOGGER.debug("Player {} failed task {}!", this.player.get().getName(), taskId);
+        this.updateProgress(this.getTaskForId(taskId), TaskProgress.UpdateMode.NONE);
+    }
+
+
+    public synchronized void updateProgress(@NotNull QuestTask task, TaskProgress.UpdateMode updateMode) {
+        PlayerData player = this.player.get();
+        TaskProgress taskProgress = this.getOrStartProgress(task);
+        TaskStrategy taskStrategy = this.getStrategy();
+
+        boolean counterComplete = switch(updateMode) {
+            case NONE -> taskProgress.checkCounter();
+            case UPDATE -> taskProgress.updateAndCheckCounter();
+            case COMPLETE -> true;
+        };
+        boolean timerNotFinished = switch(updateMode) {
+            case NONE -> taskProgress.checkTimer();
+            case UPDATE -> taskProgress.updateAndCheckTimer();
+            case COMPLETE -> true;
+        };
+
+        QuestStatus previousQuestStatus = this.getCurrentQuestStatus();
+
+        if(!timerNotFinished) {
+            taskProgress.fail();
+
+            this.unregisterListeners(task, player);
+
+            if(taskStrategy == TaskStrategy.AND && !task.isOptional()) {
+                this.setCurrentTask(task);
+                this.stopListening();
+            }
+        }
+        else if(counterComplete) {
+            taskProgress.grant();
+
+            this.unregisterListeners(task, player);
+            task.rewardPlayer(player);
+
+            switch(taskStrategy) {
+                case OR -> {
+                    if(!task.isOptional()) {
+                        this.unregisterListeners(this.getCurrentlyListenedTasks(), player);
+
+                        this.setCurrentTask(task);
+                        this.registerChildrenListeners(task, player);
+                    }
+                }
+                case AND -> {
+                    if(TaskStrategy.AND.isDone(this.getCurrentlyListenedTasks().stream().map(this::getOrStartProgress).collect(Collectors.toSet()))) {
+                        Set<ResourceLocation> children = new HashSet<>();
+                        this.getChildrenForCurrentTask().forEach(task1 -> children.addAll(task1.getChildren()));
+
+                        this.setCurrentTask(task);
+                        if(!this.isDone()) {
+                            this.registerListeners(children.stream().map(this::getTaskForId).collect(Collectors.toSet()), player);
+                        }
+                    }
+                }
+            }
+        }
+
+        PREventFactory.onQuestProgressChanged(this.quest, this, player);
+        PlayerDataManager.ensureQuestsSynced(player);
+        PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
+
+        ClientOnProgressChangedPacket.Type toastType = ClientOnProgressChangedPacket.Type.QUEST_UPDATED;
+
+        if(previousQuestStatus != this.getCurrentQuestStatus()) {
+            if(previousQuestStatus == QuestStatus.NOT_STARTED) {
+                toastType = ClientOnProgressChangedPacket.Type.NEW_QUEST;
+            }
+            else {
+                switch(this.getCurrentQuestStatus()) {
+                    case COMPLETE -> toastType = ClientOnProgressChangedPacket.Type.QUEST_COMPLETE;
+                    case FAILED -> toastType = ClientOnProgressChangedPacket.Type.QUEST_FAILED;
+                }
+            }
+
+            player.getPlayerQuests().onQuestStatusChanged(this.quest, previousQuestStatus, this.getCurrentQuestStatus());
+        }
+
+        PRNetworkHandler.sendToPlayer(new ClientOnProgressChangedPacket(this.quest.getDisplay(), toastType), player.getServerPlayer());
+
+        if(this.isDone()) {
+            PREventFactory.onQuestFinished(this.quest, task.getQuestStatus(), player);
+            LevelManager.getInstance().updateStatus();
         }
     }
 }

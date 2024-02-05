@@ -24,8 +24,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Supplier;
 
-import static de.thedead2.progression_reloaded.util.ModHelper.LOGGER;
-import static de.thedead2.progression_reloaded.util.ModHelper.MOD_ID;
+import static de.thedead2.progression_reloaded.util.ModHelper.*;
 
 
 public abstract class PRNetworkHandler {
@@ -52,7 +51,9 @@ public abstract class PRNetworkHandler {
         registerPacket(ClientSyncRestrictionsPacket.class);
         registerPacket(ClientSyncPlayerDataPacket.class);
         registerPacket(ClientUsedExtraLifePacket.class);
+        registerPacket(ServerFollowQuestPacket.class);
         registerPacket(UpdateRenderersPacket.class);
+
         //registerPacket(ClientWelcomePacket.class);
 
         LOGGER.debug(MARKER, "Network registration complete.");
@@ -137,10 +138,15 @@ public abstract class PRNetworkHandler {
         try {
             DistExecutor.safeRunWhenOn(Dist.CLIENT, () -> {
                 //LOGGER.debug(marker, "Received packet {} from server, attempting to handle it...", packet.getClass().getName());
-                return packet.onClient(ctx);
+                if(!isRunningOnServerThread()) {
+                    return packet.onClient(ctx);
+                }
+                else {
+                    return packet.onServer(ctx);
+                }
             });
             DistExecutor.safeRunWhenOn(Dist.DEDICATED_SERVER, () -> {
-                LOGGER.debug(MARKER, "Received packet {} from player {}, attempting to handle it...", packet.getClass().getName(), ctx.get().getSender().getUUID());
+                //LOGGER.debug(MARKER, "Received packet {} from player {}, attempting to handle it...", packet.getClass().getName(), ctx.get().getSender().getUUID());
                 return packet.onServer(ctx);
             });
             ctx.get().setPacketHandled(true);

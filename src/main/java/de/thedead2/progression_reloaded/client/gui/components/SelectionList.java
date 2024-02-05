@@ -56,9 +56,8 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
         this.selectionListener = selectionListener;
         this.borderColor = borderColor;
 
-        if(this.contentArea.getInnerWidth() % this.entrySize.getWidth() != 0) {
-            this.entrySize.setWidth(this.contentArea.getInnerWidth() / ((int) (this.contentArea.getInnerWidth() / this.entrySize.getWidth())));
-        }
+        this.entrySize.setWidth(Math.min(this.contentArea.getInnerWidth(), this.entrySize.getWidth()));
+        this.entrySize.setHeight(Math.min(this.contentArea.getInnerHeight(), this.entrySize.getHeight()));
 
         this.maxEntriesPerRow = (int) (this.contentArea.getInnerWidth() / this.entrySize.getWidth());
     }
@@ -139,14 +138,14 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
     @Nullable
     protected final E getEntryAtPosition(double mouseX, double mouseY) {
         if(this.contentArea.innerContains((float) mouseX, (float) mouseY)) {
-            for(int i = 0; i < this.filteredEntries.size(); i++) {
+            for(int i = 0; i < (this.isFiltered() ? this.filteredEntries.size() : this.entries.size()); i++) {
                 float xMin = this.getXPosByEntryIndex(i);
                 float xMax = xMin + this.entrySize.getWidth();
                 float yMin = (float) (this.getYPosByEntryIndex(i) - this.yScrollBar.getScrollAmount());
                 float yMax = yMin + this.entrySize.getHeight();
 
                 if(mouseX >= xMin && mouseX <= xMax && mouseY >= yMin && mouseY <= yMax) {
-                    return this.filteredEntries.get(i);
+                    return this.isFiltered() ? this.filteredEntries.get(i) : this.entries.get(i);
                 }
             }
         }
@@ -155,19 +154,19 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
 
 
     protected final float getXPosByEntryIndex(int index) {
-        return this.contentArea.getInnerX() + (Mth.clamp(index, 0, this.filteredEntries.size()) % this.maxEntriesPerRow) * this.entrySize.getWidth();
+        return this.contentArea.getInnerX() + (Mth.clamp(index, 0, (this.isFiltered() ? this.filteredEntries.size() : this.entries.size())) % this.maxEntriesPerRow) * this.entrySize.getWidth();
     }
 
 
     @SuppressWarnings("IntegerDivisionInFloatingPointContext")
     protected final float getYPosByEntryIndex(int index) {
-        return this.contentArea.getInnerY() + (Mth.clamp(index, 0, this.filteredEntries.size()) / this.maxEntriesPerRow) * this.entrySize.getHeight();
+        return this.contentArea.getInnerY() + (Mth.clamp(index, 0, (this.isFiltered() ? this.filteredEntries.size() : this.entries.size())) / this.maxEntriesPerRow) * this.entrySize.getHeight();
     }
 
 
     @Override
     protected void renderContents(@NotNull PoseStack poseStack, int mouseX, int mouseY, float partialTick) {
-        for(int i = 0; i < this.filteredEntries.size(); ++i) {
+        for(int i = 0; i < (this.isFiltered() ? this.filteredEntries.size() : this.entries.size()); ++i) {
             float xMin = this.getXPosByEntryIndex(i);
             float yMin = this.getYPosByEntryIndex(i);
             float yMax = yMin + this.entrySize.getHeight();
@@ -179,13 +178,13 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
 
 
     protected void renderEntry(PoseStack poseStack, int mouseX, int mouseY, float partialTick, int index, float xMin, float yMin, float width, float height) {
-        E entry = this.filteredEntries.get(index);
+        E entry = (this.isFiltered() ? this.filteredEntries.get(index) : this.entries.get(index));
         if(this.isSelectedItem(index)) {
             int i = this.focused ? -1 : -8355712;
             this.renderSelection(poseStack, xMin, yMin, width, height, i, -16777216);
         }
 
-        this.entryRenderer.render(entry, poseStack, xMin, yMin, this.contentArea.getZ(), width, height, mouseX, mouseY, partialTick);
+        this.entryRenderer.render(entry, poseStack, new Area(xMin, yMin, this.contentArea.getZ(), width, height), mouseX, mouseY, partialTick);
     }
 
 
@@ -202,7 +201,7 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
 
     @Override
     protected float contentHeight() {
-        return ((float) this.filteredEntries.size() / this.maxEntriesPerRow) * this.entrySize.getHeight();
+        return ((float) (this.isFiltered() ? this.filteredEntries.size() : this.entries.size()) / this.maxEntriesPerRow) * this.entrySize.getHeight();
     }
 
 
@@ -376,7 +375,7 @@ public class SelectionList<E> extends ScrollableScreenComponent implements List<
     @FunctionalInterface
     public interface IEntryRenderer<T> {
 
-        void render(T content, PoseStack poseStack, float xMin, float yMin, float zPos, float entryWidth, float entryHeight, int mouseX, int mouseY, float partialTick);
+        void render(T content, PoseStack poseStack, Area entryArea, int mouseX, int mouseY, float partialTick);
     }
 
     @FunctionalInterface

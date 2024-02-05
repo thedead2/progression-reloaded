@@ -43,11 +43,13 @@ public class PlayerDataManager {
     private static final Map<UUID, PlayerData> PLAYERS = Maps.newHashMap();
 
 
-    public static void loadPlayerData(File playerDataFile, ServerPlayer player) {
+    public static PlayerData loadPlayerData(File playerDataFile, ServerPlayer player) {
         PlayerData playerData = PlayerData.loadFromFile(playerDataFile, player);
         PLAYERS.put(playerData.getUUID(), playerData);
         playerData.getTeam().ifPresent(team -> team.addActivePlayer(playerData));
-        playerData.getQuestData().startListening();
+        playerData.getPlayerQuests().startListening();
+
+        return playerData;
     }
 
 
@@ -57,9 +59,10 @@ public class PlayerDataManager {
     }
 
 
-    public static void savePlayerData(Player player, File playerFile) {
+    public static PlayerData savePlayerData(Player player, File playerFile) {
         var playerData = getPlayerData(player);
         playerData.saveToFile(playerFile);
+        return playerData;
     }
 
 
@@ -75,12 +78,16 @@ public class PlayerDataManager {
         }
         else {
             PlayerData clientData = ModClientInstance.getInstance().getClientData();
-            if(clientData.getUUID().equals(playerId)) {
-                return clientData;
+            if(clientData != null) {
+                if(clientData.getUUID().equals(playerId)) {
+                    return clientData;
+                }
+                else {
+                    throw new IllegalArgumentException("Tried to access clientData for other local player!");
+                }
             }
-            else {
-                throw new IllegalArgumentException("Tried to access clientData for other local player!");
-            }
+
+            return null;
         }
     }
 
@@ -169,7 +176,7 @@ public class PlayerDataManager {
 
 
     public static void ensureQuestsSynced(PlayerData player) {
-        PlayerQuests playerQuests = player.getQuestData();
+        PlayerQuests playerQuests = player.getPlayerQuests();
         player.getTeam().ifPresent(team -> {
             ModHelper.LOGGER.debug("Syncing quest progress of player {} with members of team {}", player.getName(), team.getName());
             team.forEachMember(member -> {
@@ -226,7 +233,7 @@ public class PlayerDataManager {
 
         @Override
         public @NotNull CompoundTag save(@NotNull CompoundTag tag) {
-            return CollectionHelper.saveToNBT(this.teams, ResourceLocation::toString, PlayerTeam::toCompoundTag);
+            return CollectionHelper.saveToNBT(this.teams, ResourceLocation::toString, PlayerTeam::toNBT);
         }
 
 

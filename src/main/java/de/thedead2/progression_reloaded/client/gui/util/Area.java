@@ -7,6 +7,8 @@ import org.joml.Vector3f;
 
 public class Area {
 
+    public static final Area EMPTY = new Area(0, 0, 0, 0, 0);
+
     protected Padding padding;
 
     protected FloatSupplier xPos;

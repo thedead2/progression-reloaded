@@ -39,11 +39,23 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
     }
 
 
-    public static LevelProgress loadFromCompoundTag(CompoundTag tag) {
+    public static LevelProgress fromNBT(CompoundTag tag) {
         UUID uuid = tag.getUUID("player");
         ProgressionLevel level1 = ModRegistries.LEVELS.get().getValue(new ResourceLocation(tag.getString("level")));
         boolean rewarded = tag.getBoolean("rewarded");
+
         return new LevelProgress(() -> PlayerDataManager.getPlayerData(uuid), level1, rewarded);
+    }
+
+
+    @Override
+    public CompoundTag toNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("player", this.player.get().getUUID());
+        tag.putString("level", this.level.getId().toString());
+        tag.putBoolean("rewarded", this.rewarded);
+
+        return tag;
     }
 
 
@@ -53,6 +65,14 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
         boolean rewarded = buf.readBoolean();
 
         return new LevelProgress(() -> PlayerDataManager.getPlayerData(uuid), level, rewarded);
+    }
+
+
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeUUID(this.player.get().getUUID());
+        buf.writeResourceLocation(this.level.getId());
+        buf.writeBoolean(this.rewarded);
     }
 
 
@@ -97,16 +117,6 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
 
 
     @Override
-    public CompoundTag saveToCompoundTag() {
-        CompoundTag tag = new CompoundTag();
-        tag.putUUID("player", this.player.get().getUUID());
-        tag.putString("level", this.level.getId().toString());
-        tag.putBoolean("rewarded", this.rewarded);
-        return tag;
-    }
-
-
-    @Override
     public void reset() {
         this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().revoke(id, this.player.get()));
         this.rewarded = false;
@@ -116,14 +126,6 @@ public class LevelProgress implements IProgressInfo<ProgressionLevel> {
     @Override
     public void complete() {
         this.level.getQuests().forEach(id -> LevelManager.getInstance().getQuestManager().award(id, true, this.player.get()));
-    }
-
-
-    @Override
-    public void toNetwork(FriendlyByteBuf buf) {
-        buf.writeUUID(this.player.get().getUUID());
-        buf.writeResourceLocation(this.level.getId());
-        buf.writeBoolean(this.rewarded);
     }
 
 

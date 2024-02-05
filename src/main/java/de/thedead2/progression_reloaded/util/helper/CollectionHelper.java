@@ -111,6 +111,15 @@ public class CollectionHelper {
     }
 
 
+    public static <T> ListTag saveToNBT(T[] collection, Function<T, Tag> valueConverter) {
+        ListTag listTag = new ListTag();
+        for(T t : collection) {
+            listTag.add(valueConverter.apply(t));
+        }
+
+        return listTag;
+    }
+
     public static <T> ListTag saveToNBT(Collection<T> collection, Function<T, Tag> valueConverter) {
         ListTag tag = new ListTag();
         collection.forEach(t -> tag.add(valueConverter.apply(t)));
@@ -152,6 +161,16 @@ public class CollectionHelper {
     }
 
 
+    public static <T> JsonArray saveToJson(T[] collection, Function<T, JsonElement> valueConverter) {
+        JsonArray jsonArray = new JsonArray(collection.length);
+
+        for(T t : collection) {
+            jsonArray.add(valueConverter.apply(t));
+        }
+
+        return jsonArray;
+    }
+
     public static <T> JsonArray saveToJson(Collection<T> collection, Function<T, JsonElement> valueConverter) {
         JsonArray jsonArray = new JsonArray(collection.size());
         collection.forEach(t -> jsonArray.add(valueConverter.apply(t)));
@@ -172,6 +191,15 @@ public class CollectionHelper {
         return loadFromJson(Lists::newArrayListWithExpectedSize, jsonArray, valueConverter);
     }
 
+
+    public static <T> T[] loadFromJson(Class<T> typeClass, JsonArray jsonArray, Function<JsonElement, T> valueConverter) {
+        T[] array = (T[]) typeClass.arrayType().cast(new Object[jsonArray.size()]);
+        for(int i = 0; i < jsonArray.size(); i++) {
+            array[i] = valueConverter.apply(jsonArray.get(i));
+        }
+
+        return array;
+    }
 
     public static <T, R extends Collection<T>> R loadFromJson(IntFunction<R> collectionFactory, JsonArray jsonArray, Function<JsonElement, T> valueConverter) {
         R collection = collectionFactory.apply(jsonArray.size());

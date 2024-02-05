@@ -1,5 +1,7 @@
 package de.thedead2.progression_reloaded.player.types;
 
+import de.thedead2.progression_reloaded.api.INbtSerializable;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 import de.thedead2.progression_reloaded.data.level.LevelProgress;
 import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.network.PRNetworkHandler;
@@ -10,10 +12,13 @@ import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.helper.PlayerHelper;
+import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import de.thedead2.progression_reloaded.util.registries.ModRegistries;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -28,7 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 
-public class PlayerData {
+public class PlayerData implements INetworkSerializable, INbtSerializable {
     private final String playerName;
 
     private final UUID uuid;
@@ -75,7 +80,7 @@ public class PlayerData {
         CompoundTag tag = null;
         try {
             if(playerDataFile.exists()) {
-                tag = NbtIo.readCompressed(playerDataFile);
+                tag = NbtIo.read(playerDataFile);
             }
         }
         catch(IOException e) {
@@ -85,7 +90,7 @@ public class PlayerData {
     }
 
 
-    public static PlayerData loadFromNBT(CompoundTag tag, ServerPlayer player) {
+    private static PlayerData loadFromNBT(CompoundTag tag, ServerPlayer player) {
         if(tag == null || tag.isEmpty()) {
             return new PlayerData(player);
         }
@@ -95,17 +100,12 @@ public class PlayerData {
             throw new IllegalStateException("Uuid saved in player data doesn't match uuid of provided player! uuid found -> " + uuid + " | uuid provided -> " + player.getUUID());
         }
 
-        PlayerTeam team = PlayerTeam.fromRegistry(tag.getString("team"), player);
-        PlayerLevels levels = PlayerLevels.loadFromNBT(tag.getCompound("levels"));
-        PlayerQuests quests = PlayerQuests.loadFromNBT(tag.getCompound("quests"));
+        PlayerTeam team = SerializationHelper.getNullable(tag, "team", tag1 -> PlayerTeam.fromRegistry(tag1.getAsString(), player));
+        PlayerLevels levels = PlayerLevels.fromNBT(tag.getCompound("levels"));
+        PlayerQuests quests = PlayerQuests.fromNBT(tag.getCompound("quests"));
         int extraLives = tag.getInt("extra_lives");
 
         return new PlayerData(team, player, levels, quests, extraLives);
-    }
-
-
-    public static ResourceLocation createId(String name) {
-        return ResourceLocation.tryBuild(ModHelper.MOD_ID, name);
     }
 
 
@@ -114,11 +114,51 @@ public class PlayerData {
         UUID uuid = buf.readUUID();
         Player player = PlayerHelper.getPlayerForUUID(uuid);
         PlayerTeam team = buf.readNullable(PlayerTeam::fromNetwork);
-        PlayerLevels levels = PlayerLevels.loadFromNetwork(buf);
-        PlayerQuests quests = PlayerQuests.loadFromNetwork(buf);
+        PlayerLevels levels = PlayerLevels.fromNetwork(buf);
+        PlayerQuests quests = PlayerQuests.fromNetwork(buf);
         int extraLives = buf.readInt();
 
         return new PlayerData(playerName, team, uuid, player, levels, quests, extraLives);
+    }
+
+
+    public void saveToFile(File playerFile) {
+        CompoundTag tag = this.toNBT();
+        try {
+            NbtIo.write(tag, playerFile);
+        }
+        catch(IOException e) {
+            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.FATAL);
+        }
+    }
+
+
+    public static ResourceLocation createId(String name) {
+        return ResourceLocation.tryBuild(ModHelper.MOD_ID, name);
+    }
+
+
+    @Override
+    public CompoundTag toNBT() {
+        CompoundTag tag = new CompoundTag();
+        tag.putUUID("uuid", this.uuid);
+        SerializationHelper.addNullable(this.team, tag, "team", team -> StringTag.valueOf(team.getId().toString()));
+        tag.put("levels", this.levels.toNBT());
+        tag.put("quests", this.quests.toNBT());
+        tag.putInt("extra_lives", this.extraLives);
+
+        return tag;
+    }
+
+
+    @Override
+    public void toNetwork(FriendlyByteBuf buf) {
+        buf.writeUtf(this.playerName);
+        buf.writeUUID(this.uuid);
+        buf.writeNullable(this.team, (buf1, team1) -> team1.toNetwork(buf1));
+        this.levels.toNetwork(buf);
+        this.quests.toNetwork(buf);
+        buf.writeInt(this.extraLives);
     }
 
 
@@ -127,7 +167,17 @@ public class PlayerData {
             return serverPlayer;
         }
         else {
-            throw new UnsupportedOperationException("Tried to access ServerPlayer but it's a LocalPlayer!");
+            throw new IllegalStateException("Tried to access ServerPlayer but it's a LocalPlayer!");
+        }
+    }
+
+
+    public LocalPlayer getLocalPlayer() {
+        if(this.player instanceof LocalPlayer localPlayer) {
+            return localPlayer;
+        }
+        else {
+            throw new IllegalStateException("Tried to access LocalPlayer but it's a ServerPlayer!");
         }
     }
 
@@ -185,31 +235,6 @@ public class PlayerData {
         }
     }
 
-
-    public void saveToFile(File playerFile) {
-        CompoundTag tag = this.saveToNBT();
-        try {
-            NbtIo.writeCompressed(tag, playerFile);
-        }
-        catch(IOException e) {
-            CrashHandler.getInstance().handleException("Failed to write PlayerData to file! Affected player: " + playerName, e, Level.FATAL);
-        }
-    }
-
-
-    private CompoundTag saveToNBT() {
-        CompoundTag tag = new CompoundTag();
-        tag.putUUID("uuid", this.uuid);
-        if(this.team != null) {
-            tag.putString("team", this.team.getId().toString());
-        }
-        tag.put("levels", this.levels.saveToNBT());
-        tag.put("quests", this.quests.saveToNBT());
-        tag.putInt("extra_lives", this.extraLives);
-
-        return tag;
-    }
-
     public boolean isInTeam() {
         return team != null;
     }
@@ -239,23 +264,12 @@ public class PlayerData {
     }
 
 
-
-    public void serializeToNetwork(FriendlyByteBuf buf) {
-        buf.writeUtf(this.playerName);
-        buf.writeUUID(this.uuid);
-        buf.writeNullable(this.team, (buf1, team1) -> team1.toNetwork(buf1));
-        this.levels.saveToNetwork(buf);
-        this.quests.saveToNetwork(buf);
-        buf.writeInt(this.extraLives);
-    }
-
-
-    public PlayerLevels getLevelData() {
+    public PlayerLevels getPlayerLevels() {
         return this.levels;
     }
 
 
-    public PlayerQuests getQuestData() {
+    public PlayerQuests getPlayerQuests() {
         return this.quests;
     }
 

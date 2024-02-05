@@ -22,14 +22,14 @@ public record ProgressionLayout(Area toast, Area levelProgressOL, Area questProg
         }
 
 
-        public Builder withToast(float xPos, float yPos, float zPos, float width, float height, Padding padding) {
+        public Builder withToast(FloatSupplier xPos, FloatSupplier yPos, FloatSupplier zPos, FloatSupplier width, FloatSupplier height, Padding padding) {
             this.toast = new Area(xPos, yPos, zPos, width, height, padding);
 
             return this;
         }
 
 
-        public Builder withLevelProgressOL(float xPos, float yPos, float zPos, float width, float height, Padding padding) {
+        public Builder withLevelProgressOL(FloatSupplier xPos, FloatSupplier yPos, FloatSupplier zPos, FloatSupplier width, FloatSupplier height, Padding padding) {
             this.levelProgressOL = new Area(xPos, yPos, zPos, width, height, padding);
 
             return this;

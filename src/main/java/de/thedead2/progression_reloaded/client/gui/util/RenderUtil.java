@@ -1,12 +1,14 @@
 package de.thedead2.progression_reloaded.client.gui.util;
 
 import com.google.errorprone.annotations.CanIgnoreReturnValue;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.Lighting;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.math.Axis;
 import de.thedead2.progression_reloaded.client.gui.components.ScreenComponent;
+import de.thedead2.progression_reloaded.client.gui.textures.TextureInfo;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiComponent;
@@ -29,6 +31,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 
 import static net.minecraft.client.gui.GuiComponent.blit;
+import static org.lwjgl.opengl.GL11.*;
 
 
 public class RenderUtil {
@@ -404,6 +407,11 @@ public class RenderUtil {
     }
 
 
+    public static float getGuiScale() {
+        return (float) Minecraft.getInstance().getWindow().getGuiScale();
+    }
+
+
     public static Vector2d getMousePos() {
         Minecraft minecraft = Minecraft.getInstance();
         double mouseX = (minecraft.mouseHandler.xpos() * minecraft.getWindow().getGuiScaledWidth() / minecraft.getWindow().getScreenWidth());
@@ -411,6 +419,35 @@ public class RenderUtil {
         return new Vector2d(mouseX, mouseY);
     }
 
+
+    public static void renderIcon(PoseStack poseStack, TextureInfo icon, float xPos, float yPos, float zPos, float size, int color) {
+        Area area = new Area(xPos, yPos, zPos, size, size);
+        renderWithMask(() -> renderImage(poseStack, icon, area, new float[]{1, 1, 1, 1}), () -> fill(poseStack, xPos, area.getXMax(), yPos, area.getYMax(), zPos, color));
+    }
+
+
+    public static void renderWithMask(Runnable mask, Runnable renderObject) {
+        ensureStencilEnabled(Minecraft.getInstance().getMainRenderTarget());
+
+        GL11.glEnable(GL_STENCIL_TEST);
+        RenderSystem.stencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+
+        RenderSystem.stencilMask(0xFF);
+        RenderSystem.clear(GL_STENCIL_BUFFER_BIT, false);
+        RenderSystem.stencilFunc(GL_ALWAYS, 1, 0xFF);
+
+        mask.run();
+
+        RenderSystem.disableDepthTest();
+
+        RenderSystem.stencilFunc(GL_EQUAL, 1, 0xFF);
+        RenderSystem.stencilMask(0x00);
+
+        renderObject.run();
+
+        RenderSystem.enableDepthTest();
+        GL11.glDisable(GL_STENCIL_TEST);
+    }
 
     public static void renderObjectOutline(PoseStack poseStack, ScreenComponent renderObject) {
         poseStack.pushPose();
@@ -448,41 +485,58 @@ public class RenderUtil {
     }
 
 
+    public static void renderImage(PoseStack poseStack, TextureInfo textureInfo, Area area, float[] colorShift) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShader(GameRenderer::getPositionColorTexShader);
+        RenderSystem.setShaderTexture(0, textureInfo.getTextureLocation());
+
+        final ObjectFit objectFit = textureInfo.getObjectFit();
+        float uMin = objectFit.getUMin(textureInfo, area); //start-percent of the width of the original image
+        float vMin = objectFit.getVMin(textureInfo, area); //start-percent of the height of the original image
+        float uMax = objectFit.getUMax(textureInfo, area); //end-percent of the width of the original image
+        float vMax = objectFit.getVMax(textureInfo, area); //end-percent of the height of the original image
+
+        float xMin = area.getInnerX() + Mth.clamp(area.getInnerWidth() * uMin, 0, area.getInnerWidth() / 2);
+        float yMin = area.getInnerY() + Mth.clamp(area.getInnerHeight() * vMin, 0, area.getInnerHeight() / 2);
+        float xMax = area.getInnerXMax() - Mth.clamp(area.getInnerWidth() * uMax, 0, area.getInnerWidth() / 2);
+        float yMax = area.getInnerYMax() - Mth.clamp(area.getInnerHeight() * vMax, 0, area.getInnerHeight() / 2);
+        float zPos = area.getZ();
+
+
+        Tesselator tessellator = Tesselator.getInstance();
+        BufferBuilder bufferbuilder = tessellator.getBuilder();
+        bufferbuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR_TEX);
+
+        Matrix4f matrix = poseStack.last().pose();
+        bufferbuilder.vertex(matrix, xMin, yMax, zPos).color(colorShift[0], colorShift[1], colorShift[2], colorShift[3]).uv(uMin, vMax).endVertex();
+        bufferbuilder.vertex(matrix, xMax, yMax, zPos).color(colorShift[0], colorShift[1], colorShift[2], colorShift[3]).uv(uMax, vMax).endVertex();
+        bufferbuilder.vertex(matrix, xMax, yMin, zPos).color(colorShift[0], colorShift[1], colorShift[2], colorShift[3]).uv(uMax, vMin).endVertex();
+        bufferbuilder.vertex(matrix, xMin, yMin, zPos).color(colorShift[0], colorShift[1], colorShift[2], colorShift[3]).uv(uMin, vMin).endVertex();
+        tessellator.end();
+        RenderSystem.disableBlend();
+    }
+
+
+    public static void ensureStencilEnabled(RenderTarget renderTarget) {
+        if(!renderTarget.isStencilEnabled()) {
+            renderTarget.enableStencil();
+        }
+    }
+
+
     public static void renderCross(PoseStack poseStack, float xPos, float yPos, float zPos, float width, int color) {
-        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 2, color);
-        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 2, color);
+        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 1, color);
+        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 1, color);
     }
 
 
     public static void renderCrossDebug(PoseStack poseStack, float xPos, float yPos, float zPos, float width, int color) {
-        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 2, color);
-        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 2, color);
+        horizontalLine(poseStack, xPos - width / 2, xPos + width / 2, yPos, zPos, 1, color);
+        verticalLine(poseStack, xPos, yPos - width / 2, yPos + width / 2, zPos, 1, color);
 
         Font font = Minecraft.getInstance().font;
         String text = "x: " + DEBUG_FORMAT.format(xPos) + ", y: " + DEBUG_FORMAT.format(yPos);
         font.draw(poseStack, text, xPos - (float) font.width(text) / 2, yPos + 2, color);
-    }
-
-
-    public static void renderSquareOutlineDebug(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
-        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 2, color);
-        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 2, color);
-        verticalLine(poseStack, xMin, yMin, yMax, zPos, 2, color);
-        verticalLine(poseStack, xMax, yMin, yMax, zPos, 2, color);
-        float height = yMax - yMin;
-        float width = xMax - xMin;
-        Font font = Minecraft.getInstance().font;
-        double scale = Minecraft.getInstance().getWindow().getGuiScale();
-        font.draw(poseStack, DEBUG_FORMAT.format(width * scale), xMin + ((width / 2) - ((float) font.width(DEBUG_FORMAT.format(width * scale)) / 2)), yMin - font.lineHeight - 1, color);
-        font.draw(poseStack, DEBUG_FORMAT.format(height * scale), xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
-    }
-
-
-    public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
-        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 2, color);
-        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 2, color);
-        verticalLine(poseStack, xMin, yMin, yMax, zPos, 2, color);
-        verticalLine(poseStack, xMax, yMin, yMax, zPos, 2, color);
     }
 
 
@@ -849,12 +903,25 @@ public class RenderUtil {
     }
 
 
-    public static void renderWithMask(PoseStack poseStack, int mouseX, int mouseY, float partialTick, Runnable mask, Runnable render) {
-        GL11.glEnable(GL11.GL_STENCIL_TEST);
+    public static void renderSquareOutlineDebug(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 1, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 1, color);
+        verticalLine(poseStack, xMin, yMin, yMax, zPos, 1, color);
+        verticalLine(poseStack, xMax, yMin, yMax, zPos, 1, color);
+        float height = yMax - yMin;
+        float width = xMax - xMin;
+        Font font = Minecraft.getInstance().font;
+        double scale = Minecraft.getInstance().getWindow().getGuiScale();
+        font.draw(poseStack, DEBUG_FORMAT.format(width * scale), xMin + ((width / 2) - ((float) font.width(DEBUG_FORMAT.format(width * scale)) / 2)), yMin - font.lineHeight - 1, color);
+        font.draw(poseStack, DEBUG_FORMAT.format(height * scale), xMax + 1, yMin + ((height / 2) - (float) (font.lineHeight) / 2), color);
+    }
 
-        mask.run();
-        GL11.glDisable(GL11.GL_STENCIL_TEST);
-        render.run();
+
+    public static void renderSquareOutline(PoseStack poseStack, float xMin, float xMax, float yMin, float yMax, float zPos, int color) {
+        horizontalLine(poseStack, xMin, xMax, yMin, zPos, 1, color);
+        horizontalLine(poseStack, xMin, xMax, yMax, zPos, 1, color);
+        verticalLine(poseStack, xMin, yMin, yMax, zPos, 1, color);
+        verticalLine(poseStack, xMax, yMin, yMax, zPos, 1, color);
     }
 
 
@@ -906,12 +973,12 @@ public class RenderUtil {
     }
 
     /*public static void render9Sprite(PoseStack pPoseStack, int pX, int pY, int pWidth, int pHeight, int pPadding, int pUWidth, int pVHeight, int pUOffset, int pVOffset) {
-        this.blit(pPoseStack, pX, pY, pUOffset, pVOffset, pPadding, pPadding);
+        blit(pPoseStack, pX, pY, pUOffset, pVOffset, pPadding, pPadding);
         renderRepeating(pPoseStack, pX + pPadding, pY, pWidth - pPadding - pPadding, pPadding, pUOffset + pPadding, pVOffset, pUWidth - pPadding - pPadding, pVHeight);
-        this.blit(pPoseStack, pX + pWidth - pPadding, pY, pUOffset + pUWidth - pPadding, pVOffset, pPadding, pPadding);
-        this.blit(pPoseStack, pX, pY + pHeight - pPadding, pUOffset, pVOffset + pVHeight - pPadding, pPadding, pPadding);
+        blit(pPoseStack, pX + pWidth - pPadding, pY, pUOffset + pUWidth - pPadding, pVOffset, pPadding, pPadding);
+        blit(pPoseStack, pX, pY + pHeight - pPadding, pUOffset, pVOffset + pVHeight - pPadding, pPadding, pPadding);
         renderRepeating(pPoseStack, pX + pPadding, pY + pHeight - pPadding, pWidth - pPadding - pPadding, pPadding, pUOffset + pPadding, pVOffset + pVHeight - pPadding, pUWidth - pPadding - pPadding, pVHeight);
-        this.blit(pPoseStack, pX + pWidth - pPadding, pY + pHeight - pPadding, pUOffset + pUWidth - pPadding, pVOffset + pVHeight - pPadding, pPadding, pPadding);
+        blit(pPoseStack, pX + pWidth - pPadding, pY + pHeight - pPadding, pUOffset + pUWidth - pPadding, pVOffset + pVHeight - pPadding, pPadding, pPadding);
         renderRepeating(pPoseStack, pX, pY + pPadding, pPadding, pHeight - pPadding - pPadding, pUOffset, pVOffset + pPadding, pUWidth, pVHeight - pPadding - pPadding);
         renderRepeating(pPoseStack, pX + pPadding, pY + pPadding, pWidth - pPadding - pPadding, pHeight - pPadding - pPadding, pUOffset + pPadding, pVOffset + pPadding, pUWidth - pPadding - pPadding, pVHeight - pPadding - pPadding);
         renderRepeating(pPoseStack, pX + pWidth - pPadding, pY + pPadding, pPadding, pHeight - pPadding - pPadding, pUOffset + pUWidth - pPadding, pVOffset + pPadding, pUWidth, pVHeight - pPadding - pPadding);
@@ -925,7 +992,7 @@ public class RenderUtil {
             for(int l = 0; l < pBorderToV; l += pVHeight) {
                 int i1 = pY + l;
                 int j1 = Math.min(pVHeight, pBorderToV - l);
-                this.blit(pPoseStack, j, i1, pUOffset, pVOffset, k, j1);
+                blit(pPoseStack, j, i1, pUOffset, pVOffset, k, j1);
             }
         }
 

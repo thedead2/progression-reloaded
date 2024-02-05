@@ -1,7 +1,8 @@
 package de.thedead2.progression_reloaded.network.packets;
 
 import de.thedead2.progression_reloaded.api.network.ModNetworkPacket;
-import de.thedead2.progression_reloaded.client.gui.screens.ProgressionBookGUI;
+import de.thedead2.progression_reloaded.client.ModClientInstance;
+import de.thedead2.progression_reloaded.client.gui.screens.QuestLogScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.fml.DistExecutor;
@@ -25,7 +26,7 @@ public class ClientOpenProgressionBookPacket implements ModNetworkPacket {
         return new DistExecutor.SafeRunnable() {
             @Override
             public void run() {
-                Minecraft.getInstance().setScreen(new ProgressionBookGUI());
+                Minecraft.getInstance().setScreen(new QuestLogScreen(ModClientInstance.getInstance().getClientData().getPlayerQuests()));
             }
         };
     }

@@ -138,7 +138,13 @@ public abstract class ReflectionHelper {
     }
 
 
-    public static Class<?> findClassWithName(String className) throws ClassNotFoundException {
-        return ReflectionHelper.class.getClassLoader().loadClass(className);
+    public static Class<?> findClassWithName(String className) {
+        try {
+            return ReflectionHelper.class.getClassLoader().loadClass(className);
+        }
+        catch(ClassNotFoundException e) {
+            CrashHandler.getInstance().handleException("Couldn't load class with name: " + className, "ReflectionHelper", e, Level.ERROR);
+            throw new RuntimeException(e);
+        }
     }
 }

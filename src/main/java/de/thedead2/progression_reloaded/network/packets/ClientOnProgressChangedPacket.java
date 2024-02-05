@@ -7,11 +7,13 @@ import de.thedead2.progression_reloaded.client.ModRenderer;
 import de.thedead2.progression_reloaded.client.gui.GuiFactory;
 import de.thedead2.progression_reloaded.client.gui.components.toasts.NotificationToast;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
+import de.thedead2.progression_reloaded.network.PRNetworkHandler;
 import de.thedead2.progression_reloaded.player.data.PlayerQuests;
 import de.thedead2.progression_reloaded.player.types.PlayerData;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
@@ -45,7 +47,7 @@ public class ClientOnProgressChangedPacket implements ModNetworkPacket {
             @Override
             public void run() {
                 PlayerData clientData = ModClientInstance.getInstance().getClientData();
-                PlayerQuests playerQuests = clientData.getQuestData();
+                PlayerQuests playerQuests = clientData.getPlayerQuests();
                 ModRenderer renderer = ModClientInstance.getInstance().getModRenderer();
 
                 if(title != Type.LOGIN && (title != Type.QUEST_UPDATED || !renderer.isQuestFollowed(displayInfo.id()))) {
@@ -76,20 +78,22 @@ public class ClientOnProgressChangedPacket implements ModNetworkPacket {
                                                           .findAny()
                                     )
                                     .ifPresentOrElse(
-                                            quest -> renderer.updateQuestProgressOverlay(playerQuests.getOrStartProgress(quest)),
-                                            () -> renderer.setQuestProgressOverlay(null)
+                                            quest -> PRNetworkHandler.sendToServer(new ServerFollowQuestPacket(quest.getId())),
+                                            () -> PRNetworkHandler.sendToServer(new ServerFollowQuestPacket((ResourceLocation) null))
                                     );
                         break;
                     }
                     case LOGIN: {
                         renderer.setLevelProgressOverlay(GuiFactory.createLevelOverlay(clientData.getCurrentLevel().getDisplay(), clientData.getCurrentLevelProgress()));
-                        renderer.pinLastFollowedQuest();
+                        if(clientData.getPlayerQuests().getFollowedQuest() != null) {
+                            renderer.setQuestProgressOverlay(GuiFactory.createQuestOverlay(clientData.getPlayerQuests().getFollowedQuest().getDisplay(), clientData.getPlayerQuests().getFollowedQuestProgress()));
+                        }
 
                         break;
                     }
                     case LOGOUT: {
                         renderer.setLevelProgressOverlay(null);
-                        renderer.saveLastFollowedQuest();
+                        renderer.setQuestProgressOverlay(null);
 
                         break;
                     }

@@ -15,27 +15,20 @@ import de.thedead2.progression_reloaded.data.quest.QuestProgress;
 import de.thedead2.progression_reloaded.items.ModItems;
 import de.thedead2.progression_reloaded.util.ConfigManager;
 import de.thedead2.progression_reloaded.util.ModHelper;
-import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import de.thedead2.progression_reloaded.util.helper.MathHelper;
-import de.thedead2.progression_reloaded.util.helper.SerializationHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.NbtIo;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
-import org.apache.logging.log4j.Level;
 import org.joml.Quaternionf;
 
 import javax.annotation.Nullable;
 import java.awt.*;
-import java.io.IOException;
 import java.nio.file.Path;
 
 
@@ -195,19 +188,6 @@ public class ModRenderer {
     }
 
 
-    public void pinLastFollowedQuest() {
-        try {
-            CompoundTag tag = NbtIo.readCompressed(CLIENT_DATA.toFile());
-            ResourceLocation questId = SerializationHelper.getNullable(tag, "lastFollowedQuest", tag1 -> new ResourceLocation(tag1.getAsString()));
-
-            this.updateQuestProgressOverlay(ModClientInstance.getInstance().getClientData().getQuestData().getOrStartProgress(questId));
-        }
-        catch(IOException e) {
-            CrashHandler.getInstance().handleException("Failed to read client data!", e, Level.ERROR);
-        }
-    }
-
-
     public void displayNewLevelInfoScreen(ResourceLocation levelId) {
         //this.minecraft.setScreen(new LevelInformationScreen(levelId));
     }
@@ -243,17 +223,5 @@ public class ModRenderer {
 
     public void setLevelProgressOverlay(@Nullable LevelOverlay levelOverlay) {
         this.levelOverlay = levelOverlay;
-    }
-
-
-    public void saveLastFollowedQuest() {
-        try {
-            CompoundTag tag = new CompoundTag();
-            SerializationHelper.addNullable(this.questOverlay, tag, "lastFollowedQuest", questOverlay -> StringTag.valueOf(questOverlay.getFollowedQuest().toString()));
-            NbtIo.writeCompressed(tag, CLIENT_DATA.toFile());
-        }
-        catch(IOException e) {
-            CrashHandler.getInstance().handleException("Failed to save client data to file!", e, Level.ERROR);
-        }
     }
 }

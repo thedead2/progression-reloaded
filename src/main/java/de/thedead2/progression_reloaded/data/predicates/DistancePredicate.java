@@ -3,8 +3,8 @@ package de.thedead2.progression_reloaded.data.predicates;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.GsonHelper;
 import net.minecraft.util.Mth;
 
 import javax.annotation.Nullable;
@@ -27,30 +27,25 @@ public class DistancePredicate implements ITriggerPredicate<DistancePredicate.Di
     private final MinMax.Doubles absolute;
 
 
-    public DistancePredicate(MinMax.Doubles pX, MinMax.Doubles pY, MinMax.Doubles pZ, MinMax.Doubles pHorizontal, MinMax.Doubles pAbsolute) {
-        this.x = pX;
-        this.y = pY;
-        this.z = pZ;
-        this.horizontal = pHorizontal;
-        this.absolute = pAbsolute;
+    public DistancePredicate(MinMax.Doubles x, MinMax.Doubles y, MinMax.Doubles z, MinMax.Doubles horizontal, MinMax.Doubles absolute) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.horizontal = horizontal;
+        this.absolute = absolute;
     }
 
 
-    public static DistancePredicate fromJson(@Nullable JsonElement pJson) {
-        if(pJson != null && !pJson.isJsonNull()) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(pJson, "distance");
-            MinMax.Doubles MinMaxNumber$doubles = MinMax.Doubles.fromJson(jsonobject.get("x"));
-            MinMax.Doubles MinMaxNumber$doubles1 = MinMax.Doubles.fromJson(jsonobject.get("y"));
-            MinMax.Doubles MinMaxNumber$doubles2 = MinMax.Doubles.fromJson(jsonobject.get("z"));
-            MinMax.Doubles MinMaxNumber$doubles3 = MinMax.Doubles.fromJson(jsonobject.get("horizontal"));
-            MinMax.Doubles MinMaxNumber$doubles4 = MinMax.Doubles.fromJson(jsonobject.get("absolute"));
-            return new DistancePredicate(
-                    MinMaxNumber$doubles,
-                    MinMaxNumber$doubles1,
-                    MinMaxNumber$doubles2,
-                    MinMaxNumber$doubles3,
-                    MinMaxNumber$doubles4
-            );
+    public static DistancePredicate fromJson(@Nullable JsonElement jsonElement) {
+        if(jsonElement != null && !jsonElement.isJsonNull()) {
+            JsonObject jsonobject = jsonElement.getAsJsonObject();
+            MinMax.Doubles x = MinMax.Doubles.fromJson(jsonobject.get("x"));
+            MinMax.Doubles y = MinMax.Doubles.fromJson(jsonobject.get("y"));
+            MinMax.Doubles z = MinMax.Doubles.fromJson(jsonobject.get("z"));
+            MinMax.Doubles horizontal = MinMax.Doubles.fromJson(jsonobject.get("horizontal"));
+            MinMax.Doubles absolute = MinMax.Doubles.fromJson(jsonobject.get("absolute"));
+
+            return new DistancePredicate(x, y, z, horizontal, absolute);
         }
         else {
             return ANY;
@@ -58,30 +53,12 @@ public class DistancePredicate implements ITriggerPredicate<DistancePredicate.Di
     }
 
 
-    public static DistancePredicate from(DistanceInfo distanceInfo) {
-        if(distanceInfo == null) {
-            return ANY;
-        }
-        float xDistance = distanceInfo.getxDistance();
-        float yDistance = distanceInfo.getyDistance();
-        float zDistance = distanceInfo.getzDistance();
-
-        return new DistancePredicate(
-                MinMax.Doubles.exactly(xDistance),
-                MinMax.Doubles.exactly(yDistance),
-                MinMax.Doubles.exactly(zDistance),
-                MinMax.Doubles.ANY,
-                MinMax.Doubles.ANY
-        );
-    }
-
-
     @Override
     public boolean matches(DistanceInfo distanceInfo, Object... addArgs) {
-        float xDistance = distanceInfo.getxDistance();
-        float yDistance = distanceInfo.getyDistance();
-        float zDistance = distanceInfo.getzDistance();
-        if(this.x.matches(Mth.abs(xDistance)) && this.y.matches(Mth.abs(yDistance)) && this.z.matches(Mth.abs(zDistance))) {
+        float xDistance = distanceInfo.getXDistance();
+        float yDistance = distanceInfo.getYDistance();
+        float zDistance = distanceInfo.getZDistance();
+        if(this.x.matches((double) Mth.abs(xDistance)) && this.y.matches((double) Mth.abs(yDistance)) && this.z.matches((double) Mth.abs(zDistance))) {
             if(!this.horizontal.matchesSqr(xDistance * xDistance + zDistance * zDistance)) {
                 return false;
             }
@@ -102,13 +79,19 @@ public class DistancePredicate implements ITriggerPredicate<DistancePredicate.Di
         }
         else {
             JsonObject jsonobject = new JsonObject();
-            jsonobject.add("x", this.x.serializeToJson());
-            jsonobject.add("y", this.y.serializeToJson());
-            jsonobject.add("z", this.z.serializeToJson());
-            jsonobject.add("horizontal", this.horizontal.serializeToJson());
-            jsonobject.add("absolute", this.absolute.serializeToJson());
+            jsonobject.add("x", this.x.toJson());
+            jsonobject.add("y", this.y.toJson());
+            jsonobject.add("z", this.z.toJson());
+            jsonobject.add("horizontal", this.horizontal.toJson());
+            jsonobject.add("absolute", this.absolute.toJson());
             return jsonobject;
         }
+    }
+
+
+    @Override
+    public Component getDefaultDescription() {
+        return Component.empty();
     }
 
 
@@ -133,17 +116,17 @@ public class DistancePredicate implements ITriggerPredicate<DistancePredicate.Di
         }
 
 
-        public float getxDistance() {
+        public float getXDistance() {
             return xDistance;
         }
 
 
-        public float getyDistance() {
+        public float getYDistance() {
             return yDistance;
         }
 
 
-        public float getzDistance() {
+        public float getZDistance() {
             return zDistance;
         }
     }

@@ -140,7 +140,7 @@ public class LevelManager {
     }
 
 
-    public void updateStatus(PlayerData player) {//FIXME: When newly logging in, brief award of level even if not complete!
+    public void updateStatus(PlayerData player) {
         if(!PREventFactory.onStatusUpdatePre(player)) {
             LOGGER.debug(MARKER, "Updating levels for player: {}", player.getName());
             ProgressionLevel level = player.getCurrentLevel();
@@ -169,17 +169,15 @@ public class LevelManager {
     private void syncWithClient(PlayerData player) {
         PRNetworkHandler.sendToPlayer(new ClientSyncPlayerDataPacket(player), player.getServerPlayer());
     }
-    // Bsp. 25 level
-    // current level 24
 
     @Nullable
     private ProgressionLevel getNextLevel(ProgressionLevel level) {
-        int i = this.levelOrder.indexOf(level) + 1; // 24 + 1 = 25
-        if(this.levelOrder.size() <= i) { //size = 25
-            return null; // Kein weiteres level vorhanden
+        int i = this.levelOrder.indexOf(level) + 1;
+        if(this.levelOrder.size() <= i) {
+            return null;
         }
         else {
-            return this.levelOrder.get(i); //TODO: Fix IndexOutOfBounds when revoking level
+            return this.levelOrder.get(i);
         }
     }
 
@@ -191,7 +189,7 @@ public class LevelManager {
             return null;
         }
         else {
-            return this.levelOrder.get(i); //TODO: Fix IndexOutOfBounds when revoking level
+            return this.levelOrder.get(i);
         }
     }
 
@@ -219,7 +217,7 @@ public class LevelManager {
 
 
     private void resetLevelProgress(PlayerData player, ProgressionLevel level) {
-        player.getLevelData().resetLevelProgress(level);
+        player.getPlayerLevels().resetLevelProgress(level);
 
         ProgressionLevel nextLevel = this.getNextLevel(level);
         if(nextLevel != null) {
@@ -230,7 +228,7 @@ public class LevelManager {
 
     public void award(PlayerData player, ProgressionLevel level) {
         if(!PREventFactory.onLevelAward(player, level)) {
-            player.getLevelData().completeLevelProgress(level);
+            player.getPlayerLevels().completeLevelProgress(level);
 
             ProgressionLevel previousLevel = this.getPreviousLevel(level);
             if(previousLevel != null) {
@@ -243,7 +241,7 @@ public class LevelManager {
 
     public void onSurvivalChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
-        playerData.getLevelData().restoreCachedLevel();
+        playerData.getPlayerLevels().restoreCachedLevel();
 
         this.updateStatus();
     }
@@ -251,7 +249,7 @@ public class LevelManager {
 
     public void onCreativeChange(Player player) {
         PlayerData playerData = PlayerDataManager.getPlayerData(player);
-        playerData.getLevelData().updateAndCacheLevel(CREATIVE);
+        playerData.getPlayerLevels().updateAndCacheLevel(CREATIVE);
 
         this.updateStatus();
     }

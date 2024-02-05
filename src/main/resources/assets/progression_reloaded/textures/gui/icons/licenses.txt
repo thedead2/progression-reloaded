@@ -17,3 +17,4 @@ numbered_list.png: https://icons8.com/icon/8180/numbered-list
 trash_can.png: https://icons8.com/icon/11767/trash-can
 themes.png: https://icons8.com/icon/46205/themes
 drag.png: https://icons8.com/icon/7803/drag
+crossed_swords.png: https://icons8.com/icon/59335/battle

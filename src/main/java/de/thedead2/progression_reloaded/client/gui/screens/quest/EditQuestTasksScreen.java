@@ -1,7 +1,7 @@
 package de.thedead2.progression_reloaded.client.gui.screens.quest;
 
 import de.thedead2.progression_reloaded.client.gui.screens.ProgressionScreen;
-import de.thedead2.progression_reloaded.data.quest.QuestTasks;
+import de.thedead2.progression_reloaded.data.tasks.QuestTasks;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 

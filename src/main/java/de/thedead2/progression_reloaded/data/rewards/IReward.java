@@ -27,11 +27,7 @@ public interface IReward {
     }
 
     static IReward fromNetwork(FriendlyByteBuf buf) {
-        return fromNBT(buf.readNbt());
-    }
-
-    static IReward fromNBT(CompoundTag tag) {
-        return createFromJson(SerializationHelper.convertToJson(tag));
+        return createFromJson(SerializationHelper.convertToJson(buf.readNbt()));
     }
 
     static ResourceLocation createId(String name) {
@@ -41,11 +37,7 @@ public interface IReward {
     void rewardPlayer(ServerPlayer player);
 
     default void toNetwork(FriendlyByteBuf buf) {
-        buf.writeNbt(this.saveToNBT());
-    }
-
-    default CompoundTag saveToNBT() {
-        return (CompoundTag) SerializationHelper.convertToNBT(this.saveToJson());
+        buf.writeNbt((CompoundTag) SerializationHelper.convertToNBT(this.saveToJson()));
     }
 
     default JsonObject saveToJson() {

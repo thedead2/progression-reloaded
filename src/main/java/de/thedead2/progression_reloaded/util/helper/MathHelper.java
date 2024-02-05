@@ -1,30 +1,10 @@
 package de.thedead2.progression_reloaded.util.helper;
 
-import org.joml.Matrix3f;
+import net.minecraft.util.Mth;
 import org.joml.Vector3f;
 
 
 public abstract class MathHelper {
-
-    public static Matrix3f xRotMatrix(float angle) {
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        return new Matrix3f(1, 0, 0, 0, cos, -sin, 0, sin, cos);
-    }
-
-
-    public static Matrix3f yRotMatrix(float angle) {
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        return new Matrix3f(cos, 0, sin, 0, 1, 0, -sin, 0, cos);
-    }
-
-
-    public static Matrix3f zRotMatrix(float angle) {
-        float cos = (float) Math.cos(angle);
-        float sin = (float) Math.sin(angle);
-        return new Matrix3f(cos, -sin, 0, sin, cos, 0, 0, 0, 1);
-    }
 
 
     /**
@@ -117,5 +97,10 @@ public abstract class MathHelper {
 
     public static int sectionsPosToBlockPos(int sectionsCoord) {
         return sectionsCoord << 4;
+    }
+
+
+    public static float percentOf(float percent, float of) {
+        return (Mth.clamp(percent, 0, 100) / 100) * of;
     }
 }

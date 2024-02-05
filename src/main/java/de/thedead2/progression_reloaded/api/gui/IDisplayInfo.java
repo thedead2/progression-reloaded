@@ -1,7 +1,8 @@
 package de.thedead2.progression_reloaded.api.gui;
 
-import com.google.gson.JsonElement;
+import de.thedead2.progression_reloaded.api.IJsonSerializable;
 import de.thedead2.progression_reloaded.api.IProgressable;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -10,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import java.lang.reflect.InvocationTargetException;
 
 
-public interface IDisplayInfo<T extends IProgressable<T>> {
+public interface IDisplayInfo<T extends IProgressable<T>> extends IJsonSerializable, INetworkSerializable {
 
     static IDisplayInfo<?> deserializeFromNetwork(FriendlyByteBuf buf) {
         String className = buf.readUtf();
@@ -27,10 +28,6 @@ public interface IDisplayInfo<T extends IProgressable<T>> {
         buf.writeUtf(this.getClass().getName());
         this.toNetwork(buf);
     }
-
-    void toNetwork(FriendlyByteBuf buf);
-
-    JsonElement toJson();
 
     ItemStack icon();
 

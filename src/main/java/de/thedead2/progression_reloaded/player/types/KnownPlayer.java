@@ -1,6 +1,8 @@
 package de.thedead2.progression_reloaded.player.types;
 
 import com.google.common.base.Objects;
+import de.thedead2.progression_reloaded.api.INbtSerializable;
+import de.thedead2.progression_reloaded.api.network.INetworkSerializable;
 import de.thedead2.progression_reloaded.util.exceptions.CrashHandler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
@@ -14,7 +16,7 @@ import java.util.UUID;
 import static de.thedead2.progression_reloaded.util.ModHelper.DATE_TIME_FORMATTER;
 
 
-public record KnownPlayer(UUID uuid, String name, LocalDateTime lastOnline) {
+public record KnownPlayer(UUID uuid, String name, LocalDateTime lastOnline) implements INetworkSerializable, INbtSerializable {
 
     public static KnownPlayer fromPlayer(Player player) {
         return new KnownPlayer(player.getUUID(), player.getScoreboardName(), LocalDateTime.now());
@@ -90,7 +92,8 @@ public record KnownPlayer(UUID uuid, String name, LocalDateTime lastOnline) {
     }
 
 
-    public CompoundTag toCompoundTag() {
+    @Override
+    public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putUUID("uuid", uuid);
         tag.putString("name", name);
@@ -99,6 +102,7 @@ public record KnownPlayer(UUID uuid, String name, LocalDateTime lastOnline) {
     }
 
 
+    @Override
     public void toNetwork(FriendlyByteBuf buf) {
         buf.writeUUID(this.uuid);
         buf.writeUtf(this.name);

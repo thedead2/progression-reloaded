@@ -4,7 +4,7 @@ import de.thedead2.progression_reloaded.data.level.ProgressionLevel;
 import de.thedead2.progression_reloaded.data.predicates.ITriggerPredicate;
 import de.thedead2.progression_reloaded.data.quest.ProgressionQuest;
 import de.thedead2.progression_reloaded.data.rewards.IReward;
-import de.thedead2.progression_reloaded.data.trigger.SimpleTrigger;
+import de.thedead2.progression_reloaded.data.trigger.SimpleCriterionTrigger;
 import de.thedead2.progression_reloaded.util.ModHelper;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
@@ -17,7 +17,7 @@ public abstract class RegistryKeys {
 
     public static final ResourceKey<Registry<ProgressionQuest>> QUESTS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "quests"));
 
-    public static final ResourceKey<Registry<Class<SimpleTrigger<?>>>> TRIGGER = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "trigger"));
+    public static final ResourceKey<Registry<Class<SimpleCriterionTrigger<?>>>> TRIGGER = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "trigger"));
 
     public static final ResourceKey<Registry<Class<IReward>>> REWARDS = ResourceKey.createRegistryKey(new ResourceLocation(ModHelper.MOD_ID, "rewards"));
 
